@@ -1,6 +1,3 @@
----
-nav_exclude: true
----
 # Getting started with Vivado and HDL
 
 This manual provides an illustration of the tools you will use in CG3207/EE3207E through examples of a simple combinational and a simple sequential circuit. It will familiarize you with industry leader Xilinx®’s Vivado® Design Suite^1 – a comprehensive integrated development envrionment for FPGA design flow, Digilent Inc.’s Nexys™ 4 Development Board featuring an FPGA from Xilinx®’s state-of-the-art Artix®-7 family, and VHDL/Verilog HDL.
