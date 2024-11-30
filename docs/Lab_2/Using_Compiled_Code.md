@@ -1,8 +1,4 @@
----
-nav_order: 1
-parent: "Lab 4: (Near) Complete Processor + Pipelining + Bells + Whistles"
----
-# Lab 4: Using Compiled Code and New Peripherals
+# Using Compiled Code and New Peripherals
 
 ## Using Compiled Code
 

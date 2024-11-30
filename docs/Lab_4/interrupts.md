@@ -1,8 +1,4 @@
----
-nav_order: 5
-parent: "Lab 4: (Near) Complete Processor + Pipelining + Bells + Whistles"
----
-# Lab 4 Enhancement: Interrupt generation and exception handling
+# Enhancement: Interrupt generation and exception handling
 
 You can implement some simple interrupt handling. There is no need to conform to the RISC-V interrupt architecture.
 
