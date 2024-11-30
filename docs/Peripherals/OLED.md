@@ -48,7 +48,7 @@ Octal array emitted by the compiler
 Copy-pasted array fix in RARS with .byte declaration
 
 
-### Food for thought:
+### Food for thought
 
 * It may be better to use synchronous read and use block RAMs if you have many images. Else, you will quickly run out of LUTs.
 * Image pixels being sent column-wise is advantageous if the conversion tool can give a column-major format for the array. This is because multiplication by 64 is easier than by 96.
