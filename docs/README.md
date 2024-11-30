@@ -10,15 +10,17 @@ Welcome to CG3207! In this repository, you will find the manuals for each of the
 
 All labs will be conducted at Digital Systems and Applications laboratory, E4A-04-08. 
 
-| Lab | Description                                                         | Marks  | Remarks                   |
-|-----|---------------------------------------------------------------------|--------|---------------------------|
-| 1   | [Familiarisation with HDL/FPGA and Assembly Language](lab1/lab1.md).  <br/> Omae wa mou shindeiru. | 10     | Individual exercise       |
-| 2   | [Basic CPU design](lab2/lab2.md).   <br/> All your base are belong to us.                                | 30     | Teams of 2 or 3 students  |
-| 3   | [ALU Design](lab3/lab3.md).  <br/> Billions of blue blistering barnacles.                                         | 20+5$  | Teams of 2 or 3 students  |
-| 4   | [Advanced CPU design](lab4/lab4.md).   <br/>   It was the best of times, it was the worst of times.                                 | 15+10$ | Teams of 2 or 3 students  |
-|     |**Total**                                                            | 90     | = 45% of the module grade |
+| Lab | Description                                                                     | Marks  | Remarks                   |
+|-----|---------------------------------------------------------------------            |--------|---------------------------|
+| 1   | [Familiarisation with HDL/FPGA and Assembly Language](lab1/lab1.md).  
+        <br/> Omae wa mou shindeiru.                                                    | 10     | Individual exercise       |
+| 2   | [Basic CPU design](lab2/lab2.md).   <br/> All your base are belong to us.       | 30     | Teams of 2 or 3 students  |
+| 3   | [ALU Design](lab3/lab3.md).  <br/> Billions of blue blistering barnacles.       | 20+5$  | Teams of 2 or 3 students  |
+| 4   | [Advanced CPU design](lab4/lab4.md).   
+        <br/>   It was the best of times, it was the worst of times.                    | 15+10$ | Teams of 2 or 3 students  |
+|     |**Total**                                                                        | 90     | = 45% of the module grade |
 
-[The skeleton file repository](https://github.com/nus-cg3207/lab-skeletons) contains all the files you need to download. 
+[The lab repository](https://github.com/nus-cg3207/labs) contains all the files you need to download. 
 
 ## Other useful pages
 
@@ -52,7 +54,7 @@ If you have any questions regarding the content of any of the labs, please follo
 
 1. Please read the lab manual closely. We will try our best to keep the manual updated with any common errors, or issues, that you may face. 
 
-2. If the lab manual does not answer your question, [the skeleton file repository](https://github.com/nus-cg3207/lab-skeletons) has a [discussions page](https://github.com/NUS-CG3207/lab-skeletons/discussions). Please search here for your question, in case it has already been answered before. We will leave questions and answers from previous semesters on this page, so over time, more and more information should be covered between here and the manuals. 
+2. If the lab manual does not answer your question, [the lab repository](https://github.com/nus-cg3207/labs) has a [discussions page](https://github.com/NUS-CG3207/labs/discussions). Please search here for your question, in case it has already been answered before. We will leave questions and answers from previous semesters on this page, so over time, more and more information should be covered between here and the manuals. 
 
 3. If you cannot find an answer to your question in the discussions either, then please create a new discussion. Make sure your title is as succinct, but descriptive, as possible, for the benefit of others who may search the issues page later. Also, do make sure you include all relevant details in the discussion content. [This webpage](https://www.freecodecamp.org/news/how-to-ask-good-technical-questions/) offers some helpful advice on how to ask good technical questions. 
 
@@ -72,18 +74,6 @@ Here are some tips to take good care of your board:
 * Absolutely DO NOT DROP your board. When moving it around, hold the board by the edges and make sure the USB cable is unplugged so as to minimize strain on the port and to avoid it getting caught on something.
 * Avoid plugging and unplugging the micro-USB cable more than necessary. To reset the board, you can use the power switch on the top left of the board, or unplug the USB-A connector from your computer if really necessary. Micro USB is a notoriously fragile connector, and it's best to avoid putting more strain on it than necessary. USB-A is much sturdier so that end of the cable is not as much of a concern.
 * Apply common sense and standard practices for taking care of electronics: don't eat or drink near your board in case you get crumbs (or worse, a spill) on the board. Don't throw the board around. Plug and unplug accessories with care. Be gentle when using the switches and buttons.
-
-## Suggestions for using this repository
-
-* You may choose to clone this repository, and then set the remote to a private repository of your own. Otherwise, an easier option is to simply download the repository as a zip file, and upload the contents to your own private repository.
-
-* Please DO NOT FORK this repository to do your lab work. Forks of this repository will be public, exposing your work to the internet. Submissions of code from public repositories will be considered plagiarism, even if they're your own repository!
-
-* Educators are welcome to fork this repository (and all others in this organisation) for their own teaching.
-
-* Create a separate folder to contain a Vivado project, which you can use for Lab 2 through 4. 
-
-* Use the GitHub Releases and Milestones functions to mark your progress. We suggest creating a release for every lab assignment, with your code submission zip file as the release file. 
 
 ## License
 

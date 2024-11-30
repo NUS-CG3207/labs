@@ -1,4 +1,4 @@
-# CG3207 Lab Skeletons
+# CG3207 Lab Templates
 
 ## Suggestions for using this repository
 
@@ -11,3 +11,7 @@
 * Create a separate folder to contain a Vivado project, which you can use for Lab 2 through 4. 
 
 * Use the GitHub Releases and Milestones functions to mark your progress. We suggest creating a release for every lab assignment, with your code submission zip file as the release file. 
+
+## License 
+
+ [NUS CG3207 Lab Manuals](https://github.com/nus-cg3207/lab-manuals) © 2024 by [NUS CG3207 Team](https://github.com/nus-cg3207) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)  
