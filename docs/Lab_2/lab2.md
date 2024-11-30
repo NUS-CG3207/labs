@@ -23,7 +23,9 @@ No extra marks will be awarded for performance enhancements / adding support for
 
 ## Design Files
 
-The design files can be found here - [Lab\_2\_Template\_files](https://github.com/NUS-CG3207/lab-skeletons/tree/main/lab2) (Only Verilog version provided. ChatGPT can help you convert this to VHDL pretty well if you are a fan of VHDL). Import all the relevant files into your project - all the .v files, as well as TOP\_<Nexys/Basys depending on your board>.vhd and uart.vhd - irrespective of whether you use UART. Choose the appropriate constraint file for your boardᶲ. The files are pretty self-explanatory. It is possible to mix VHDL and Verilog files in the same project. Note that TOP/uart.vhd is the same as that for the ARM version. All other files have differences, though in many cases, the differences are minor.
+The design files can be found here - [Lab\_2\_Template\_files](https://github.com/NUS-CG3207/labs/tree/main/lab2) (Only Verilog version provided. ChatGPT can help you convert this to VHDL pretty well if you are a fan of VHDL).
+Import all the relevant files into your project - all the .v files, as well as TOP\_<Nexys/Basys depending on your board>.vhd and uart.vhd, ADXL362Ctrl.vhd, SPI_If.vhd, pmodoledrgb_bitmap.vhd - irrespective of whether you use these peripherals.
+Choose the appropriate constraint file for your boardᶲ. The files are pretty self-explanatory. It is possible to mix VHDL and Verilog files in the same project. Note that TOP/uart.vhd is the same as that for the ARM version. All other files have differences, though in many cases, the differences are minor.
 
 The file hierarchy is as follows
 
