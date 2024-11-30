@@ -1,9 +1,3 @@
----
-nav_order: 1
-permalink: /
----
-# CG3207 Lab Manuals
-
 Welcome to CG3207! In this repository, you will find the manuals for each of the 4 lab exercises you will complete for this course, as well as instructions on how to set up the tools you'll need. 
 
 ## Lab outline
@@ -12,25 +6,15 @@ All labs will be conducted at Digital Systems and Applications laboratory, E4A-0
 
 | Lab | Description                                                                                         | Marks  | Remarks                   |
 |-----|-----------------------------------------------------------------------------------------------------|--------|---------------------------|
-| 1   | [Familiarisation with HDL/FPGA and Assembly Language](lab1/lab1.md). <br/> Omae wa mou shindeiru.   | 10     | Individual exercise       |
-| 2   | [Basic CPU design](lab2/lab2.md).   <br/> All your base are belong to us.                           | 30     | Teams of 2 or 3 students  |
-| 3   | [ALU Design](lab3/lab3.md).  <br/> Billions of blue blistering barnacles.                           | 20+5$  | Teams of 2 or 3 students  |
-| 4   | [Advanced CPU design](lab4/lab4.md).  <br/>   It was the best of times, it was the worst of times.  | 15+10$ | Teams of 2 or 3 students  |
+| 1   | [Familiarisation with HDL/FPGA and Assembly Language](Lab_1/lab1.md). <br/> Omae wa mou shindeiru.   | 10     | Individual exercise       |
+| 2   | [Basic CPU design](Lab_2/lab2.md).   <br/> All your base are belong to us.                           | 30     | Teams of 2 or 3 students  |
+| 3   | [ALU Design](Lab_3/lab3.md).  <br/> Billions of blue blistering barnacles.                           | 20+5$  | Teams of 2 or 3 students  |
+| 4   | [Advanced CPU design](Lab_4/lab4.md).  <br/>   It was the best of times, it was the worst of times.  | 15+10$ | Teams of 2 or 3 students  |
 |     |**Total**                                                                                            | 90     | = 45% of the module grade |
 
-[The lab repository](https://github.com/nus-cg3207/labs) contains all the files you need to download. 
+[The lab repository](https://github.com/nus-cg3207/labs) contains all the files you need to download. Some other useful resources can also be found using the menu on the left of this page.
 
-## Other useful pages
 
-[Vivado Installation Guide](vivado_install_guide/vivado_install_guide.md)
-
-[RISC-V Memory Map](rv_memmap.md)
-
-[RISC-V Programming Guide](rv_programming.md)
-
-[ARM Memory Map](arm_memmap.md)
-
-[ARM Programming Guide](arm_programming.md)
 
 ## Lab Schedule (Tentative)
 | Week   | Monday Lab Date (18:00-21:00) | Friday Lab Date (09:00-12:00) | Activity                    | Remarks |
