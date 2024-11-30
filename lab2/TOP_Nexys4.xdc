@@ -237,30 +237,30 @@ set_property IOSTANDARD LVCMOS33 [get_ports {RESET}]
 
 
 ##Pmod Header JB
-##Bank = 15, Pin name = IO_L15N_T2_DQS_ADV_B_15,				Sch name = JB1
-#set_property PACKAGE_PIN G14 [get_ports {JB[0]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[0]}]
-##Bank = 14, Pin name = IO_L13P_T2_MRCC_14,					Sch name = JB2
-#set_property PACKAGE_PIN P15 [get_ports {JB[1]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[1]}]
+#Bank = 15, Pin name = IO_L15N_T2_DQS_ADV_B_15,				Sch name = JB1
+set_property PACKAGE_PIN G14 [get_ports {PMOD_CS}]
+set_property IOSTANDARD LVCMOS33 [get_ports {PMOD_CS}]
+#Bank = 14, Pin name = IO_L13P_T2_MRCC_14,					Sch name = JB2
+set_property PACKAGE_PIN P15 [get_ports {PMOD_MOSI}]
+set_property IOSTANDARD LVCMOS33 [get_ports {PMOD_MOSI}]
 ##Bank = 14, Pin name = IO_L21N_T3_DQS_A06_D22_14,			Sch name = JB3
 #set_property PACKAGE_PIN V11 [get_ports {JB[2]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {JB[2]}]
-##Bank = CONFIG, Pin name = IO_L16P_T2_CSI_B_14,				Sch name = JB4
-#set_property PACKAGE_PIN V15 [get_ports {JB[3]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[3]}]
-##Bank = 15, Pin name = IO_25_15,							Sch name = JB7
-#set_property PACKAGE_PIN K16 [get_ports {JB[4]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[4]}]
-##Bank = CONFIG, Pin name = IO_L15P_T2_DQS_RWR_B_14,			Sch name = JB8
-#set_property PACKAGE_PIN R16 [get_ports {JB[5]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[5]}]
-##Bank = 14, Pin name = IO_L24P_T3_A01_D17_14,				Sch name = JB9
-#set_property PACKAGE_PIN T9 [get_ports {JB[6]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[6]}]
-##Bank = 14, Pin name = IO_L19N_T3_A09_D25_VREF_14,			Sch name = JB10
-#set_property PACKAGE_PIN U11 [get_ports {JB[7]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[7]}]
+#Bank = CONFIG, Pin name = IO_L16P_T2_CSI_B_14,				Sch name = JB4
+set_property PACKAGE_PIN V15 [get_ports {PMOD_SCK}]
+set_property IOSTANDARD LVCMOS33 [get_ports {PMOD_SCK}]
+#Bank = 15, Pin name = IO_25_15,							Sch name = JB7
+set_property PACKAGE_PIN K16 [get_ports {PMOD_DC}]
+set_property IOSTANDARD LVCMOS33 [get_ports {PMOD_DC}]
+#Bank = CONFIG, Pin name = IO_L15P_T2_DQS_RWR_B_14,			Sch name = JB8
+set_property PACKAGE_PIN R16 [get_ports {PMOD_RES}]
+set_property IOSTANDARD LVCMOS33 [get_ports {PMOD_RES}]
+#Bank = 14, Pin name = IO_L24P_T3_A01_D17_14,				Sch name = JB9
+set_property PACKAGE_PIN T9 [get_ports {PMOD_VCCEN}]
+set_property IOSTANDARD LVCMOS33 [get_ports {PMOD_VCCEN}]
+#Bank = 14, Pin name = IO_L19N_T3_A09_D25_VREF_14,			Sch name = JB10
+set_property PACKAGE_PIN U11 [get_ports {PMOD_EN}]
+set_property IOSTANDARD LVCMOS33 [get_ports {PMOD_EN}]
 
 
 
@@ -423,18 +423,18 @@ set_property IOSTANDARD LVCMOS33 [get_ports {RESET}]
 
 
 ##Accelerometer
-##Bank = 15, Pin name = IO_L6N_T0_VREF_15,					Sch name = ACL_MISO
-#set_property PACKAGE_PIN D13 [get_ports aclMISO]
-#set_property IOSTANDARD LVCMOS33 [get_ports aclMISO]
-##Bank = 15, Pin name = IO_L2N_T0_AD8N_15,					Sch name = ACL_MOSI
-#set_property PACKAGE_PIN B14 [get_ports aclMOSI]
-#set_property IOSTANDARD LVCMOS33 [get_ports aclMOSI]
-##Bank = 15, Pin name = IO_L12P_T1_MRCC_15,					Sch name = ACL_SCLK
-#set_property PACKAGE_PIN D15 [get_ports aclSCK]
-#set_property IOSTANDARD LVCMOS33 [get_ports aclSCK]
-##Bank = 15, Pin name = IO_L12N_T1_MRCC_15,					Sch name = ACL_CSN
-#set_property PACKAGE_PIN C15 [get_ports aclSS]
-#set_property IOSTANDARD LVCMOS33 [get_ports aclSS]
+#Bank = 15, Pin name = IO_L6N_T0_VREF_15,					Sch name = ACL_MISO
+set_property PACKAGE_PIN D13 [get_ports aclMISO]
+set_property IOSTANDARD LVCMOS33 [get_ports aclMISO]
+#Bank = 15, Pin name = IO_L2N_T0_AD8N_15,					Sch name = ACL_MOSI
+set_property PACKAGE_PIN B14 [get_ports aclMOSI]
+set_property IOSTANDARD LVCMOS33 [get_ports aclMOSI]
+#Bank = 15, Pin name = IO_L12P_T1_MRCC_15,					Sch name = ACL_SCLK
+set_property PACKAGE_PIN D15 [get_ports aclSCK]
+set_property IOSTANDARD LVCMOS33 [get_ports aclSCK]
+#Bank = 15, Pin name = IO_L12N_T1_MRCC_15,					Sch name = ACL_CSN
+set_property PACKAGE_PIN C15 [get_ports aclSS]
+set_property IOSTANDARD LVCMOS33 [get_ports aclSS]
 ##Bank = 15, Pin name = IO_L20P_T3_A20_15,					Sch name = ACL_INT1
 #set_property PACKAGE_PIN C16 [get_ports aclInt1]
 #set_property IOSTANDARD LVCMOS33 [get_ports aclInt1]
@@ -725,4 +725,4 @@ set_property IOSTANDARD LVCMOS33 [get_ports TX]
 set_property CFGBVS VCCO [current_design]
 	set_property CONFIG_VOLTAGE 3.3 [current_design]
 
-set_max_delay -from [get_pins RX_MSF1_reg/C] -to [get_pins RX_MSF2_reg/D] 1.000
+set_max_delay -from [get_pins RX_MSF1_reg/C] -to [get_pins RX_MSF2_reg/D] 4.000

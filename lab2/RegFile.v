@@ -38,8 +38,8 @@ module RegFile(
     input [4:0] rs2,
     input [4:0] rd,
     input [31:0] WD,
-    output [31:0] RD1,
-    output [31:0] RD2
+    output reg [31:0] RD1,
+    output reg [31:0] RD2
     );
     
     // declare RegBank
@@ -48,8 +48,11 @@ module RegFile(
         // (1 to 31) is sufficient as R15 is not stored. Kept it as (0 to 31) just to supress a warning
 		
     // read
-    assign RD1 = (rs1 == 5'b00000) ? 32'd0 : RegBank[rs1] ; 
-    assign RD2 = (rs2 == 5'b00000) ? 32'd0 : RegBank[rs2] ;   
+    always@(*)	// change to @posedge CLK only if using synch read. In that case, the output is RD1E, RD2E directly
+    begin
+    	RD1 <= (rs1 == 5'b00000) ? 32'd0 : RegBank[rs1] ; 
+    	RD2 <= (rs2 == 5'b00000) ? 32'd0 : RegBank[rs2] ;  
+    end 
     
     // write
     always@(posedge CLK)

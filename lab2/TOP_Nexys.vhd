@@ -6,10 +6,11 @@
 -- Design Name: 	TOP
 -- Target Devices: Nexys 4 (Artix 7 100T)
 -- Description: Top level module for Synthesis. Not meant to be simulated
---
--- Dependencies: Uses uart.vhd by (c) Peter A Bennett
---
--- Revision 0.03
+-- Dependencies: 
+-- uart.vhd by (c) Peter A Bennett, https://github.com/pabennett/uart
+-- PMOD OLED RGB controller by (c) Yannick Bornat, https://yannick-bornat.enseirb-matmeca.fr/wiki/doku.php/en202:pmodoledrgb
+-- ADXL362Ctrl and SPI controllers by (c) Digilent, https://github.com/Digilent/Nexys-4-DDR-OOB
+-- Revision 0.04
 -- Additional Comments: See the notes below. The interface (entity) as well as implementation (architecture) can be modified
 ----------------------------------------------------------------------------------
 --	License terms :
@@ -51,7 +52,7 @@ entity TOP is
 			-- If read at a rate of > ~100 Hz, debouncing may be necessary. This can be fixed in software by ensuring that we don't read too fast (a few 10s of ms gap between reads).
 			PB    			: in  STD_LOGIC_VECTOR (N_PBs-1 downto 0);  -- PB switch inputs. Not debounced - see the comment above.
 			LED 			: out  STD_LOGIC_VECTOR (15 downto 0); -- LEDs.
-			-- (15 downto 8) mapped to the address 0x00000C00
+			-- (15 downto 8) memory mapper, writeable by software
 			-- (7) showing the divided clock
 			-- (6 downto 0) showing PC(8 downto 2)
 			SevenSegAn		: out  STD_LOGIC_VECTOR (N_SEVEN_SEG_DIGITs-1 downto 0); -- 7 Seg anodes. Common anodes - 4 for Basys, 8 for Nexys
@@ -60,7 +61,18 @@ entity TOP is
 			RX 				: in  STD_LOGIC;	-- UART Rx
 			PAUSE			: in  STD_LOGIC;  	-- Pause -> BTNU (Up push button)
 			RESET			: in  STD_LOGIC; 	-- Reset -> BTND (Down push button)
-			CLK_undiv		: in  STD_LOGIC 	-- 100MHz clock. Converted to a lower frequency using DIV_PROCESS before being fed to the Wrapper.
+			CLK_undiv		: in  STD_LOGIC; 	-- 100MHz clock. Converted to a lower frequency using DIV_PROCESS before being fed to the Wrapper.
+			PMOD_CS      	: out STD_LOGIC;
+			PMOD_MOSI    	: out STD_LOGIC;
+			PMOD_SCK     	: out STD_LOGIC;
+			PMOD_DC      	: out STD_LOGIC;
+			PMOD_RES     	: out STD_LOGIC;
+			PMOD_VCCEN   	: out STD_LOGIC;
+			PMOD_EN      	: out STD_LOGIC;
+			aclSCK     		: out STD_LOGIC;
+			aclMOSI    		: out STD_LOGIC;
+			aclMISO    		: in STD_LOGIC;
+			aclSS      		: out STD_LOGIC
 		);
 end TOP;
 
@@ -91,12 +103,18 @@ component Wrapper is
 			LED_OUT				: out  STD_LOGIC_VECTOR (N_LEDs_OUT-1 downto 0);
 			LED_PC 				: out  STD_LOGIC_VECTOR (6 downto 0);
 			SEVENSEGHEX 		: out STD_LOGIC_VECTOR (31 downto 0);
-			CONSOLE_OUT 		: out STD_LOGIC_VECTOR (7 downto 0);
-			CONSOLE_OUT_ready	: in STD_LOGIC;
-			CONSOLE_OUT_valid 	: out STD_LOGIC;
-			CONSOLE_IN 			: in STD_LOGIC_VECTOR (7 downto 0);
-			CONSOLE_IN_valid 	: in STD_LOGIC;
-			CONSOLE_IN_ack 		: out STD_LOGIC;
+			UART_TX 			: out STD_LOGIC_VECTOR (7 downto 0);
+			UART_TX_ready		: in STD_LOGIC;
+			UART_TX_valid 		: out STD_LOGIC;
+			UART_RX 			: in STD_LOGIC_VECTOR (7 downto 0);
+			UART_RX_valid 		: in STD_LOGIC;
+			UART_RX_ack 		: out STD_LOGIC;
+			OLED_Write    		: out  STD_LOGIC;
+			OLED_Col      		: out  STD_LOGIC_VECTOR(6 downto 0);
+			OLED_Row      		: out  STD_LOGIC_VECTOR(5 downto 0);
+			OLED_Data	  		: out  STD_LOGIC_VECTOR(23 downto 0);
+			ACCEL_Data 			: in STD_LOGIC_VECTOR (31 downto 0);
+			ACCEL_DReady		: in STD_LOGIC;			
 			RESET				: in  STD_LOGIC;
 			CLK					: in  STD_LOGIC
 		);
@@ -107,13 +125,24 @@ end component Wrapper;
 ----------------------------------------------------------------------------  
 signal	LED_OUT				: STD_LOGIC_VECTOR (N_LEDs_OUT-1 downto 0);
 signal	LED_PC 				: STD_LOGIC_VECTOR (6 downto 0); 		
-signal	SEVENSEGHEX 		: STD_LOGIC_VECTOR (31 downto 0); 		
-signal	CONSOLE_OUT 		: STD_LOGIC_VECTOR (7 downto 0);
-signal  CONSOLE_OUT_ready	: STD_LOGIC := '1';
-signal	CONSOLE_OUT_valid 	: STD_LOGIC;
-signal	CONSOLE_IN 			: STD_LOGIC_VECTOR (7 downto 0);
-signal	CONSOLE_IN_valid 	: STD_LOGIC;
-signal	CONSOLE_IN_ack 		: STD_LOGIC;	
+signal	SEVENSEGHEX 		: STD_LOGIC_VECTOR (31 downto 0);
+ 		
+signal	UART_TX 			: STD_LOGIC_VECTOR (7 downto 0);
+signal  UART_TX_ready		: STD_LOGIC := '1';
+signal	UART_TX_valid 		: STD_LOGIC;
+signal	UART_RX 			: STD_LOGIC_VECTOR (7 downto 0);
+signal	UART_RX_valid 		: STD_LOGIC;
+signal	UART_RX_ack 		: STD_LOGIC;
+
+signal pix_write    		: STD_LOGIC;
+signal pix_col      		: STD_LOGIC_VECTOR(6 downto 0);
+signal pix_row      		: STD_LOGIC_VECTOR(5 downto 0);
+signal pix_data_in  		: STD_LOGIC_VECTOR(15 downto 0);
+signal pix_data_out 		: STD_LOGIC_VECTOR(15 downto 0); -- not used in wrapper for now as there is no read.
+
+signal ACCEL_Data 			: STD_LOGIC_VECTOR(31 downto 0);
+signal ACCEL_DReady 		: STD_LOGIC;
+
 signal	CLK					: STD_LOGIC;
 
 ----------------------------------------------------------------------------
@@ -158,17 +187,90 @@ signal uart_data_out_ack        : std_logic;
 -- Other UART signals
 -----------------------------------------------------------------------------
 -- UART related
-type states is (WAITING, CONSOLE);
-signal recv_state : states := WAITING;
+type states is (UART_WAITING, UART_ACTIVE);
+signal recv_state : states := UART_WAITING;
 signal RX_MSF1, RX_MSF2 : std_logic := '1'; -- metastable filter		
 
--- UART console related
-signal CONSOLE_OUT_valid_prev : std_logic := '0';
-signal CONSOLE_IN_ack_prev : std_logic := '0';
+-- UART related
+signal UART_TX_valid_prev : std_logic := '0';
+signal UART_RX_ack_prev : std_logic := '0';
 signal uart_data_out_stb_prev: std_logic := '0'; 
 
 signal RESET_INT, RESET_EFF : STD_LOGIC; 	-- internal and effective reset, for future use.
 signal RESET_EXT	: std_logic; 			-- internal reset
+
+----------------------------------------------------------------
+-- OLED component
+----------------------------------------------------------------
+component PmodOLEDrgb_bitmap is
+    Generic (CLK_FREQ_HZ : integer := CLOCK_FREQUENCY;  -- by default, we run at 100MHz
+             BPP         : integer range 1 to 16 := 16; -- bits per pixel
+             GREYSCALE   : boolean := False;            -- color or greyscale ? (only for BPP>6)
+             LEFT_SIDE   : boolean := False);           -- True if the Pmod is on the left side of the board
+    Port (clk          : in  STD_LOGIC;
+          reset        : in  STD_LOGIC;
+          
+          pix_write    : in  STD_LOGIC;
+          pix_col      : in  STD_LOGIC_VECTOR(    6 downto 0);
+          pix_row      : in  STD_LOGIC_VECTOR(    5 downto 0);
+          pix_data_in  : in  STD_LOGIC_VECTOR(BPP-1 downto 0);
+          pix_data_out : out STD_LOGIC_VECTOR(BPP-1 downto 0);
+          
+          PMOD_CS      : out STD_LOGIC;
+          PMOD_MOSI    : out STD_LOGIC;
+          PMOD_SCK     : out STD_LOGIC;
+          PMOD_DC      : out STD_LOGIC;
+          PMOD_RES     : out STD_LOGIC;
+          PMOD_VCCEN   : out STD_LOGIC;
+          PMOD_EN      : out STD_LOGIC);
+end component PmodOLEDrgb_bitmap;
+
+----------------------------------------------------------------------------
+-- OLED signals
+----------------------------------------------------------------------------
+signal pix_data			: STD_LOGIC_VECTOR(23 downto 0);
+
+
+----------------------------------------------------------------
+-- Accel component
+----------------------------------------------------------------
+component ADXL362Ctrl is
+generic 
+(
+   SYSCLK_FREQUENCY_HZ : integer := CLOCK_FREQUENCY;
+   SCLK_FREQUENCY_HZ   : integer := 1000000;
+   NUM_READS_AVG       : integer := 16;
+   UPDATE_FREQUENCY_HZ : integer := 1000
+);
+port
+(
+   SYSCLK     : in STD_LOGIC; -- System Clock
+   RESET      : in STD_LOGIC;
+
+   -- Accelerometer data signals
+   ACCEL_X    : out STD_LOGIC_VECTOR (11 downto 0);
+   ACCEL_Y    : out STD_LOGIC_VECTOR (11 downto 0);
+   ACCEL_Z    : out STD_LOGIC_VECTOR (11 downto 0);
+   ACCEL_TMP  : out STD_LOGIC_VECTOR (11 downto 0);
+   Data_Ready : out STD_LOGIC;
+
+   --SPI Interface Signals
+   SCLK       : out STD_LOGIC;
+   MOSI       : out STD_LOGIC;
+   MISO       : in STD_LOGIC;
+   SS         : out STD_LOGIC
+);
+end component ADXL362Ctrl;
+
+----------------------------------------------------------------------------
+-- Accelerometer signals
+----------------------------------------------------------------------------
+signal ACCEL_Data_X		: STD_LOGIC_VECTOR(11 downto 0);
+signal ACCEL_Data_Y		: STD_LOGIC_VECTOR(11 downto 0);
+signal ACCEL_Data_Z		: STD_LOGIC_VECTOR(11 downto 0);
+signal ACCEL_Data_TMP	: STD_LOGIC_VECTOR(11 downto 0);
+
+----------------------------------------------------------------
 ----------------------------------------------------------------	
 ----------------------------------------------------------------
 -- <TOP architecture>
@@ -192,6 +294,19 @@ RESET_EXT <= RESET; 					-- BTNU, active high.
 RESET_EFF <= RESET_INT or RESET_EXT; 	-- Reset sent to the Wrapper
 RESET_INT <= '0'; 						-- internal reset, for future use.	
 
+----------------------------------------------------------------
+-- Accelerometer data aggregation
+----------------------------------------------------------------
+ACCEL_Data(31 downto 24) <= ACCEL_Data_TMP(11 downto 4);
+ACCEL_Data(23 downto 16) <= ACCEL_Data_X(11 downto 4);
+ACCEL_Data(15 downto 8) <= ACCEL_Data_Y(11 downto 4);
+ACCEL_Data(7 downto 0) <= ACCEL_Data_Z(11 downto 4);
+
+----------------------------------------------------------------
+-- OLED data aggregation
+----------------------------------------------------------------
+pix_data_in <= pix_data(23 downto 19) & pix_data(15 downto 10) & pix_data(7 downto 3);
+
 ----------------------------------------------------------------------------
 -- Wrapper port map
 ----------------------------------------------------------------------------			
@@ -202,14 +317,72 @@ port map (
 		LED_OUT			 	=>   	LED_OUT			,
 		LED_PC 			 	=>   	LED_PC 			,
 		SEVENSEGHEX 	 	=>   	SEVENSEGHEX 	,
-		CONSOLE_OUT 	 	=>   	CONSOLE_OUT 	,
-		CONSOLE_OUT_ready	=>		CONSOLE_OUT_ready,
-		CONSOLE_OUT_valid  	=>   	CONSOLE_OUT_valid,
-		CONSOLE_IN 		 	=>     	CONSOLE_IN 		,
-		CONSOLE_IN_valid  	=>    	CONSOLE_IN_valid,
-		CONSOLE_IN_ack 	 	=>     	CONSOLE_IN_ack 	,
+		UART_TX 	 		=>   	UART_TX 	,
+		UART_TX_ready		=>		UART_TX_ready,
+		UART_TX_valid  		=>   	UART_TX_valid,
+		UART_RX 		 	=>     	UART_RX 		,
+		UART_RX_valid  		=>    	UART_RX_valid,
+		UART_RX_ack 	 	=>     	UART_RX_ack 	,
+		OLED_Write   		=> 		pix_write   	,
+		OLED_Col     		=> 		pix_col     	,
+		OLED_Row     		=> 		pix_row     	,
+		OLED_Data	 		=> 		pix_data	 	,
+		ACCEL_Data			=> 		ACCEL_Data		,
+		ACCEL_DReady		=> 		ACCEL_DReady	,
 		RESET			 	=>     	RESET_EFF		,
 		CLK				 	=>     	CLK	
+);
+
+----------------------------------------------------------------------------
+-- OLED port map
+----------------------------------------------------------------------------
+PmodOLEDrgb_bitmap1 : PmodOLEDrgb_bitmap
+generic map (
+		CLK_FREQ_HZ => CLOCK_FREQUENCY,
+        BPP => 16,				-- bits per pixel
+        GREYSCALE => False,		-- color or greyscale ? (only for BPP>6)
+        LEFT_SIDE => False)		-- True if the Pmod is on the left side of the board
+port map (
+		clk         	=>	CLK_undiv       ,	
+        reset       	=>	reset   		,    
+        pix_write   	=> 	pix_write   	,
+        pix_col     	=> 	pix_col     	,
+        pix_row     	=> 	pix_row     	,
+        pix_data_in 	=> 	pix_data_in 	,
+        pix_data_out	=> 	pix_data_out	,
+        PMOD_CS     	=> 	PMOD_CS     	,
+        PMOD_MOSI   	=> 	PMOD_MOSI   	,
+        PMOD_SCK    	=> 	PMOD_SCK    	,
+        PMOD_DC     	=> 	PMOD_DC     	,
+        PMOD_RES    	=> 	PMOD_RES    	,
+        PMOD_VCCEN  	=> 	PMOD_VCCEN  	,
+        PMOD_EN     	=> 	PMOD_EN
+);
+
+----------------------------------------------------------------------------
+-- UART port map
+----------------------------------------------------------------------------
+ADXL362Ctrl1: ADXL362Ctrl
+generic map
+(
+   SYSCLK_FREQUENCY_HZ => CLOCK_FREQUENCY,
+   SCLK_FREQUENCY_HZ  => 1000000,
+   NUM_READS_AVG => 16,
+   UPDATE_FREQUENCY_HZ => 1000
+)
+port map
+(
+   SYSCLK => CLK_undiv,
+   RESET => RESET_EXT,
+   ACCEL_X => ACCEL_Data_X,
+   ACCEL_Y => ACCEL_Data_Y,
+   ACCEL_Z => ACCEL_Data_Z,
+   ACCEL_TMP => ACCEL_Data_TMP,
+   Data_Ready => ACCEL_DReady,
+   SCLK => aclSCK,
+   MOSI => aclMOSI,
+   MISO => aclMISO,
+   SS => aclSS
 );
 
 ----------------------------------------------------------------------------
@@ -244,13 +417,13 @@ if CLK_undiv'event and CLK_undiv = '1' then
 		uart_data_in_stb        <= '0';
 		uart_data_out_ack       <= '0';
 		uart_data_in            <= (others => '0');
-		recv_state			  	<= WAITING;
+		recv_state			  	<= UART_WAITING;
 		uart_data_out_stb_prev 	<= '0';
 		RX_MSF1					<= '1';
 		RX_MSF2					<= '1';
-		CONSOLE_OUT_ready		<= '1';
-		CONSOLE_IN_valid 		<= '0';
-		CONSOLE_IN				<= (others => '0'); -- not really required, as the valid flag will be 0 on reset. 
+		UART_TX_ready		<= '1';
+		UART_RX_valid 		<= '0';
+		UART_RX				<= (others => '0'); -- not really required, as the valid flag will be 0 on reset. 
    else
    		RX_MSF1					<= RX; -- metastable filter
    		RX_MSF2					<= RX_MSF1; -- metastable filter
@@ -258,40 +431,40 @@ if CLK_undiv'event and CLK_undiv = '1' then
 		-- Sending
 		---------------------
 		uart_data_out_ack <= '0';
-		if CONSOLE_OUT_valid = '1' and CONSOLE_OUT_valid_prev = '0' then-- CONSOLE_OUT_ready = '1' is checked in the Wrapper, which ensures that the next character is sent only if the previous character has been sent. Hence, there is no need to check it here
-			uart_data_in <= CONSOLE_OUT;
+		if UART_TX_valid = '1' and UART_TX_valid_prev = '0' then-- UART_TX_ready = '1' is checked in the Wrapper, which ensures that the next character is sent only if the previous character has been sent. Hence, there is no need to check it here
+			uart_data_in <= UART_TX;
 			uart_data_in_stb <= '1';
-			CONSOLE_OUT_ready 	<= '0';
+			UART_TX_ready 	<= '0';
 		end if;
 		if uart_data_in_ack = '1' then
 			uart_data_in_stb    <= '0';
-			CONSOLE_OUT_ready 	<= '1';
+			UART_TX_ready 	<= '1';
 		end if;
 		---------------------
 		-- Receiving
 		---------------------
 		case recv_state is 
-		when WAITING =>
+		when UART_WAITING =>
 			if uart_data_out_stb = '1' and uart_data_out_stb_prev = '0' then
 				uart_data_out_ack   <= '1';
-				recv_state <= CONSOLE;	
-				CONSOLE_IN <= uart_data_out;
-				CONSOLE_IN_valid <= '1';
+				recv_state <= UART_ACTIVE;	
+				UART_RX <= uart_data_out;
+				UART_RX_valid <= '1';
 			end if;
 			
-		when CONSOLE =>	
+		when UART_ACTIVE =>	
 			if uart_data_out_stb = '1' and uart_data_out_stb_prev = '0' then -- just read and ignore further characters before the current valid character is read. To prevent this, do not send it from PC at a rate faster than your processor reads it.
 				uart_data_out_ack   <= '1';
 			end if;
-			if CONSOLE_IN_ack = '1' and CONSOLE_IN_ack_prev = '0' then
-				recv_state <= WAITING;
-				CONSOLE_IN_valid <= '0';
+			if UART_RX_ack = '1' and UART_RX_ack_prev = '0' then
+				recv_state <= UART_WAITING;
+				UART_RX_valid <= '0';
 			end if;	
 			
 		end case; 			
 		uart_data_out_stb_prev <= uart_data_out_stb;
-		CONSOLE_OUT_valid_prev <= CONSOLE_OUT_valid; -- No successive STRs
-		CONSOLE_IN_ack_prev <= CONSOLE_IN_ack;  -- No successive LDRs
+		UART_TX_valid_prev <= UART_TX_valid; -- No successive STRs
+		UART_RX_ack_prev <= UART_RX_ack;  -- No successive LDRs
 	end if;
 end if;
 end process;				
@@ -322,7 +495,7 @@ begin
 		SevenSegAN(conv_integer(sevenseg_counter(18 downto 16))) <= '0';
 	end if;
 end process;
-
+	
 ----------------------------------------------------------------
 -- Clock divider
 ----------------------------------------------------------------
