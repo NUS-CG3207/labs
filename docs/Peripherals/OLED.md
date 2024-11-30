@@ -1,22 +1,4 @@
-### Cycle Counter
-
-Cycle counter gives the number of processor cycles that have elapsed since the last reset.  
-Cycle counter rolls over at 42 seconds at 100 MHz (CLK_DIV_BITS = 0), but is much longer at lower frequencies.  
-Change counter width and bits used in Wrapper for a longer duration, but lower cycles precision.  
-
-### Accelerometer
-
-The accelerometer gives the temperature and X, Y, Z accelerations.  
-ACCEL_DATA is a 32-bit value packing 4 independent 8-bit values <temperature, X, Y, Z> MSB downto LSB.  
-Each value is in 8-bit signed format with a range of +/- 2g. So a reading of 1g is 0x40 and -1g is 0xC0.  
-The sensor in fact gives a 12-bit reading, but uses only 8 bits for simplicity.  
-The calibration is not perfect on all boards, so do not be surprised if there is a fixed offset to all your readings.  
-
-If you want only a specific axis or temperature, use a combination of logical operators and shift e.g., extract Y using (*ACC_DATA_ADDR & 0x0000FF00) >> 8. If your processor can do `lbu`, the required byte can be read directly.  
-
-ACCEL_DREADY indicates data readiness, which is useful only when attempting to read at a high rate.
-
-### OLED
+## OLED
 
 OLED uses PMOD **B**.
 
@@ -38,7 +20,7 @@ OLED_CTRL[7:4] : Colour format.
 * 0x1: 16-bit colour mode: Highest colour depth supported by the OLED in a compact representation. It is the OLED native input format: 5R-6G-5B.  
 * 0x2: 24-bit colour mode: Similar to standard displays, but some LSBs are not used. Easier to visualise in simulation as each colour is a 2-hex digits. Wrapper output format: 5R-3(0)-6G-2(0)-5B-3(0).  
 
-#### Loading Images
+### Loading Images
 
 The easiest way to load a [raster](https://en.wikipedia.org/wiki/Raster_graphics) image is to hard-code the array in C or assembly. This can be done easily using an online tool such as https://notisrac.github.io/FileToCArray/.  
  
@@ -66,7 +48,7 @@ Octal array emitted by the compiler
 Copy-pasted array fix in RARS with .byte declaration
 
 
-Food for thought:
+### Food for thought:
 
 * It may be better to use synchronous read and use block RAMs if you have many images. Else, you will quickly run out of LUTs.
 * Image pixels being sent column-wise is advantageous if the conversion tool can give a column-major format for the array. This is because multiplication by 64 is easier than by 96.
