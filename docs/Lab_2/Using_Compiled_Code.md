@@ -1,10 +1,4 @@
-# Using Compiled Code and New Peripherals
-
-## Using Compiled Code
-
-
-* Use ProgramCounterv2 if your memory configuration is such that .text starts at a location other than 0. You will need to do this if you want to load a full-resolution image (see the OLED section below). 
-* Use RegFilev2 if you wish to use synchronous read, which may be used to infer block RAMs.
+# Using Compiled Code
 
 You can use the .C file in the folder above as a sample. The corresponding .asm is also provided for reference.  
 
