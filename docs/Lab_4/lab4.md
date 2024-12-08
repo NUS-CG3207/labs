@@ -32,7 +32,6 @@ This is the fun part - you get 10 marks for Lab 4 for implementing performance e
 
 Some potential improvements you can think about implementing are:
 
-* [Implement hazard detection and resolution](hazard.md)
 * [Implement additional instructions](additional_instructions.md)
 * [Implement exception handling and interrupt support](interrupts.md)
 * Implement basic branch prediction
