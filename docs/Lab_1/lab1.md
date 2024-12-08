@@ -15,11 +15,11 @@ This lab may seem quite confusing and tedious at first - this is normal, and not
 
 ### Software (Assembly simulation only)
 
-The goal of this section is to get you familiar with the [RISC-V assembler/simulator](../rv_programming.md) and [ARM assembler/simulator](../arm_programming.md) by simulating a sample program. 
+The goal of this section is to get you familiar with the [RISC-V assembler/simulator](RV_Programming.md) and [ARM assembler/simulator](../ARM/arm_programming.md) by simulating a sample program. 
 
 Here, we will do a software simulation of an RISC-V based system with memory-mapped input-output. Assume that the system we are simulating has LEDs mapped to the address `0x00002400` (`0x00000C00` for ARM), such that the data written (using `sw` for RISC-V/`STR` for ARM) to this address location will appear on the LEDs. Also, assume that the system has DIP switches mapped to the address `0x00002404` (`0x00000C04` for ARM) such that the data read from this location (using `lw` for RISC-V/`LDR` for ARM) will reflect the positions of the switches. The program which does that is provided for you, with the details mentioned below. 
 
-Simulate [riscv_assembly_sample.asm](https://github.com/NUS-CG3207/lab-skeletons/blob/main/lab1/riscv_assembly_sample.asm) or [arm_assembly_sample.s](https://github.com/NUS-CG3207/lab-skeletons/blob/main/lab1/arm_assembly_sample.asm). You should understand every line of code, and every directive, in this file - you might be quizzed on these later, *hint hint nudge nudge*. Read [RISC-V Memory Map](../rv_memmap.md) or [ARM Memory Map](../arm_memmap.md) to understand the program better. 
+Simulate [riscv_assembly_sample.asm](https://github.com/NUS-CG3207/lab-skeletons/blob/main/lab1/riscv_assembly_sample.asm) or [arm_assembly_sample.s](https://github.com/NUS-CG3207/lab-skeletons/blob/main/lab1/arm_assembly_sample.asm). You should understand every line of code, and every directive, in this file - you might be quizzed on these later, *hint hint nudge nudge*. Read [RISC-V Memory Map](RV_Memory_Map.md) or [ARM Memory Map](../ARM/arm_memmap.md) to understand the program better. 
 
 Modify the data in the location pointed to by DIPs and see if the location pointed to by LEDs reflects it. Please see the screenshot below which illustrates how to inspect/modify the memory at location `0x2400`/`0xC00` and `0x2404`/`0xC04`. The value you enter at the location `0x2404`/`0xC04` before executing instruction #4 (line 28 (23 for ARM) in the file) should go into the register `s4`/`R4` after instruction #4, and should be reflected at the location `0x2400`/`0xC00` after instruction #5 (line 29 (24 for ARM) in the code). Are they exactly the same? 
 
@@ -39,7 +39,7 @@ Understand the assembly language instructions and the corresponding hexadecimal 
 
 Task: Display the Instruction (INSTR\_MEM) and Data (DATA\_CONST\_MEM) ROM contents on the physical 7-segment display on the FPGA board. We are doing only a memory dump here; not executing an actual assembly language program.
 
-Templates for Verilog and VHDL for all the boards can be found in [the skeleton file repository](https://github.com/nus-cg3207/lab-skeletons). Note the following:
+Templates for Verilog and VHDL for all the boards can be found in [the labs file repository](https://github.com/nus-cg3207/labs). Note the following:
 
 *   Whether line 29 of the assembly code (for ARM) is commented or not is fundamentally not important as we are doing only a memory dump, not executing an actual assembly language program.
 *   Choose the appropriate combination of files depending on the language you are using. Add only those files you need - one each of Top\_Nexys.v/vhd, Seven\_Seg\_Nexys.v, Clock\_Enable.v/vhd, Get\_MEM.v/vhd, and one .xdc file. You are **NOT** obliged to use the templates - it is perfectly fine to have your own architecture.
