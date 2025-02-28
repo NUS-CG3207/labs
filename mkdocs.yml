@@ -2,3 +2,7 @@ site_name: CG3207 Labs
 site_url: https://nus-cg3207.github.io/labs
 theme:
   name: material
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
