@@ -3,6 +3,11 @@ nav_order: 2
 ---
 # Installation Guide for Vivado
 
+!!! warning
+    Please note that this is the CG3207 website. If you are taking a different course, you may have been directed here for the instructions to install Vivado. 
+
+    Please **DO NOT** get confused, and start doing the labs for CG3207, if you are not taking CG3207. 
+
 For this course, we recommend using Vivado 2023.2. Any other version of Vivado you have installed will probably work; however, you will need support for 7 series FPGAs to be able to use the Nexys 4 board. 
 
 **Important note**: Vivado runs on Windows and Linux, but not on macOS. Our testing has found that if you use a Windows VM with Parallels Desktop, USB passthrough for the FPGA board doesn't work correctly. However, you can still use the simulation tools, and RARS will run (that will run natively on macOS too), so it's still better than nothing. This guide will be updated if we find any workarounds to this issue. 
