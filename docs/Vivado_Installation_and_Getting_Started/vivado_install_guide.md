@@ -10,7 +10,18 @@ nav_order: 2
 
 For this course, we recommend using Vivado 2023.2. Any other version of Vivado you have installed will probably work; however, you will need support for 7 series FPGAs to be able to use the Nexys 4 board. 
 
-**Important note**: Vivado runs on Windows and Linux, but not on macOS. Our testing has found that if you use a Windows VM with Parallels Desktop, USB passthrough for the FPGA board doesn't work correctly. However, you can still use the simulation tools, and RARS will run (that will run natively on macOS too), so it's still better than nothing. This guide will be updated if we find any workarounds to this issue. 
+!!! note
+    Vivado runs on Windows and Linux, but not on macOS. However, we have recently found that it is possible to run Vivado on a Mac computer using Parallels Desktop. Our test setup was as follows:
+    
+    * MacBook Pro with M1 Max CPU
+    * macOS Sequoia version 15.4
+    * Parallels Desktop version 20.2.2, running Windows 11
+
+    Create a virtual machine for Windows 11 on Parallels Desktop, then in that VM, follow the steps for Windows in this guide. To successfully connect your FPGA board to Vivado, you will need to install the latest version of the [Digilent Adept Runtime](https://digilent.com/shop/software/digilent-adept/), as the cable drivers included with Vivado may not install correctly. 
+
+    If you are an NUS student, you may obtain a license for Windows 11 Education from [here](https://portal.azure.com/#blade/Microsoft_Azure_Education/EducationMenuBlade/software). 
+    
+    We have not (yet) tested Vivado running on a Linux VM (e.g. Ubuntu on Parallels), or using other hypervisors (e.g. VMWare Fusion, QEMU etc.). These setups may work, but are not guaranteed to do so. We understand Parallels Desktop is paid (and not cheap) software, so if you are unable to obtain a license to use it, we recommend either borrowing a laptop/PC from someone you know, or using the lab PCs which have the software preinstalled. 
 
 Download Vivado from [AMD/Xilinx's website](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/2023-2.html). We echo AMD's recommendation to download the web installer instead of the full, 100+ gigabyte archive. Download the exe or bin file, depending on your operating system of choice. 
 
