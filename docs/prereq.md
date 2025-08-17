@@ -32,4 +32,4 @@ The software you will use to program your FPGA board is [Vivado](https://www.amd
 To explore RISC-V assembly, we will use the [RARS architecture simulator](https://github.com/TheThirdOne/rars). This runs on Windows, macOS and Linux, and does not require any installation and can be run by double clicking the downloaded jar file or by running `java -jar filename.jar` where `filename` is the name of the jar file you downloaded.
 
 !!! note
-    If you choose to implement the ARM architecture for your project, you will need to use ARM's (somewhat antiquated) Keil MDK 4. Instructions to use this IDE are [available on the page about ARM programming](arm/arm_programming.md).
+    If you choose to implement the ARM architecture for your project, you will need to use ARM's (somewhat antiquated) Keil MDK 4. Instructions to use this IDE are [available on the page about ARM programming](ARM/arm_programming.md).

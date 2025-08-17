@@ -43,10 +43,10 @@ nav:
     - Getting to know your Nexys 4: guides/nexys4.md
     - Installation Guide for Vivado: guides/vivado_install_guide.md
   - Lab manuals:
-    - Lab 1 [Week 4-5]: manuals/01/lab_01.md
-    - Lab 2 [Week 5-7]: manuals/02/lab_02.md
-    - Lab 3 [Week 7-9]: manuals/03/lab_03.md
-    - Lab 4 [Week 9-12]: manuals/04/lab_04.md
+    - Assignment 1 [Weeks 4-5]: manuals/01/lab_01.md
+    - Assignment 2 [Weeks 5-7]: manuals/02/lab_02.md
+    - Assignment 3 [Weeks 7-9]: manuals/03/lab_03.md
+    - Assignment 4 [Weeks 9-12]: manuals/04/lab_04.md
   - Peripheral guides:
     - Accelerometer: peripherals/accelerometer.md
     - Cycle Counter: peripherals/cycle_counter.md
@@ -56,5 +56,5 @@ nav:
     - RISC-V Memory Map: rv/rv_memmap.md
     - RISC-V Programming Guide: rv/rv_programming.md
   - Resources for ARM [DEPRECATED]:
-    - ARM Memory Map: arm/arm_memmap.md
-    - ARM Programming Guide: arm/arm_programming.md
+    - ARM Memory Map: ARM/arm_memmap.md
+    - ARM Programming Guide: ARM/arm_programming.md

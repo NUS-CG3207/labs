@@ -1,27 +1,31 @@
-# Lab 1: Familiarisation with Assembly Language and HDL/FPGA
+# Assignment 1: Familiarisation with Assembly Language and HDL/FPGA
 
 !!! info
-    Lab 1 consists of **2** tasks, worth **5** points each, for a total of **10 points**.
+    Assignment 1 consists of **2** tasks, worth **5** points each, for a total of **10 points**.
 
-    Lab 1 is an **individual** exercise. You will work in groups for later labs, but this one must be completed, submitted and demonstrated **individually**.
+    Assignment 1 is an **individual** exercise. You will work in groups for later labs, but this one must be completed, submitted and demonstrated **individually**.
 
 ## Introduction
 
+This assignment is designed to test your prerequisite knowledge for smooth completion of this course. It will walk through some basics of desigining for FPGA hardware,  writing RISC-V code, and how to use your RISC-V code in an FPGA design.
+
+It is **imperative** to put in effort and try your best for this assignment. It may take an amount of effort that is quite disproportionately large, compared to the impact on your grade. This is normal. This assignment is designed to prepare you for the later ones, so that you can spend time debugging your design, instead of debugging your knowledge. 
+
 ## Task 0: Getting familiar with FPGAs [0 points]
 
-To comfortably complete Lab 1 (and 2 and 3 and 4, for that matter), solid familiarity with the FPGA design toolchain is required. Having taken, and understood (at least most of) EE2026 or CS2100DE is sufficient for this level of familiarity.
+To comfortably complete Assignment 1 (and 2 and 3 and 4, for that matter), solid familiarity with the FPGA design toolchain is required. Having taken, and understood (at least most of) EE2026 or CS2100DE is sufficient for this level of familiarity.
 
 If you are not confident of your Vivado-wrangling and FPGA-whispering capabilities, you should go to [the CS2100DE website](https://nus-cs2100de.github.io/labs) and attempt Lab 1 through Lab 4.
 
 If you have already read through, and followed the instructions in [Lab Prerequisites](../../prereq.md), as you should have done, then congratulations - you are ready for the tasks ahead! If not, now is the time to do so.
 
-This task is not graded, but necessary to be able to complete the labs meaningfully. Please do not take it lightly.
+This task is not graded, but necessary to be able to complete the assignments meaningfully. Please do not take it lightly.
 
 ## Task 1: Assembly simulation [5 points]
 
 ### Task overview
 
-The goal of this task is to get familiar with the [RISC-V assembler/simulator](../../rv/rv_programming.md) or [ARM assembler/simulator](../ARM/arm_programming.md) by simulating a sample program. We will simulate a system with memory-mapped input/output (MMIO).
+The goal of this task is to get familiar with the [RISC-V assembler/simulator](../../rv/rv_programming.md) or [ARM assembler/simulator](../../ARM/arm_programming.md) by simulating a sample program. We will simulate a system with memory-mapped input/output (MMIO).
 
 We assume that the LEDs on this system are mapped to address [`0x2400`]("`0xC00` for ARM"). This means that when we write to this memory address using [`sw`]("`STR` for ARM"), the least significant 16 bits of whatever data we write to this address is shown on the LEDs. For example, if we write `0xF0F0`, the first four LEDs from the left will be lit, then the next four will be unlit, the next four lit, and the last four unlit.
 
@@ -29,14 +33,14 @@ Similarly, we assume that the switches are mapped to address [`0x2404`]("`0xC04`
 
 ### Task instructions
 
-In this task, we will simulate the user providing some input to the switches, and observe the provided assembly program display said input on the LEDs. The first step, of course, is to download the [RISC-V assembly sample](../../../lab1/riscv_assembly_sample.asm) program or the [ARM assembly sample](../../../lab1/arm_assembly_sample.s) program. Then, we can open our sample file in RARS or Keil MDK and start simulating.
+In this task, we will simulate the user providing some input to the switches, and observe the provided assembly program display said input on the LEDs. The first step, of course, is to download the [RISC-V assembly sample](../../downloads/lab1/riscv_assembly_sample.asm) program or the [ARM assembly sample](../../downloads/lab1/arm_assembly_sample.s) program. Then, we can open our sample file in RARS or Keil MDK and start simulating.
 
 === "RISC-V (RARS)"
 
     Refer to [Lab 4 from CS2100DE](https://nus-cs2100de.github.io/labs/manuals/04/lab_04/#getting-started-with-rars) for some help on how to open a RISC-V assembly file in RARS. The guide is written for a different sample program, but the steps to open, assemble and run the code are identical.
 
     !!! warning
-        Remember to set the memory configuration correctly - from "Settings" -> "Memory Configuration", choose "Compact, Text at Address 0". Setting this correctly is **very important** - our simulation for this lab depends on this memory configuration being selected, and our CPU design later will also assume this memory configuration.
+        Remember to set the memory configuration correctly - from "Settings" -> "Memory Configuration", choose "Compact, Text at Address 0". Setting this correctly is **very important** - our simulation for this assignment depends on this memory configuration being selected, and our CPU design later will also assume this memory configuration.
     
     Once you have assembled and begun to run the RISC-V code line-by-line, before executing line 28, simulate changing the input on the switches by modifying the memory at the address mapped to the DIP switches (`0x2404`). Then, continue running the code, including lines 28 and 29, one line at a time, until the memory at the address for the LEDs (`0x2400`) changes to reflect the new data. 
 
@@ -50,7 +54,7 @@ In this task, we will simulate the user providing some input to the switches, an
 
 === "ARM (Keil MDK)"
 
-    Refer to [the ARM Programming Guide](../../arm/arm_programming.md) for instructions on how to set up and use Keil MDK. 
+    Refer to [the ARM Programming Guide](../../ARM/arm_programming.md) for instructions on how to set up and use Keil MDK. 
 
     Once you have assembled and begun to run the ARM code line by line, before executing line 23, simulate changing the input on the switches by modifying the memory at the address mapped to the DIP switches (`0xC04`). Then continue running the code, including lines 23 and 24, one line at a time, until the memory at the address for the LEDs (`0xC00`) changes to reflect the new data.
 
@@ -63,6 +67,8 @@ In this task, we will simulate the user providing some input to the switches, an
     ///
 
 For the assessment, you must be able to demonstrate everything you just did in front of your assessor. You must also understand every line of the sample assembly program, as you may be quizzed on what a particular line (or set of lines) does.
+
+Finally, dump the instruction and data memories into .hex files. Click the "Dump Memory" button in RARS to do this. We need to dump the "text" (instruction) and "data" sections, using the "Hexadecimal Text" option, and finally choosing to "Dump to File...". Keep these files in a safe place to use in the next task. 
 
 ## Task 2: Basic HDL simulation and implementation [5 points]
 
@@ -143,7 +149,24 @@ In total, we will need `Top_Nexys`, `Seven_Seg_Nexys`, `Clock_Enable`, `Get_MEM`
 !!! warning
     The Nexys 4 and Nexys 4 DDR/Nexys A7 use the same FPGA chip on board, but the pins are connected differently. Thus, the part number we choose when creating a new project is the same for both (XC7A100T-1CSG324C), however, the constraints file **is different**. Using the wrong constraints file will work for simulation, synthesis, implementation and even bitstream generation - but the bitstream will not work on the board!
 
-We need to fill out `Clock_Enable`, `Get_MEM` and `Top_Nexys` to achieve the functionality described above. To load the instruction and data ROM, we simply need to import the .hex file
+We need to fill out `Clock_Enable`, `Get_MEM` and `Top_Nexys` to achieve the functionality described above. 
+
+To use the `.hex` files we must first rename them to use the `.mem` file extension. No conversion is needed. These files can be imported into our Vivado project as design sources, and used to initialise memories using the `$readmemh()` command. 
+
+Do **NOT** use a clock divider, like you may have used in EE2026. They can cause all sorts of issues, since it becomes difficult for the synthesis tool to route the clocks. 
+
+### Simulation
+
+Simulation is required for this assignment, but nothing too complicated - a simple simulation of the `Top_Nexys` module will suffice. The simulation should cover all possible input cases. Needless to say, the simulation should be show the correct result!
+
+Feel free to make your simulation more rigorous by automatically checking test cases, and using $error() to halt the simulation if any don't pass. This is not required, but will make for an impressive demo. 
+
+!!! warning
+    Do not move on to the next step without writing a good simulation, and making sure the design can pass it! If the simulation doesn't work, there is no chance the hardware will. However, if the simulation does work, the hardware is almost guaranteed to work too. The most common reason for designs that work in simulation not to work on hardware is mistakes in the constraints file, or faulty hardware. 
+
+### Implementation
+
+Before starting the implementation process, remember to set up the constraints file correctly. Uncomment the lines corresponding to the pins used - no more, no less. Make sure the names in the constraints file match the inputs and outputs of the `Top_Nexys` module. Then, run Synthesis, Implementation and Generate Bitstream to generate the bitstream to upload to your board. 
 
 ## Tips
 
@@ -154,8 +177,47 @@ We need to fill out `Clock_Enable`, `Get_MEM` and `Top_Nexys` to achieve the fun
 * Similarly, the synthesis report can contain some hints on where things are going wrong. We can check to see if the primitives being inferred make sense for our design.
 * Vivado's text editor is, perhaps, not the greatest ever made. We recommend using a more cromulent alternative, such as [Notepad++](https://notepad-plus-plus.org/) or [Visual Studio Code](https://code.visualstudio.com/).
 * Writing good HDL code is a skill that takes a lot of practice. It is a completely different paradigm to (and should **never ever** be confused with) software programming. The best teacher is experience, and practice really does help. Following the guidelines from Chapter 2, and being very conscious about the hardware we expect our code to generate, is key.
+* For this design, debouncing the switches is really quite extra and not necessary. (Why?) Feel free to look into a [metastable filter](https://en.wikipedia.org/wiki/Metastability_(electronics)), although it is also unnecessary for this design.
 
 ## Submission and demonstration instructions
+
+### Submission
+
+Once you have finished the assignment, you must submit your work to Canvas. You should submit **a single zip file**. The file should contain:
+
+1. The assembly language program (ending with `.s` or `.asm`), if you have modified it. If not, skip this one. 
+2. The HDL sources for your project, i.e. all of the `.v`/`.vhd`/`.sv` files for modules, testbenches, etc.
+3. The `.xdc` constraints file.
+4. The `.bit` bitstream file.
+5. A screenshot of the simulation waveform as a `.jpg` file. All of the signals in the design should be captured - there aren't that many, so they should fit on your screen. If you need to use multiple screenshots to make it clear, feel free to do so. 
+
+Your submission must be made to Canvas before the start of your lab session in Week 5. The exact deadline for your submission will be visible on Canvas. 
+
+### Demonstration
+
+Before your lab session in Week 5, you will be assigned a time slot of 7 minutes for your demonstration. 
+
+Arrive at the lab at least 30 minutes before your assigned time slot. If you are one of the earlier time slots, you need not arrive more than 15 minutes before the start of the lab timing (i.e. before 17:45 or 08:45). 
+
+The time will be split as follows:
+
+* 2 minutes to demonstrate Task 1, using RARS. You should show that you are able to follow the instructions in Task 1. 
+* 2 minutes to demonstrate Task 2, on the FPGA board. You should show that the design specified for Task 2 is implemented correctly with all features functional.
+* 3 minutes for two questions from the GA assessing you.
+
+The time is extremely tight - with so many of you, we do have to be quick :3. If you are not there when we are ready to assess you, we will skip past you and start assessing others. You will be bumped to the bottom of the queue, and we will not assess you until everyone else is done. (On the flip side, if you are nice and early, and someone misses their turn - good news, you might get to go home early :D)
+
+Note that you will **not** have extra time to open programs, load projects, etc.. Make sure you have opened RARS and Vivado, and have the bitstream ready to upload to your board. Any extra time you take to do these tasks will eat into the time for the demonstration. We will not exceed your allotted time for demonstration.
+
+### Penalties for late submission
+
+Late submissions and demonstrations up to one week will be allowed, with a penalty of 50%. Beyond one week, submissions will not be accepted. 
+
+This policy is non-negotiable, aside from the usual NUS clauses such as being unwell (Medical Certificate strictly required), authorised competitions, family emergencies etc. 
+
+## Conclusion
+
+Congratulations! With the first assignment finished, we are now comfortable with FPGA design and assembly programming. We are ready to dive into the proper content of the course. In the next assignment, we will have our CPU up and running - it's going to be exciting.
 
 !!! success "What we should know"
     * How to write and simulate RISC-V assembly programs.

@@ -6,20 +6,14 @@ In this lab, you will be implementing the basic RISC-V processor supporting only
 
 Essentially, it should support the following instructions \[HDL simulation as well as hardware\](20 marks)
 
-=== "RISC-V"
+*   **add**, **addi**, **sub**, **and**, **andi**, **or**, **ori**
+*   **lw**, **sw**
+*   **beq**, **bne**, **jal** (without linking, that is, without saving the return address). 
 
-    *   **add**, **addi**, **sub**, **and**, **andi**, **or**, **ori**
-    *   **lw**, **sw**
-    *   **beq**, **bne**, **jal** (without linking, that is, without saving the return address). 
+Further, improve the processor by adding the following features \[HDL simulation as well as hardware\]
 
-    Further, improve the processor by adding the following features \[HDL simulation as well as hardware\]
-
-    *   **lui**, **auipc** (5 marks)
-    *   **sll**, **srl**, **sra** (5 marks)
-
-=== "ARM"
-
-
+*   **lui**, **auipc** (5 marks)
+*   **sll**, **srl**, **sra** (5 marks)
 
 No extra marks will be awarded for performance enhancements / adding support for more instructions (that's for Labs 3 and 4). However, a lack of convincing demos (with carefully crafted assembly language programs) can result in the deduction of marks.
 

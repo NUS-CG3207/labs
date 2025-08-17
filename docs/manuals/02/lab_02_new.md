@@ -1,21 +1,43 @@
 # Lab 2: Implementation of a RISC-V 32-bit (RV32I) Processor
 
+!!! info
+
+    Assignment 2 consists of 1 task, with 2 subtasks, for a total of **30 points**. 
+
+    Assignment 2 is a group exercise. You will be assessed as a group, but scored individually. 
+
 ## Objective
 
-In this lab, you will be implementing the basic RISC-V processor supporting only limited 32-bit integer instructions.
+In this assignment, we will be implementing the basic RISC-V (or ARM!) processor supporting only limited 32-bit integer instructions.
 
-Essentially, it should support the following instructions \[HDL simulation as well as hardware\](20 marks)
+=== "RISC-V"
 
-*   **add**, **addi**, **sub**, **and**, **andi**, **or**, **ori**
-*   **lw**, **sw**
-*   **beq**, **bne**, **jal** (without linking, that is, without saving the return address). 
+    For 20 points, implement the following instructions:
 
-Further, improve the processor by adding the following features \[HDL simulation as well as hardware\]
+    *   `add`, `addi`, `sub`, `and`, `andi`, `or`, `ori`
+    *   `lw`, `sw`
+    *   `beq`, `bne`, `jal` (without linking, that is, without saving the return address). 
 
-*   **lui**, **auipc** (5 marks)
-*   **sll**, **srl**, **sra** (5 marks)
+    Further, improve the processor by adding the following features
 
-No extra marks will be awarded for performance enhancements / adding support for more instructions (that's for Labs 3 and 4). However, a lack of convincing demos (with carefully crafted assembly language programs) can result in the deduction of marks.
+    *   `lui`,` auipc` (5 points)
+    *   `sll`, `srl`, `sra` (5 points)
+
+=== "ARM"
+
+    For 20 points, implement the following instructions:
+
+    * `LDR`, `STR` (Both with positive immediate offsets)
+    * `AND`, `OR`, `ADD`, `SUB` (Where `Src2` is register or immediate without shifts)
+    * `B`
+
+    Further, improve the processor by adding the following features 
+
+    * `CMP` (3 points)
+    * `LDR`, `STR` (4 points)
+    * Immediate shift support for `Src2` in DP instructions (i.e. `LSL`, `LSR`, `ASR`, `ROR`) (3 points)
+
+No extra points will be awarded for performance enhancements / adding support for more instructions (that's for Labs 3 and 4). However, a lack of convincing demos (with carefully crafted assembly language programs) can result in the deduction of points.
 
 ## Design Files
 
