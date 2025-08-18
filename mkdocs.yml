@@ -1,8 +1,60 @@
-site_name: CG3207 Labs
+site_name: NUS CG3207 Labs
 site_url: https://nus-cg3207.github.io/labs
 theme:
   name: material
+  palette:
+    scheme: nus
+  font:
+    text: Merriweather
+  icon:
+    annotation: material/information-variant-circle-outline
+  features:
+    - content.tooltips
+    
+extra_css:
+  - stylesheets/extra.css
 markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - pymdownx.blocks.caption
+  - attr_list
+  - md_in_html
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  # - glightbox
+copyright:  <p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><a property="dct:title" rel="cc:attributionURL" href="https://nus-cg3207.github.io/labs">NUS CG3207 Labs</a> by <a rel="cc:attributionURL dct:creator" property="cc:attributionName" href="https://github.com/nus-CG3207">NUS CG3207 Team</a> is licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-NC-SA 4.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/nc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1" alt=""></a></p> 
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nus-cg3207
+
+    - icon: fontawesome/solid/envelope
+      link: mailto:neil@nus.edu.sg
+
+nav:
+  - Home: index.md
+  - How to use this website: guides/howto.md
+  - Preparing for labs:
+    - Lab Prerequisites: prereq.md
+    - Getting to know your Nexys 4: guides/nexys4.md
+    - Installation Guide for Vivado: guides/vivado_install_guide.md
+  - Lab manuals:
+    - Assignment 1 [Weeks 4-5]: manuals/01/lab_01.md
+    - Assignment 2 [Weeks 5-7]: manuals/02/lab_02.md
+    - Assignment 3 [Weeks 7-9]: manuals/03/lab_03.md
+    - Assignment 4 [Weeks 9-12]: manuals/04/lab_04.md
+  - Peripheral guides:
+    - Accelerometer: peripherals/accelerometer.md
+    - Cycle Counter: peripherals/cycle_counter.md
+    - OLED Display: peripherals/oled.md
+    - UART: peripherals/uart.md
+  - Resources for RISC-V:
+    - RISC-V Memory Map: rv/rv_memmap.md
+    - RISC-V Programming Guide: rv/rv_programming.md
+  - Resources for ARM [DEPRECATED]:
+    - ARM Memory Map: ARM/arm_memmap.md
+    - ARM Programming Guide: ARM/arm_programming.md

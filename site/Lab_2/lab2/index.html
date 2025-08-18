@@ -1,0 +1,1385 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://nus-cg3207.github.io/labs/Lab_2/lab2/">
+      
+      
+        <link rel="prev" href="../Using_Compiled_Code/">
+      
+      
+        <link rel="next" href="../../Lab_3/lab3/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>Lab 2: Implementation of a RISC-V 32-bit (RV32I) Processor - CG3207 Labs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
+      
+      
+
+  
+  
+  
+  
+  <style>:root{--md-annotation-icon:url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12.3%207.29c.2-.18.44-.29.7-.29.27%200%20.5.11.71.29.19.21.29.45.29.71%200%20.27-.1.5-.29.71-.21.19-.44.29-.71.29-.26%200-.5-.1-.7-.29-.19-.21-.3-.44-.3-.71%200-.26.11-.5.3-.71m-2.5%204.68s2.17-1.72%202.96-1.79c.74-.06.59.79.52%201.23l-.01.06c-.14.53-.31%201.17-.48%201.78-.38%201.39-.75%202.75-.66%203%20.1.34.72-.09%201.17-.39.06-.04.11-.08.16-.11%200%200%20.08-.08.16.03.02.03.04.06.06.08.09.14.14.19.02.27l-.04.02c-.22.15-1.16.81-1.54%201.05-.41.27-1.98%201.17-1.74-.58.21-1.23.49-2.29.71-3.12.41-1.5.59-2.18-.33-1.59-.37.22-.59.36-.72.45-.11.08-.12.08-.19-.05l-.03-.06-.05-.08c-.07-.1-.07-.11.03-.2M22%2012c0%205.5-4.5%2010-10%2010S2%2017.5%202%2012%206.5%202%2012%202s10%204.5%2010%2010m-2%200c0-4.42-3.58-8-8-8s-8%203.58-8%208%203.58%208%208%208%208-3.58%208-8%22/%3E%3C/svg%3E');}</style>
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Merriweather:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Merriweather";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lab-2-implementation-of-a-risc-v-32-bit-rv32i-processor" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CG3207 Labs" class="md-header__button md-logo" aria-label="CG3207 Labs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CG3207 Labs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Lab 2: Implementation of a RISC-V 32-bit (RV32I) Processor
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CG3207 Labs" class="md-nav__button md-logo" aria-label="CG3207 Labs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CG3207 Labs
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    ARM
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            ARM
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ARM/arm_memmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ARM Memory Map
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ARM/arm_programming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ARM Programming Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Lab 1
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Lab 1
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Lab_1/RV_Memory_Map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    RISC-V Memory Map
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Lab_1/RV_Programming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    RISC-V Programming
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Lab_1/lab1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lab 1: Familiarisation with Assembly Language and HDL/FPGA
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Lab 2
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Lab 2
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Template_Updates_Log/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Work in progress - Cleanup Necessary
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Using_Compiled_Code/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Using Compiled Code
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Lab 2: Implementation of a RISC-V 32-bit (RV32I) Processor
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lab 2: Implementation of a RISC-V 32-bit (RV32I) Processor
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#objective" class="md-nav__link">
+    <span class="md-ellipsis">
+      Objective
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design Files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design Requirements
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#risc-programming-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      RISC Programming Instructions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tips
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#submission-info" class="md-nav__link">
+    <span class="md-ellipsis">
+      Submission Info
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Lab 3
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Lab 3
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Lab_3/lab3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lab 3: Multiplication / Division units
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Lab 4
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Lab 4
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Lab_4/additional_instructions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Enhancement: Implementing additional instructions
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Lab_4/interrupts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Enhancement: Interrupt generation and exception handling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Lab_4/lab4/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lab 4: (Near) Complete Processor + Pipelining + Bells + Whistles
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Lab_4/pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Implementing Pipelining
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Peripherals
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Peripherals
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Peripherals/Accelerometer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Accelerometer
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Peripherals/Cycle_Counter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Cycle Counter
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Peripherals/OLED/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    OLED
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Peripherals/UART/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    UART and RealTerm
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Vivado Installation and Getting Started
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Vivado Installation and Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Vivado_Installation_and_Getting_Started/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting started with Vivado and HDL
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Vivado_Installation_and_Getting_Started/vivado_install_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation Guide for Vivado
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#objective" class="md-nav__link">
+    <span class="md-ellipsis">
+      Objective
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design Files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design Requirements
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design Requirements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#risc-programming-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      RISC Programming Instructions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tips
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#submission-info" class="md-nav__link">
+    <span class="md-ellipsis">
+      Submission Info
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="lab-2-implementation-of-a-risc-v-32-bit-rv32i-processor">Lab 2: Implementation of a RISC-V 32-bit (RV32I) Processor</h1>
+<h2 id="objective">Objective</h2>
+<p>In this lab, you will be implementing the basic RISC-V processor supporting only limited 32-bit integer instructions.</p>
+<p>Essentially, it should support the following instructions [HDL simulation as well as hardware](20 marks)</p>
+<ul>
+<li><strong>add</strong>, <strong>addi</strong>, <strong>sub</strong>, <strong>and</strong>, <strong>andi</strong>, <strong>or</strong>, <strong>ori</strong></li>
+<li><strong>lw</strong>, <strong>sw</strong></li>
+<li><strong>beq</strong>, <strong>bne</strong>, <strong>jal</strong> (without linking, that is, without saving the return address). </li>
+</ul>
+<p>Further, improve the processor by adding the following features [HDL simulation as well as hardware]</p>
+<ul>
+<li><strong>lui</strong>, <strong>auipc</strong> (5 marks)</li>
+<li><strong>sll</strong>, <strong>srl</strong>, <strong>sra</strong> (5 marks)</li>
+</ul>
+<p>No extra marks will be awarded for performance enhancements / adding support for more instructions (that's for Labs 3 and 4). However, a lack of convincing demos (with carefully crafted assembly language programs) can result in the deduction of marks.</p>
+<h2 id="design-files">Design Files</h2>
+<p>The design files can be found here - <a href="https://github.com/NUS-CG3207/labs/tree/main/lab2">Lab_2_Template_files</a> (Only Verilog version provided. ChatGPT can help you convert this to VHDL pretty well if you are a fan of VHDL).
+Import all the relevant files into your project - all the .v files, as well as TOP_<Nexys/Basys depending on your board>.vhd and uart.vhd, ADXL362Ctrl.vhd, SPI_If.vhd, pmodoledrgb_bitmap.vhd - irrespective of whether you use these peripherals.
+Choose the appropriate constraint file for your boardᶲ. The files are pretty self-explanatory. It is possible to mix VHDL and Verilog files in the same project. Note that TOP/uart.vhd is the same as that for the ARM version. All other files have differences, though in many cases, the differences are minor.</p>
+<p>The file hierarchy is as follows</p>
+<ul>
+<li>TOP_<board>.vhd (top-level module for hardware implementation) → Wrapper.v (unit under test for simulation) → RV.v → Components of RV (PC_Logic.v, Decoder.v, ALU.v etc).</li>
+<li>TOP_<board>.vhd → uart.vhd</li>
+<li>test_Wrapper.v (top-level module for simulation) → Wrapper.v (unit under test for simulation) → RV.v → Components of RV (PC_Logic.v, Decoder.v, ALU.v etc).</li>
+<li>ALU.v → Shifter.v</li>
+</ul>
+<p>Ensure that the top-level module is set correctly in your project. It should be TOP (TOP_<board>.vhd) for implementation, and test_Wrapper for simulation. It can be set by right-clicking the appropriate file under Design sources (for implementation) and Simulation sources (for simulation) and choosing Set as Top.
+The Wrapper is a convenient testbed to plug your processor (RV) into and simulate it using test_Wrapper as the testbench - see below for more details on how to modify the test_Wrapper appropriately. The Wrapper provides instruction/data memory and a set of abstract peripherals with easy-to-view signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals (e.g., CONSOLE_IN/CONSOLE_OUT of the Wrapper to RX/TX of UART; anode and cathode activation signals of the 7-segment display) by Top_.vhd. Writing a testbench to simulate RV directly is unnecessary. </p>
+<p>There are basically 4 files you need to populate / modify  - <strong>PC_Logic.v</strong> , <strong>Decoder.v</strong> , <strong>RV.v</strong> ; <strong>y</strong>ou will also need to add your code / constant memories hex values into <strong>Wrapper.v</strong>.  A 5th file, <strong>ALU.v</strong> should also be modified to incorporate shifts.</p>
+<p>Some other important considerations :
+*   Ensure the top-level module for synthesis is TOP (TOP.vhd) for synthesis (by right-clicking the file under Design Sources).
+*   Ensure that the top-level module is test_Wrapper (test_Wrapper.v) for simulation (by right-clicking the file under Simulation Sources) - this is especially important as Vivado might pick up TOP as top-level module for simulation, which is wrong.
+*   You might also need to modify CLK_DIV_BITS in TOP.vhd depending on the processor clock speed you want to achieve (keep it to a low number like 5 if you are using UART). This need not be changed for simulation as TOP_.vhd is not simulated. <br />
+*   Read the comments (especially about the input and output ports / interfaces) in the Wrapper.v carefully.</p>
+<p>ᶲIt is a good idea to delay importing the constraints file and the TOP_<board>.vhd file until you are ready to test on hardware. Not having the constraints file during the design / simulation phase can help avoid some warnings related to synthesis when you try synthesizing a module that does not have the interfaces specified in the constraints file. Alternatively, import it, but keep it disabled until you need it in Project Manager &gt; Sources &gt; Constraints &gt; right-click and Disable File.</p>
+<p>Wrapper.v for ARM and RISC-V are almost identical. The only real difference is in the memory map.</p>
+<h2 id="design-requirements">Design Requirements</h2>
+<ul>
+<li><strong>You are required to simulate your design and verify its functionality.</strong> All debugging should be done in simulation, not in hardware. Furthermore, while developing and testing your design, <em>you should also try synthesizing to ensure that your design is synthesizable without avoidable warnings and errors.</em></li>
+<li>All arithmetic, logical, and shift operations on 32-bit numbers should be done in the ALU, except for the new PC (PC+ aka PC_IN) computation.<ul>
+<li>You should use '+' on 32-bit numbers only in 2 statements -&gt; one to compute the new PC value, and one statement in ALU.<ul>
+<li>In other words, only 2 32-bit adders can be used in the whole system.</li>
+<li>A single-cycle processor cannot be implemented with less than 2 adders, but a multi-cycle design can be - this will require the ALU to be used for PC increment in a second cycle for the same instructions.</li>
+</ul>
+</li>
+<li>Do not implement your own carry look ahead or ripple carry adders. The '+' operator synthesizes a circuit that makes use of the built-in carry acceleration logic built into most FPGAs (carry chain, carry lookahead logic - Google for CARRY4). However, if you insist on implementing your own adder logic for the sake of learning, please go ahead. It will use the general-purpose fabric/routing, which will almost certainly be slower (doesn't matter for lower frequencies though).</li>
+<li>"=" should not be used on 32-bit numbers for Lab 2.<ul>
+<li>The comparison for conditional branch should be done inside the ALU through subtraction.</li>
+<li>"=" may be used in other places such as the control unit, to implement multiplexers in the datapath, for checking the value of counter(s) for Lab 3 MCycle unit, etc., but this comparison is done on values that are much less than 32 bits.</li>
+<li>You may need "=" on 32-bit numbers in Lab 4 if you are implementing branch prediction, but that is optional and far away from where we are now :).</li>
+</ul>
+</li>
+<li>All Shift operations on 32-bit numbers should be done in the Shifter unit.</li>
+</ul>
+</li>
+<li><strong>DO NOT create additional entities/modules</strong>. Components such as multiplexers are easily implemented using when-else / with-select / if / case statements. Leave PC_Logic and Decoder separate (do not combine them into one ControlUnit entity). However, the interfaces for entities could be modified slightly to meet the design requirements.<ul>
+<li>DO NOT modify the ports of the entity RISC-V, unless you want to take responsibility for the top-level wrapper module.</li>
+</ul>
+</li>
+<li>It is a good idea to use '-' (VHDL) or 'X' (Verilog) for don't cares, as it could simplify the combinational logic. However, there are 2 issues<ul>
+<li>Using don't cares with signals which change the processor state (RegWrite, PCSrc, MemWrite) would make the system vulnerable to illegal instructions.</li>
+<li>Don't cares can cause different behavior in simulation and synthesis. Don't cares are treated as a don't cares in simulation, whereas in synthesis, it could be a random 0 or 1 (whichever simplifies logic better).</li>
+</ul>
+</li>
+<li>Reset resets only the program counter. The register initial values are not guaranteed to be zero. This requires you to write to a register before using/reading it.</li>
+<li>you might need to <strong>modify your Lab 1 program to use only those instructions you have implemented in YOUR processor</strong> (<strong>and simulate it in RARS</strong> to ensure the functionality) before you get started</li>
+<li>Use your own, well-crafted assembly language programs for a convincing demo (to demonstrate that all the required instructions and variants work). <strong>One single program demonstrating all the features would be desirable</strong>. By 'convincing demo', what we mean is having an assembly language program that tests all the features of all instructions of a particular type. For example, if you demonstrate <strong>addi</strong>, you don't really have to show <strong>andi</strong>, <strong>ori</strong> as it can be expected to work, as the datapath activated is the same. Instructions such as conditional branches should be used such as both possibilities - i.e., branch taken and branch not taken should be demonstrated. In other words, it should provide an exhaustive 'coverage' of your HDL code. Your program should be crafted such that if one instruction misbehaves, the overall behavior of the program should be different (this is the case for most programs, as long as you use the result from every instruction in a subsequent instruction).</li>
+<li>The assembly language program you use, should be (obviously) such that only those instructions that <strong>you</strong> have implemented in your HDL are used.</li>
+<li>Byte (sb) and half-word (sh) writes are supported for data memory and peripherals like the 7-segment display. Ensure memory addresses are aligned, and data is pre-shifted/aligned accordingly. Note: byte and half-word read don't require any Wrapper support - you can simply read the whole byte, extract the byte/half-word, and extend as necessary.</li>
+<li>The provided HelloWorld program is perhaps <strong>NOT</strong> the first assembly language program you should attempt on <em>your</em> processor. Use the <strong>Lab 1 assembly language program</strong> (with appropriate modifications) instead. HelloWorld is neither meant to be a program for you to get started nor meant to be a comprehensive program that tests everything. It is just a fancy example program. Make sure that all the instructions used by the assembly programme are implemented in your design (HDL) before you can expect the functionality!</li>
+<li>The provided test_Wrapper is meant to test the HelloWorld assembly language program and provides stimuli simulating a UART Console. Slight <strong>modifications will be needed</strong> to test other assembly language programs you write. For example, if you are giving inputs using DIP switches, you will need to provide appropriate stimuli, i.e., DIP = something at an appropriate point in time in your testbench.</li>
+<li>You could use the program that you simulated in RARS in Lab 1 as a starting point if you have implemented <strong>lui</strong> and <strong>auipc</strong><em>. However, you will need to make appropriate modifications to include instructions such as </em><em>DP reg type</em><em>, </em><em>bne</em><em>, and shifts in a meaningful manner. The test_Wrapper should be modified to give appropriate stimuli, as mentioned in the previous point. </em>You can use it even before incorporating lui and auipc, but you will need to change it such that s1 and s2 are loaded from memory.</li>
+<li>It is possible to use a different Memory Configuration from RARS, except supporting 32'hFFFF0000 as the MMIO base in the RARS default. The RARS default memory configuration is IROM_BASE = 32'h00400000 and DMEM_BASE = 32'h10010000 in RARS. The RARS default MMIO base is 32'hFFFF0000, but this is hard to support. So we use MMIO_BASE = DMEM_BASE + 2**DMEM_DEPTH_BITS in all memory configurations We use compact memory configuration with .txt at 0 where IROM_BASE = 32'h00000000 and DMEM_BASE = 32'h00002000, but you can change this to either of the other two if you wish.</li>
+<li>Set the number of bits for the byte address. Depth (size) = 2DEPTH_BITS. e.g.,if DEPTH_BITS = 9, depth = 512 bytes = 128 words.</li>
+<li>Make sure that the align directive in the assembly programme is set according to the sizes of the various segments. The size of a data segment affects the next segment alignment and address. Keep in mind that large memory sizes can cause synthesis times to be longer, esp if not using synch read (block RAM)</li>
+<li>There is no requirement that you should use all the peripherals supported by the Wrapper. As long as your demo is convincing, it is fine to use only a limited set of peripherals (say, LEDs and DIP switches - at least one input and one output). <a href="../../Lab_1/RV_Memory_Map/">RISC-V Memory Map</a> page has more details about the address and usage of the supported peripherals.</li>
+<li>You can add more peripherals (RGB LED, accelerometer, VGA display, etc.) to the Wrapper if you wish. The corresponding changes will also need to be done in the top-level .vhd and .xdc files.</li>
+<li>Learn how to use debugging options such as single stepping, breakpoints, running for a specified time, etc which can help tremendously. However, note that some options such as single stepping work a bit differently from conventional software debugging, due to the inherent parallel nature of HDLs, as well as the fact that non-blocking assignments do not have an instantaneous effect on the LHS. Some additional info is given in the Tips section, and there is a demo on this during the lab briefing.</li>
+</ul>
+<h3 id="risc-programming-instructions">RISC Programming Instructions</h3>
+<p>Please follow the instructions in the <a href="../../Lab_1/RV_Programming/">RISC-V Programming</a> page to configure RARS and to write programs. The .hex file generated by the program is inserted into the ROMs within Wrapper.v directly to "program" the RISC-V processor. Note: Instruction and data memory sizes can be bigger than 128 words. Be mindful of the potentially increased synthesis time though. Addresses except IROM_BASE and DMEM_BASE are hierarchically derived instead of hard-coding.</p>
+<p>Simulate your assembly language program thoroughly - else when something goes wrong, you won't know if the problem is with your HDL code (hardware) or the assembly language program (software).</p>
+<h2 id="tips">Tips</h2>
+<ul>
+<li>Please <strong>SIMULATE</strong> your design before spending your time on bitstream generation. Make sure your design synthesizes without warnings (if at all there are warnings, you should know the reasons and you should ensure that the warnings do not affect the functionality). If you don't simulate and click 'generate bitstream' hoping it would work on the board, you are probably wasting your time. This can't be emphasized enough.</li>
+<li>Synthesize modules that you edit, such as decoder and conditional logic by setting them as top-level modules even before simulation. The synthesis tool is much smarter than the simulation tool - <strong>synthesis reports and warnings</strong> can give you a wealth of information.</li>
+<li>Looking at RTS Analysis &gt; Open Elaborated design gives you insights into the schematic (block design) inferred from your code. This can be very useful in debugging. Pay particular attention to the bit widths for each connection etc.<ul>
+<li>You can get even more information from the synthesis report.</li>
+</ul>
+</li>
+<li>You will get a warning about indices_reg. This is related to the seven-segment display and can also be ignored. You will also get warnings about Funct7 bits other than Funct7[5] being unused. This is also expected.</li>
+<li>You may also get warnings about Shifter connections and ALUFlags until you connect them.</li>
+<li>If you are synthesizing after setting a module other than TOP as the top-level module, you will get warnings such as those below. If your intention is to check the synthesizability of modules one by one, these warnings can be safely ignored (Why?).<ul>
+<li>'set_property' expects at least one object.      </li>
+<li>create_clock:No valid object(s) found for '-objects [get_ports CLK_undiv]'.     </li>
+</ul>
+</li>
+<li>You can get a very very good sense of whether it will work on hardware by doing a <strong>post-synthesis functional simulation</strong> by Simulate &gt; Post-synthesis functional simulation. The same testbench can be used, so it requires zero extra effort. However, debugging is much harder than it is with behavioral simulation as some of the internal signals are optimized away and/or renamed (still easier than it is with hardware). For post-synthesis functional simulation, either the Wrapper or the TOP should be set as the top-level module for synthesis, and then the module should be synthesized before it can be (Post-synthesis) simulated.</li>
+<li>By default, Vivado will run significantly slower in Windows than in Linux, due to the differences in the number of threads used. A workaround is mentioned here - https://docs.amd.com/r/2021.2-English/ug904-vivado-implementation/Multithreading-with-the-Vivado-Tools</li>
+<li>If you try to run the design from a 100 MHz clock directly (CLK_DIV_BITS = 0, i.e., without dividing the clock), you will most certainly get a critical warning that the timing constraints are not met (Why?).  Your design may or may not work on hardware, and it is unreliable even if it works. A pipelined design (Lab 4) should work directly from 100 MHz. </li>
+<li>You can go into the subunits and see their value for each instruction (Scope-Objects) - this is much easier than what most of you think. This is more powerful than dragging the various signals into the waveform. Note that the values you see are those at the time the simulation has stopped/paused, not the time corresponding to the yellow vertical bar in the waveforms window. Double-clicking the Scope-Objects will lead you to the source code - you can then hover the mouse pointer above various objects to see their values.</li>
+<li>Make sure your radix in the waveform window / Scope-Objects is set correctly. Looking at hexadecimal and assuming them to be decimal or vice versa is a common mistake. Saving the waveform window (.wcfg) and adding it to the project will ensure that such settings get saved. For Console input/output, setting the radix to ASCII can be useful.</li>
+<li>Have the RARS simulator side by side so that you can compare the register/memory values between that in RARS and HDL register/memory objects. While you single step in RARS, you can also run by 10 more ns to have the same effect in HDL simulation. It helps to have the PC and Instr values in the waveform window to see the correspondence between RARS and HDL simulations, i.e., to ensure that you are looking at the same instruction on the two tools.</li>
+<li>If you get a number of warnings (~100) about unconnected stuff being removed, chances are that you haven't initialized the ROMs.</li>
+<li>The default processor clock frequency is 5 MHz which is ideal for UART, but too fast for LEDs - you will see the LEDs constantly lit, but different LEDs may have different brightness (why?). To see the output on LEDs, you need to have the LEDs changing state slow enough. There are two ways to do it - 1) by using a slow clock for the processor. This is done by setting the CLK_DIV_BITS to a value of around 26. 2) by having a fast clock CLK_DIV_BITS = 1 for 50MHz), but using software delays (using a high value for DELAY_VAL between LED writes).
+    However, note that you should use a very low DELAY_VAL during simulation. Else, you might have to run simulation for a long time to get past the delay. Make sure you change either of them to a high value before implementation / bitstream generation<br />
+    Similar considerations apply while sending data via UART.</li>
+<li>To implement <strong>lui</strong> and <strong>auipc</strong>, you will need to have a multiplexer at SrcA. The ALUSrcA control signal needs to be implemented properly too.</li>
+<li>The signals connected to the ports are given the same name as the ports themselves. So making the datapath connection is as easy as having a concurrent statement (VHDL) such as Opcode  &lt;= Instr(6 downto 0) / continuous assignment (Verilog) such as assign Opcode  \= Instr[6: 0].</li>
+<li>Don't forget to <strong>Relaunch</strong> simulation (not just Restart) once you have made any changes to your HDL.</li>
+</ul>
+<h2 id="submission-info">Submission Info</h2>
+<ul>
+<li>You will have to demonstrate your design during your designated lab session in <strong>Week 7</strong>. The presentation schedule can be found on Canvas. </li>
+<li>One single program demonstrating all the features would be desirable.</li>
+<li>Please upload a <em>single archive</em> containing all the relevant files to Canvas within 1 hour of your demo.</li>
+<li>Include<ul>
+<li><strong>.vhd/.v</strong> files you have created/modified [ RTL Sources, Testbench(es) ]</li>
+<li><strong>.bit</strong> files </li>
+<li><strong>.asm</strong> files</li>
+<li>a <strong>readme.txt</strong>, mentioning the purpose of each file (only those you have created / modified) briefly</li>
+</ul>
+</li>
+</ul>
+<p>in an archive with the filename <strong>Lab2_<lab day><group number>.zip</strong>, e.g. Lab2_Monday01.zip. One submission per group is sufficient – if there are multiple submissions, the file with the latest timestamp will be taken as the final submission. <strong><em>Do not</em></strong> zip and upload the complete project folder – only those files mentioned above should be included. <strong>The files should be the exact same files that you used for the demo</strong>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><a property="dct:title" rel="cc:attributionURL" href="https://nus-cg3207.github.io/labs">NUS CG3207 Labs</a> by <a rel="cc:attributionURL dct:creator" property="cc:attributionName" href="https://github.com/nus-CG3207">NUS CG3207 Team</a> is licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-NC-SA 4.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/nc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1" alt=""></a></p>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/nus-cg3207" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="mailto:neil@nus.edu.sg" target="_blank" rel="noopener" title="" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4l217.6 163.2c11.4 8.5 27 8.5 38.4 0l217.6-163.2c12.1-9.1 19.2-23.3 19.2-38.4 0-26.5-21.5-48-48-48zM0 176v208c0 35.3 28.7 64 64 64h384c35.3 0 64-28.7 64-64V176L294.4 339.2a63.9 63.9 0 0 1-76.8 0z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
