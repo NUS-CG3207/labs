@@ -73,12 +73,11 @@ DRAM:
 # ------- <memory-mapped input-output (peripherals) begins>
 .align 9 ## MMIO segment. 0x00002400-0x00002418
 MMIO:
-LEDS: .word 0x0			# 0x00002400	# Address of LEDs. //volatile unsigned int * LEDS = (unsigned int*)0x00000C00#  
-DIPS: .word 0x0			# 0x00002404	# Address of DIP switches. //volatile unsigned int * DIPS = (unsigned int*)0x00000C04#
-PBS: .word 0x0			# 0x00002408	# Address of Push Buttons. Used only in Lab 2
-CONSOLE: .word 0x0		# 0x0000240C	# Address of UART. Used only in Lab 2 and later
-CONSOLE_IN_valid: .word 0x0	# 0x00002410	# Address of UART. Used only in Lab 2 and later
-CONSOLE_OUT_ready: .word 0x0	# 0x00002414	# Address of UART. Used only in Lab 2 and later
-SEVENSEG: .word	0x0		# 0x00002418	# Address of 7-Segment LEDs. Used only in Lab 2 and later
-
+LEDS: .word 0x0			# 0x00002400	# Location simulating LEDs. //volatile unsigned int* LEDS = (unsigned int*)0x00002400#  
+DIPS: .word 0x0			# 0x00002404	# Location simulating DIP switches. //volatile unsigned int* DIPS = (unsigned int*)0x00002404#
+PBS: .word 0x0			# 0x00002408	# Location simulating Push Buttons. Used only in Lab 2
+SEVENSEG: .word	0x0		# 0x0000240C	# Location simulating 7-Segment LEDs. Used only in Lab 2 and later
+CONSOLE: .word 0x0		# 0x00002410	# Location simulating UART. Used only in Lab 2 and later
+CONSOLE_IN_valid: .word 0x0	# 0x00002414	# Location simulating UART input valid flag. Used only in Lab 2 and later
+CONSOLE_OUT_ready: .word 0x0	# 0x00002418	# Location simulating UART ready for output flag. Used only in Lab 2 and later
 # ------- <memory-mapped input-output (peripherals) ends>

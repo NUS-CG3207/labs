@@ -1,3 +1,4 @@
+# to be updated. addresses have changed
 main:
         addi    sp, sp, -32
         sw      ra, 28(sp)

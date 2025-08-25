@@ -81,17 +81,17 @@ localparam MMIO_BASE = DMEM_BASE + 2**DMEM_DEPTH_BITS;    // assuming MMIO is al
 localparam LED_OFF 		= 8'h00; //WO
 localparam DIP_OFF 		= 8'h04; //RO
 localparam PB_OFF  		= 8'h08; //RO
-localparam UART_OFF 		= 8'h0C; //RW
-localparam UART_RX_VALID_OFF 	= 8'h10; //RO, status bit
-localparam UART_TX_READY_OFF 	= 8'h14; //RO, status bit
-localparam SEVENSEG_OFF 	= 8'h18; //WO
-localparam CYCLECOUNT_OFF 	= 8'h1C; //RO
+localparam SEVENSEG_OFF 	= 8'h0C; //WO
+localparam UART_OFF 		= 8'h10; //RW
+localparam UART_RX_VALID_OFF = 8'h14; //RO, status bit
+localparam UART_TX_READY_OFF = 8'h18; //RO, status bit
 localparam OLED_COL_OFF 	= 8'h20; //WO
 localparam OLED_ROW_OFF 	= 8'h24; //WO
 localparam OLED_DATA_OFF 	= 8'h28; //WO
 localparam OLED_CTRL_OFF 	= 8'h2C; //WO 
 localparam ACCEL_DATA_OFF 	= 8'h30; //RO
-localparam ACCEL_DREADY_OFF 	= 8'h34; //RO, status bit
+localparam ACCEL_DREADY_OFF = 8'h34; //RO, status bit
+localparam CYCLECOUNT_OFF 	= 8'h40; //RO
                                       
 //----------------------------------------------------------------
 // RV signals
@@ -174,17 +174,17 @@ always@(*) begin
 			LED_OFF[MMIO_DEPTH_BITS-1:2]: dec_LED <= 1'b1;
 			DIP_OFF[MMIO_DEPTH_BITS-1:2]: dec_DIP <= 1'b1;
 			PB_OFF[MMIO_DEPTH_BITS-1:2]: dec_PB <= 1'b1;
+			SEVENSEG_OFF[MMIO_DEPTH_BITS-1:2]: dec_SEVENSEG <= 1'b1;
 			UART_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART <= 1'b1;
 			UART_RX_VALID_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_RX_valid <= 1'b1;
 			UART_TX_READY_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_TX_ready <= 1'b1;
-			SEVENSEG_OFF[MMIO_DEPTH_BITS-1:2]: dec_SEVENSEG <= 1'b1;
-			CYCLECOUNT_OFF[MMIO_DEPTH_BITS-1:2]: dec_CYCLECOUNT <= 1'b1;
 			OLED_COL_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_COL <= 1'b1;
 			OLED_ROW_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_ROW <= 1'b1;
 			OLED_DATA_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_DATA <= 1'b1;
 			OLED_CTRL_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_CTRL <= 1'b1;
 			ACCEL_DATA_OFF[MMIO_DEPTH_BITS-1:2]: dec_ACCEL_Data <= 1'b1;
 			ACCEL_DREADY_OFF[MMIO_DEPTH_BITS-1:2]: dec_ACCEL_DReady <= 1'b1;
+			CYCLECOUNT_OFF[MMIO_DEPTH_BITS-1:2]: dec_CYCLECOUNT <= 1'b1;
 			default: bad_MEM_addr <= 1'b1;
 		endcase
 	end
@@ -247,7 +247,7 @@ end
 reg [31:0] cycle_count = 32'd0; // Max 42 seconds at 100 MHz clock
 // extending this to generate interrupts at fixed intervals that are powers of two is very easy.
 // extending this to generate interrupts at programmable intervals or intervals that are not powers of two is not difficult either. This will require another 
-//  counter that reloads/resets itself with each interrupt. This reload/reset value can be made programmable by having an MMIO register for the purpose. 
+// counter that reloads/resets itself with each interrupt. This reload/reset value can be made programmable by having an MMIO register for the purpose. 
 always@(posedge CLK) begin
     if(RESET)
         cycle_count <= 0 ;
