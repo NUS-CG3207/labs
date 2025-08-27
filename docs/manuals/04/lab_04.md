@@ -1,7 +1,10 @@
-# Lab 4: (Near) Complete Processor + Pipelining + Bells + Whistles
+# Assignment 4: (Near) Complete Processor + Pipelining + Bells + Whistles
+
+!!! danger "Work in progress!"
+    This document is a draft. It may change until **12 October 2025**, after which no further significant changes will be made. Corrections and clarifications may still be made after this date. 
 
 !!! info
-    Lab 4 involves **2 compulsory tasks** and the rest is **open-ended.**
+    Assignment 4 involves **2 compulsory tasks** and the rest is **open-ended.**
 
     Demonstrate \[Post-synthesis simulation and FPGA hardware\] incorporating all the mandatory andopen-ended parts. Use a single assembly program that can be entirely compiler-generated, entirelyhand-crafted, or a combination of the two.
 
@@ -50,7 +53,7 @@ Some potential improvements you can think about implementing are:
     2. All operators (including `**`, `*`, `/`, `sll`, `rem`, `mod` etc.) are allowed on constants (operations on constants are done at synthesis time, and will not infer any hardware).
 
 ## Submission Info
-* Lab 4 will be evaluated in **Week 12**. The presentation schedule can be found on Canvas.
+* Assignment 4 will be evaluated in **Week 12**. The presentation schedule can be found on Canvas.
 * Include
   * **.v/vhd** files you have created/modified \[ RTL Sources, Testbench(es) \]
   * **.c/h** files used to generate assembly

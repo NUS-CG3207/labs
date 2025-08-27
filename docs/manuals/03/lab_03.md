@@ -1,7 +1,10 @@
-# Lab 3: Multiplication / Division units
+# Assignment 3: Multiplication / Division units
+
+!!! danger "Work in progress!"
+    This document is a draft. It may change until **28 September 2025**, after which no further significant changes will be made. Corrections and clarifications may still be made after this date. 
 
 ## Tasks
-Lab 3 involves 2 compulsory tasks and one open-ended task.
+Assignment 3 involves 2 compulsory tasks and one open-ended task.
 
 1) You will incorporate division (both signed and unsigned) into the MCycle unit given \[HDL simulation only\] (13 marks).
 
@@ -37,7 +40,7 @@ Lab 3 involves 2 compulsory tasks and one open-ended task.
 *   If you are using the UART console, you can set the radix to hexadecimal in the 'Display' tab of RealTerm.
 
 ## Submission Info
-* Lab 3 will be evaluated in **Week 9**. The presentation schedule can be found on Canvas. 
+* Assignment 3 will be evaluated in **Week 9**. The presentation schedule can be found on Canvas. 
 * Please upload the Lab 3 files to Canvas **within 1 hour of your demo in week 9**, including the following files:
     * **.v**/**vhd** files you have created/modified \[ RTL Sources, Testbench(es) \] 
     * **.bit** files 

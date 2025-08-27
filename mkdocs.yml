@@ -36,7 +36,7 @@ extra:
       link: mailto:neil@nus.edu.sg
 
 nav:
-  - Home: README.md
+  - Home: index.md
   - How to use this website: guides/howto.md
   - Preparing for labs:
     - Lab Prerequisites: prereq.md

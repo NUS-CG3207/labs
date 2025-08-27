@@ -1,5 +1,8 @@
 # Assignment 1: Familiarisation with Assembly Language and HDL/FPGA
 
+!!! danger "Work in progress!"
+    This document is a draft. It may change until **31 August 2025**, after which no further significant changes will be made. Corrections and clarifications may still be made after this date. 
+
 !!! info
     Assignment 1 consists of **2** tasks, worth **5** points each, for a total of **10 points**.
 
@@ -136,11 +139,11 @@ If `btnC` is pressed, the sequence should be paused as long as it is held down, 
 
 ### Implementation guide
 
-Download the template for Lab 1 from [the labs file repository](https://github.com/nus-cg3207/labs). Choose the files appropriate for your setup - that is, in your language of preference (Verilog or VHDL), and the constraints file corresponding to the FPGA board model you have. Create a new project and import these files, setting the Top module correctly.
+Download the template for Assignment 1 from [the labs file repository](https://github.com/nus-cg3207/labs). Choose the files appropriate for your setup - that is, in your language of preference (Verilog or VHDL), and the constraints file corresponding to the FPGA board model you have. Create a new project and import these files, setting the Top module correctly.
 
 !!! tip
 
-    Vivado (like many other IDEs) does not take too kindly to project paths that are too long, contain special/non-English characters, or are in some cloud synchronisation folder like OneDrive, Google Drive or Dropbox. All sorts of weird bugs may crop up, which are hard to debug. 
+    Vivado (like many other IDEs) does not take too kindly to project paths that are too long, contain special/non-English characters, or are in some cloud synchronised folder like OneDrive, Google Drive or Dropbox. All sorts of weird bugs may crop up, which are hard to debug. 
 
     Vivado projects should ideally be stored in a folder with a short and sweet name, that is not continuously synchronised to the cloud. For backups, collaboration and version control, `git` should be used - whether GitHub, Gitlab or any other implementation.
 
