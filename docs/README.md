@@ -42,18 +42,18 @@ To make the most of the labs, we recommend doing some reading before you come fo
 
 ## Lab Schedule
 
-| Week   | Monday Lab Date (18:00-21:00) | Friday Lab Date (09:00-12:00) | Activity                    |
-|--------|-------------------------------|-------------------------------|-----------------------------|
-| 4      | 1 Sep 2025                    | 5 Sep 2025                    | Lab 1 Intro                 |
-| 5      | 8 Sep 2025                    | 12 Sep 2025                   | Lab 1 Demo, Lab 2 Intro     |
-| 6      | 15 Sep 2025                   | 19 Sep 2025                   | Lab 2 Consultation          |
-| Recess | 22 Sep 2025                   | 26 Sep 2025                   | No Lab Session              |
-| 7      | 29 Sep 2025                   | 3 Oct 2025                    | Lab 2 Demo, Lab 3 Intro     |
-| 8      | 6 Oct 2025                    | 10 Oct 2025                   | Lab 3 Consultation          |
-| 9      | 13 Oct 2025                   | 17 Oct 2025                   | Lab 3 Demo, Lab 4 Intro     |
-| 10     | 20 Oct 2025                   | 24 Oct 2025                   | Lab 4 Consultation          |
-| 11     | 27 Oct 2025                   | 31 Oct 2025                   | No Lab - NUS Well-Being Day |
-| 12     | 3 Nov 2025                    | 7 Nov 2025                    | Lab 4 Demo                  |
+| Week   | Monday Lab Date (18:00-21:00) | Friday Lab Date (09:00-12:00) | Activity                    	|
+|--------|-------------------------------|-------------------------------|------------------------------|
+| 4      | 1 Sep 2025                    | 5 Sep 2025                    | Lab 1 Intro                 	|
+| 5      | 8 Sep 2025                    | 12 Sep 2025                   | Lab 1 Demo, Lab 2 Intro     	|
+| 6      | 15 Sep 2025                   | 19 Sep 2025                   | Lab 2 Consultation          	|
+| Recess | 22 Sep 2025                   | 26 Sep 2025                   | No Lab Session              	|
+| 7      | 29 Sep 2025                   | 3 Oct 2025                    | Lab 2 Demo, Lab 3 Intro     	|
+| 8      | 6 Oct 2025                    | 10 Oct 2025                   | Lab 3 Consultation          	|
+| 9      | 13 Oct 2025                   | 17 Oct 2025                   | Lab 3 Demo, Lab 4 Intro     	|
+| 10     | 20 Oct 2025                   | 24 Oct 2025                   | No Lab - Deepavali			|
+| 11     | 27 Oct 2025                   | 31 Oct 2025                   | Lab 4 Consultation			|
+| 12     | 3 Nov 2025                    | 7 Nov 2025                    | Lab 4 Demo                  	|
 
 ## License
 
