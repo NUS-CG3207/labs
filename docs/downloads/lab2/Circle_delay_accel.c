@@ -1,9 +1,9 @@
-#define IROM_BASE 0x00000000		// make sure this is the same as the .txt address based on the Memory Configuration set in the assembler/linker 
-                                        // and the PC default value as well as reset value in **ProgramCounter.v** 
-#define DMEM_BASE 0x00002000   	// make sure this is the same as the .data address based on the Memory Configuration set in the assembler/linker
-#define DMEM_SIZE 0x400        // 2**DMEM_DEPTH_BITS
-#define MMIO_BASE DMEM_BASE + DMEM_SIZE   // assuming MMIO is also in the .data segment
-#define STACK_INIT MMIO_BASE // make it the same as HDL, top of RAM to allow stack to grow downwards
+#define IROM_BASE 0x00400000		// Should be the same as the .txt address based on the Memory Configuration set in the assembler/linker, 
+                                        // Wrapper.v and the PC default value as well as reset value in **ProgramCounter.v** 
+#define DMEM_BASE 0x10010000   	// Should be the same as the .data address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
+#define DMEM_SIZE 0x400         // 2**DMEM_DEPTH_BITS, as in Wrapper.v
+#define MMIO_BASE 0xFFFFF0000   // Should be the same as the .mmio address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
+#define STACK_INIT DMEM_BASE + DMEM_SIZE // Top of RAM to allow stack to grow downwards
 
 // Memory-mapped peripheral register offsets
 #define UART_RX_VALID_OFF	0x00 //RO, status bit
@@ -34,7 +34,7 @@ int main()
     asm volatile("li sp, %0" : : "i" (STACK_INIT)); //inline assembly to init sp. Registers cant be accessed explicitly in pure C
     volatile unsigned int* ACCEL_Data_ADDR = (unsigned int*) (MMIO_BASE+ACCEL_DATA_OFF); // temp, x, y, z
     volatile unsigned int* UART_TX_ready_ADDR = (unsigned int*) (MMIO_BASE+UART_TX_READY_OFF);
-    volatile unsigned int* UART_ADDR = (unsigned int*) (MMIO_BASE+UART_OFF);
+    volatile unsigned int* UART_TX_ADDR = (unsigned int*) (MMIO_BASE+UART_TX_OFF);
     volatile unsigned int* SEVENSEG_ADDR = (unsigned int*) (MMIO_BASE+SEVENSEG_OFF);
 
     while(1)
@@ -53,7 +53,7 @@ int main()
             // print the raw binary value
             while(!(*UART_TX_ready_ADDR)); // wait for UART to be ready
             // no need to mask it as UART ignores all excel LSByte
-            *UART_ADDR = accel_reading >> i;
+            *UART_TX_ADDR = accel_reading >> i;
 
             accel_reading_mag_byte = ( accel_reading << (24-i) ) & 0xFF000000;
             if(accel_reading_mag_byte<0)    // find magnitude
@@ -65,7 +65,7 @@ int main()
 
             // print the magnitude
             while(!(*UART_TX_ready_ADDR));
-            *UART_ADDR = accel_reading_mag_byte >> 24;
+            *UART_TX_ADDR = accel_reading_mag_byte >> 24;
         }
         // Sending to UART and abs() is easier if there is byte addressability
 

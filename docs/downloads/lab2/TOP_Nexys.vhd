@@ -37,9 +37,9 @@ use ieee.math_real.exp;
 entity TOP is
 		Generic 
 		(
-			constant N_LEDs_OUT	: integer := 8; -- Number of LEDs displaying Result. LED(15 downto 15-N_LEDs_OUT+1). 8 by default
-			-- LED(15-N_LEDs_OUT) showing the divided clock. 
-			-- LED(15-N_LEDs_OUT-1 downto 0) showing the PC.
+			constant N_LEDs_OUT	: integer := 8; -- Number of writeable LEDs - LED(N_LEDs_OUT-1 downto 0). 8 by default
+			-- LED(N_LEDs_OUT) showing the divided clock. 
+			-- LED(15 downto N_LEDs_OUT+1) showing the PC.
 			constant N_DIPs		: integer := 16;  -- Number of DIPs. 16 by default
 			constant N_PBs		: integer := 3;  -- Number of PushButtons. 3 by default
 			-- Order (2 downto 0) -> BTNL, BTNC, BTNR.
@@ -52,9 +52,9 @@ entity TOP is
 			-- If read at a rate of > ~100 Hz, debouncing may be necessary. This can be fixed in software by ensuring that we don't read too fast (a few 10s of ms gap between reads).
 			PB    			: in  STD_LOGIC_VECTOR (N_PBs-1 downto 0);  -- PB switch inputs. Not debounced - see the comment above.
 			LED 			: out  STD_LOGIC_VECTOR (15 downto 0); -- LEDs.
-			-- (15 downto 8) memory mapper, writeable by software
-			-- (7) showing the divided clock
-			-- (6 downto 0) showing PC(8 downto 2)
+			-- (7 downto 0) memory mapped, writeable by software
+			-- (8) showing the divided clock
+			-- (15 downto 9) showing PC(8 downto 2)
 			SevenSegAn		: out  STD_LOGIC_VECTOR (N_SEVEN_SEG_DIGITs-1 downto 0); -- 7 Seg anodes. Common anodes - 4 for Basys, 8 for Nexys
 			SevenSegCat		: out  STD_LOGIC_VECTOR (6 downto 0); -- 7 Seg cathodes
 			TX 				: out STD_LOGIC;	-- UART Tx
@@ -282,9 +282,9 @@ begin
 ----------------------------------------------------------------
 -- Debug LEDs
 ----------------------------------------------------------------			
-LED(15-N_LEDs_OUT-1 downto 0) <= LED_PC; 	-- PC on LED(6 downto 0)
-LED(15-N_LEDs_OUT) <= CLK; 					-- clock on LED(7)
-LED(15 downto N_LEDs_OUT) <= LED_OUT;		-- Written by the processor
+LED(15 downto N_LEDs_OUT+1) <= LED_PC; 	-- PC on LED(15 downto 9)
+LED(N_LEDs_OUT) 			<= CLK; 	-- clock on LED(8)
+LED(N_LEDs_OUT-1 downto 0) 	<= LED_OUT;	-- LED(7 downto 0) Memory-mapped writeable by the processor
 
 ----------------------------------------------------------------
 -- Reset

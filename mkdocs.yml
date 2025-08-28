@@ -47,13 +47,13 @@ nav:
     - Assignment 2 [Weeks 5-7]: manuals/02/lab_02.md
     - Assignment 3 [Weeks 7-9]: manuals/03/lab_03.md
     - Assignment 4 [Weeks 9-12]: manuals/04/lab_04.md
-  - Peripheral guides:
-    - Accelerometer: peripherals/accelerometer.md
-    - Cycle Counter: peripherals/cycle_counter.md
-    - OLED Display: peripherals/oled.md
-    - UART: peripherals/uart.md
   - Resources for RISC-V:
     - RISC-V Memory Map: rv/rv_memmap.md
+      - Peripheral guides:
+        - Accelerometer: peripherals/accelerometer.md
+        - Cycle Counter: peripherals/cycle_counter.md
+        - OLED Display: peripherals/oled.md
+        - UART: peripherals/uart.md
     - RISC-V Programming Guide: rv/rv_programming.md
   - Resources for ARM [DEPRECATED]:
     - ARM Memory Map: ARM/arm_memmap.md

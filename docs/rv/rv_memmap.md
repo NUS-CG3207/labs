@@ -22,20 +22,35 @@ The data memory is further divided into constant (ROM) and variable memories (RA
 | 0x14                  | RO              | CONSOLE_IN_valid.                                                                                                                                                                                                                                  |
 | 0x18                  | RO              | CONSOLE_OUT_ready.                                                                                                                                                                                                                                 |
 
-LED_OFF 		= 8'h00; //WO
-DIP_OFF 		= 8'h04; //RO
-PB_OFF  		= 8'h08; //RO
-SEVENSEG_OFF 	= 8'h0C; //WO
-UART_OFF 		= 8'h10; //RW
-UART_RX_VALID_OFF = 8'h14; //RO, status bit
-UART_TX_READY_OFF = 8'h18; //RO, status bit
-OLED_COL_OFF 	= 8'h20; //WO
-OLED_ROW_OFF 	= 8'h24; //WO
-OLED_DATA_OFF 	= 8'h28; //WO
-OLED_CTRL_OFF 	= 8'h2C; //WO 
-ACCEL_DATA_OFF 	= 8'h30; //RO
-ACCEL_DREADY_OFF = 8'h34; //RO, status bit
-CYCLECOUNT_OFF 	= 8'h40; //RO
+#define IROM_BASE 0x00400000		// Should be the same as the .txt address based on the Memory Configuration set in the assembler/linker, 
+                                        // Wrapper.v and the PC default value as well as reset value in **ProgramCounter.v** 
+   // range is IROM_BASE to IROM_BASE+2^IROM_DEPTH_BITS-1
+//# Total number of real instructions should not exceed 2^IROM_DEPTH_BITS/4 (127 excluding the last line 'halt B halt' if IROM_DEPTH_BITS=9).
+
+#define DMEM_BASE 0x10010000   	// Should be the same as the .data address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
+#define DMEM_SIZE 0x400         // 2**DMEM_DEPTH_BITS, as in Wrapper.v
+// range is DMEM_BASE to DMEM_BASE+2^DMEM_DEPTH_BITS-1
+// # Total number of constants+variables should not exceed 2^DMEM_DEPTH_BITS/4 (128 if DMEM_DEPTH_BITS=9).
+
+
+#define MMIO_BASE 0xFFFFF0000   // Should be the same as the .mmio address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
+
+// Memory-mapped peripheral register offsets
+#define UART_RX_VALID_OFF	0x00 //RO, status bit
+#define UART_RX_OFF 		0x04 //RO
+#define UART_TX_READY_OFF	0x08 //RO, status bit
+#define UART_TX_OFF 		0x0C //WO
+#define OLED_COL_OFF 		0x20 //WO
+#define OLED_ROW_OFF 		0x24 //WO
+#define OLED_DATA_OFF 		0x28 //WO
+#define OLED_CTRL_OFF 		0x2C //WO 
+#define ACCEL_DATA_OFF 		0x40 //RO
+#define ACCEL_DREADY_OFF 	0x44 //RO, status bit
+#define LED_OFF 			0x60 //WO
+#define DIP_OFF 			0x64 //RO
+#define PB_OFF  			0x68 //RO
+#define SEVENSEG_OFF 		0x80 //WO
+#define CYCLECOUNT_OFF 		0xA0 //RO
 
 #### Table 1: Memory map summary
 

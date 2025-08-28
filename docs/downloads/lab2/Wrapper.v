@@ -47,12 +47,12 @@ module Wrapper
 	output [6:0] LED_PC, 			// LED(6 downto 0) showing PC(8 downto 2).
 	output reg [31:0] SEVENSEGHEX, 		// 32-bit value for 8-digit 7 Seg LED Display. 
 	output reg [7:0] UART_TX,           	// 8-bit CONSOLE (UART TX) Output. Character sent to PC/testbench via UART.
-						// s/w should check if UART_TX_ready is set before writing to this location esp if your CLK_DIV_BITS is small. No consecutive STRs
+						// s/w should check if UART_TX_ready is set before writing to this location esp if your CLK_DIV_BITS is small. No consecutive stores
 	input UART_TX_ready,			// A status that it is ok to write to the UART_TX.
 		                                // This bit should be set in the testbench to indicate readiness to transmit new character.
 	output reg UART_TX_valid,           	// A signal from Wrapper to UART hardware that the processor has written a new data byte to be transmitted.
 	input [7:0] UART_RX,                	// 8-bit CONSOLE (UART RX) Input. Character received from PC/testbench via UART.
-	                                        // s/w should check if UART_RX_valid flag is set before reading from this location. No consecutive LDRs
+	                                        // s/w should check if UART_RX_valid flag is set before reading from this location. No consecutive loads
 	input  	UART_RX_valid,               	// A status that there is a new data byte waiting to be read from UART_RX.
 	                                        // This bit should be set in the testbench to indicate a new character.
 	output reg UART_RX_ack,              	// A signal from to UART hardware that the processor has read the newly received data byte.
@@ -68,31 +68,31 @@ module Wrapper
 );
 
 // Set the base address according to your memory configuration in RARS. Set the size (Depth bits) appropriately as well.
-localparam IROM_DEPTH_BITS = 10; 
-localparam DMEM_DEPTH_BITS = 10;	// combined DROM and DRAM into one in v3
+localparam IROM_BASE = 32'h0040_0000;		// make sure this is the same as the .txt address based on the Memory Configuration set in the assembler/linker 
+                                            	// and the PC default value as well as reset value in **ProgramCounter.v** 
+localparam DMEM_BASE = 32'h1001_0000;    	// make sure this is the same as the .data address based on the Memory Configuration set in the assembler/linker
+localparam MMIO_BASE = 32'hFFFF_0000;
+
+localparam IROM_DEPTH_BITS = 9;		//9 for 128 words. Change if your program is larger.
+localparam DMEM_DEPTH_BITS = 9;		//9 for 128 words. Change if your data (const+variable) is larger.
 localparam MMIO_DEPTH_BITS = 8;
 
-localparam IROM_BASE = 32'h00000000;		// make sure this is the same as the .txt address based on the Memory Configuration set in the assembler/linker 
-                                            	// and the PC default value as well as reset value in **ProgramCounter.v** 
-localparam DMEM_BASE = 32'h00002000;    	// make sure this is the same as the .data address based on the Memory Configuration set in the assembler/linker
-localparam MMIO_BASE = DMEM_BASE + 2**DMEM_DEPTH_BITS;    // assuming MMIO is also in the .data segment
-
 // Memory-mapped peripheral register offsets
-localparam UART_RX_VALID_OFF = 8'h00; //RO, status bit
-localparam UART_RX_OFF 		= 8'h04; //WO out
-localparam UART_TX_READY_OFF = 8'h08; //RO, status bit
-localparam UART_TX_OFF 		= 8'h0C; //WO out
-localparam OLED_COL_OFF 	= 8'h20; //WO
-localparam OLED_ROW_OFF 	= 8'h24; //WO
-localparam OLED_DATA_OFF 	= 8'h28; //WO
-localparam OLED_CTRL_OFF 	= 8'h2C; //WO 
-localparam ACCEL_DATA_OFF 	= 8'h40; //RO
-localparam ACCEL_DREADY_OFF = 8'h44; //RO, status bit
-localparam LED_OFF 			= 8'h60; //WO
-localparam DIP_OFF 			= 8'h64; //RO
-localparam PB_OFF  			= 8'h68; //RO
-localparam SEVENSEG_OFF 	= 8'h80; //WO
-localparam CYCLECOUNT_OFF 	= 8'hA0; //RO
+localparam UART_RX_VALID_OFF 	= 8'h00; //RO, status bit
+localparam UART_RX_OFF 			= 8'h04; //RO
+localparam UART_TX_READY_OFF 	= 8'h08; //RO, status bit
+localparam UART_TX_OFF 			= 8'h0C; //WO
+localparam OLED_COL_OFF 		= 8'h20; //WO
+localparam OLED_ROW_OFF 		= 8'h24; //WO
+localparam OLED_DATA_OFF 		= 8'h28; //WO
+localparam OLED_CTRL_OFF 		= 8'h2C; //WO
+localparam ACCEL_DATA_OFF 		= 8'h40; //RO
+localparam ACCEL_DREADY_OFF 	= 8'h44; //RO, status bit
+localparam LED_OFF 				= 8'h60; //WO
+localparam DIP_OFF 				= 8'h64; //RO
+localparam PB_OFF  				= 8'h68; //RO
+localparam SEVENSEG_OFF 		= 8'h80; //WO
+localparam CYCLECOUNT_OFF 		= 8'hA0; //RO
                                       
 //----------------------------------------------------------------
 // RV signals
@@ -161,7 +161,7 @@ reg [31:0] DMEM	[0:2**(DMEM_DEPTH_BITS-2)-1];	// data (constant) memory + data (
 //----------------------------------------------------------------
 initial begin
 // Make sure that the .mem files (hexadecimal text memory dump from RARS - name it with .mem extension) are added to the project as 'Design Sources'. Alternatively, specify the full path.
-// v3: Renamed the file to start with AA so that it is easier t find in the file open/save dialog box 
+	// The files start with AA so that it is easier t find in the file open/save dialog box 
 // If you checked "Copy sources into project", make sure that subsequent dumps from RARS are to projectName/projectName.srcs/sources_1/imports/orignalSourceFolderName 
 	// IMP: "Relaunch Simulation" (top menu broken clock-wise button) may not be enough if you change your .mem file. Do SIMULATION > Run Simulation > Run Behavioural Simulation. 
 	// In simulation, check the memory contents under test_Wrapper>dut (Wrapper)> IROM (and other memories) if unsure the correct contents are used.
@@ -169,7 +169,7 @@ initial begin
 	// Rerun the synthesis and then bitstream generation though Vivado says it is up to date. 
 	
 $readmemh("AA_IROM.mem", IROM);
-$readmemh("AA_DMEM.mem", DMEM);	// v3: Renamed DROM into DMEM
+$readmemh("AA_DMEM.mem", DMEM);
 // AA_DMEM.mem will generate a warning of having more than necessary data as the assembler dumps the entire data segment including DMEM and MMIO,
 	// This is ok as only the first part of it will be used to initialize DMEM.
 
