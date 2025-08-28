@@ -6,20 +6,22 @@
 #define STACK_INIT MMIO_BASE // make it the same as HDL, top of RAM to allow stack to grow downwards
 
 // Memory-mapped peripheral register offsets
-#define LED_OFF 0x00 //WO
-#define DIP_OFF 0x04  //RO
-#define PB_OFF  0x08 //RO
-#define SEVENSEG_OFF 0x0C //WO
-#define UART_OFF 0x10 //RW
-#define UART_RX_VALID_OFF 0x14 //RO, status bit
-#define UART_TX_READY_OFF 0x18 //RO, status bit
-#define OLED_COL_OFF 0x20 //WO
-#define OLED_ROW_OFF 0x24 //WO
-#define OLED_DATA_OFF 0x28 //WO
-#define OLED_CTRL_OFF 0x2C //WO
-#define ACCEL_DATA_OFF 0x30 //RO
-#define ACCEL_DREADY_OFF 0x34 //RO, status bit. // Not using ACCEL_DREADY_OFF as we poll at a low freq, should be ready
-#define CYCLECOUNT_OFF 0x40 //WO
+#define UART_RX_VALID_OFF	0x00 //RO, status bit
+#define UART_RX_OFF 		0x04 //WO out
+#define UART_TX_READY_OFF	0x08 //RO, status bit
+#define UART_TX_OFF 		0x0C //WO out
+#define OLED_COL_OFF 		0x20 //WO
+#define OLED_ROW_OFF 		0x24 //WO
+#define OLED_DATA_OFF 		0x28 //WO
+#define OLED_CTRL_OFF 		0x2C //WO 
+#define ACCEL_DATA_OFF 		0x40 //RO
+#define ACCEL_DREADY_OFF 	0x44 //RO, status bit
+#define LED_OFF 			0x60 //WO
+#define DIP_OFF 			0x64 //RO
+#define PB_OFF  			0x68 //RO
+#define SEVENSEG_OFF 		0x80 //WO
+#define CYCLECOUNT_OFF 		0xA0 //RO
+// Not using ACCEL_DREADY_OFF as we poll at a low freq, should be ready
 
 void drawFilledMidpointCircleSinglePixelVisit(int centerX, int centerY, int radius, unsigned int colour);
 void drawHorizontalLine(int startX, int endX, int Y, unsigned int colour);

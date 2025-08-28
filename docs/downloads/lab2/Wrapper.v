@@ -78,20 +78,21 @@ localparam DMEM_BASE = 32'h00002000;    	// make sure this is the same as the .d
 localparam MMIO_BASE = DMEM_BASE + 2**DMEM_DEPTH_BITS;    // assuming MMIO is also in the .data segment
 
 // Memory-mapped peripheral register offsets
-localparam LED_OFF 		= 8'h00; //WO
-localparam DIP_OFF 		= 8'h04; //RO
-localparam PB_OFF  		= 8'h08; //RO
-localparam SEVENSEG_OFF 	= 8'h0C; //WO
-localparam UART_OFF 		= 8'h10; //RW
-localparam UART_RX_VALID_OFF = 8'h14; //RO, status bit
-localparam UART_TX_READY_OFF = 8'h18; //RO, status bit
+localparam UART_RX_VALID_OFF = 8'h00; //RO, status bit
+localparam UART_RX_OFF 		= 8'h04; //WO out
+localparam UART_TX_READY_OFF = 8'h08; //RO, status bit
+localparam UART_TX_OFF 		= 8'h0C; //WO out
 localparam OLED_COL_OFF 	= 8'h20; //WO
 localparam OLED_ROW_OFF 	= 8'h24; //WO
 localparam OLED_DATA_OFF 	= 8'h28; //WO
 localparam OLED_CTRL_OFF 	= 8'h2C; //WO 
-localparam ACCEL_DATA_OFF 	= 8'h30; //RO
-localparam ACCEL_DREADY_OFF = 8'h34; //RO, status bit
-localparam CYCLECOUNT_OFF 	= 8'h40; //RO
+localparam ACCEL_DATA_OFF 	= 8'h40; //RO
+localparam ACCEL_DREADY_OFF = 8'h44; //RO, status bit
+localparam LED_OFF 			= 8'h60; //WO
+localparam DIP_OFF 			= 8'h64; //RO
+localparam PB_OFF  			= 8'h68; //RO
+localparam SEVENSEG_OFF 	= 8'h80; //WO
+localparam CYCLECOUNT_OFF 	= 8'hA0; //RO
                                       
 //----------------------------------------------------------------
 // RV signals
@@ -108,12 +109,46 @@ wire[31:0] WriteData_out ;
 // Address Decode signals
 //---------------------------------------------------------------
 // 'enable' signals from data memory address decoding
-reg dec_DMEM, dec_LED, dec_DIP, dec_PB, dec_UART, dec_UART_RX_valid, dec_UART_TX_ready, dec_SEVENSEG, dec_CYCLECOUNT,
-			dec_OLED_COL, dec_OLED_ROW, dec_OLED_DATA, dec_OLED_CTRL, dec_ACCEL_Data, dec_ACCEL_DReady;
+localparam UART_RX_VALID_OFF	= 8'h00; //RO, status bit
+localparam UART_RX_OFF 			= 8'h04; //WO out
+localparam UART_TX_READY_OFF	= 8'h08; //RO, status bit
+localparam UART_TX_OFF 			= 8'h0C; //WO out
+localparam OLED_COL_OFF 		= 8'h20; //WO
+localparam OLED_ROW_OFF 		= 8'h24; //WO
+localparam OLED_DATA_OFF 		= 8'h28; //WO
+localparam OLED_CTRL_OFF 		= 8'h2C; //WO 
+localparam ACCEL_DATA_OFF 		= 8'h40; //RO
+localparam ACCEL_DREADY_OFF 	= 8'h44; //RO, status bit
+localparam LED_OFF 				= 8'h60; //WO
+localparam DIP_OFF 				= 8'h64; //RO
+localparam PB_OFF  				= 8'h68; //RO
+localparam SEVENSEG_OFF 		= 8'h80; //WO
+localparam CYCLECOUNT_OFF 		= 8'hA0; //RO
+
 wire dec_MMIO_read;	// any MMIO register is being read?
-reg dec_DMEM_W = 1'b0, dec_MMIO_read_W = 1'b0;  // delayed versions of the decoded signals for output multiplexing
+reg dec_DMEM_W = 1'b0;
+reg dec_MMIO_read_W = 1'b0;  // delayed versions of the decoded signals for output multiplexing
 reg bad_MEM_addr;	// bad data memory address. Can be used as interrupt
 wire MemWrite;		// overall MemWrite
+
+// MMIO decode signals
+reg 
+dec_UART_RX_VALID_OFF		,
+dec_UART_RX_OFF 			,
+dec_UART_TX_READY_OFF		,
+dec_UART_TX_OFF 			,
+dec_OLED_COL_OFF 			,
+dec_OLED_ROW_OFF 			,
+dec_OLED_DATA_OFF 			,
+dec_OLED_CTRL_OFF 			,
+dec_ACCEL_DATA_OFF 			,
+dec_ACCEL_DREADY_OFF 		,
+dec_LED_OFF 				,
+dec_DIP_OFF 				,
+dec_PB_OFF  				,
+dec_SEVENSEG_OFF 			,
+dec_CYCLECOUNT_OFF			,
+;
 
 //----------------------------------------------------------------
 // Memory declaration
@@ -150,40 +185,42 @@ reg [31:0] ReadData_MMIO ;
 // Data memory address decoding
 //----------------------------------------------------------------
 always@(*) begin
-	dec_DMEM <= 1'b0;
-	dec_LED <= 1'b0;
-	dec_DIP <= 1'b0; 
-	dec_PB <= 1'b0; 
-	dec_UART <= 1'b0;
-	dec_UART_RX_valid <= 1'b0; 
-	dec_UART_TX_ready <= 1'b0; 
-	dec_SEVENSEG <= 1'b0;
-	dec_CYCLECOUNT <= 1'b0;
-	dec_OLED_COL <= 1'b0;
-	dec_OLED_ROW <= 1'b0;
-	dec_OLED_DATA <= 1'b0;
-	dec_OLED_CTRL <= 1'b0;
-	dec_ACCEL_Data <= 1'b0;
-	dec_ACCEL_DReady <= 1'b0;
-	bad_MEM_addr <= 1'b0;
+	dec_DMEM 					<= 1'b0;
+	bad_MEM_addr 				<= 1'b0;
+	dec_UART_RX_VALID_OFF		<= 1'b0;
+	dec_UART_RX_OFF 			<= 1'b0;
+	dec_UART_TX_READY_OFF		<= 1'b0;
+	dec_UART_TX_OFF 			<= 1'b0;
+	dec_OLED_COL_OFF 			<= 1'b0;
+	dec_OLED_ROW_OFF 			<= 1'b0;
+	dec_OLED_DATA_OFF 			<= 1'b0;
+	dec_OLED_CTRL_OFF 			<= 1'b0;
+	dec_ACCEL_DATA_OFF 			<= 1'b0;
+	dec_ACCEL_DREADY_OFF 		<= 1'b0;
+	dec_LED_OFF 				<= 1'b0;
+	dec_DIP_OFF 				<= 1'b0;
+	dec_PB_OFF  				<= 1'b0;
+	dec_SEVENSEG_OFF 			<= 1'b0;
+	dec_CYCLECOUNT_OFF			<= 1'b0;
 	
 	if(ALUResult[31:DMEM_DEPTH_BITS] == DMEM_BASE[31:DMEM_DEPTH_BITS])
 		dec_DMEM <= 1'b1;
 	else if (ALUResult[31:MMIO_DEPTH_BITS] == MMIO_BASE[31:MMIO_DEPTH_BITS]) begin
 		case (ALUResult[MMIO_DEPTH_BITS-1:2])
-			LED_OFF[MMIO_DEPTH_BITS-1:2]: dec_LED <= 1'b1;
-			DIP_OFF[MMIO_DEPTH_BITS-1:2]: dec_DIP <= 1'b1;
-			PB_OFF[MMIO_DEPTH_BITS-1:2]: dec_PB <= 1'b1;
-			SEVENSEG_OFF[MMIO_DEPTH_BITS-1:2]: dec_SEVENSEG <= 1'b1;
-			UART_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART <= 1'b1;
 			UART_RX_VALID_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_RX_valid <= 1'b1;
+			UART_RX_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_RX <= 1'b1;
 			UART_TX_READY_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_TX_ready <= 1'b1;
+			UART_TX_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_TX <= 1'b1;
 			OLED_COL_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_COL <= 1'b1;
 			OLED_ROW_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_ROW <= 1'b1;
 			OLED_DATA_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_DATA <= 1'b1;
 			OLED_CTRL_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_CTRL <= 1'b1;
 			ACCEL_DATA_OFF[MMIO_DEPTH_BITS-1:2]: dec_ACCEL_Data <= 1'b1;
 			ACCEL_DREADY_OFF[MMIO_DEPTH_BITS-1:2]: dec_ACCEL_DReady <= 1'b1;
+			LED_OFF[MMIO_DEPTH_BITS-1:2]: dec_LED <= 1'b1;
+			DIP_OFF[MMIO_DEPTH_BITS-1:2]: dec_DIP <= 1'b1;
+			PB_OFF[MMIO_DEPTH_BITS-1:2]: dec_PB <= 1'b1;
+			SEVENSEG_OFF[MMIO_DEPTH_BITS-1:2]: dec_SEVENSEG <= 1'b1;
 			CYCLECOUNT_OFF[MMIO_DEPTH_BITS-1:2]: dec_CYCLECOUNT <= 1'b1;
 			default: bad_MEM_addr <= 1'b1;
 		endcase
@@ -192,7 +229,7 @@ always@(*) begin
 		bad_MEM_addr <= 1'b1;
 end
 
-assign dec_MMIO_read = MemRead || dec_DIP || dec_PB || dec_UART || dec_UART_RX_valid || dec_UART_TX_ready || dec_CYCLECOUNT || dec_ACCEL_Data || dec_ACCEL_DReady ;
+assign dec_MMIO_read = MemRead || dec_DIP || dec_PB || dec_UART_RX_valid || dec_UART_RX || dec_UART_TX_ready || dec_UART_TX || dec_CYCLECOUNT || dec_ACCEL_Data || dec_ACCEL_DReady ;
 assign MemWrite = MemWrite_out[3] || MemWrite_out[2] || MemWrite_out[1] || MemWrite_out[0];
 
 //----------------------------------------------------------------
@@ -263,7 +300,7 @@ if (dec_DIP)
 	ReadData_MMIO <= { {31-N_DIPs+1{1'b0}}, DIP } ; 
 else if (dec_PB)
 	ReadData_MMIO <= { {31-N_PBs+1{1'b0}}, PB } ; 
-else if (dec_UART && UART_RX_valid)
+else if (dec_UART_RX && UART_RX_valid)
 	ReadData_MMIO <= {24'd0, UART_RX};
 else if (dec_UART_RX_valid)
 	ReadData_MMIO <= {31'd0, UART_RX_valid};	
@@ -358,12 +395,12 @@ end
 always @(posedge CLK) begin
 	UART_TX_valid <= 1'b0;
 	UART_RX_ack <= 1'b0;
-	if (MemWrite_out[0] && dec_UART && UART_TX_ready)
+	if (MemWrite_out[0] && dec_UART_TX && UART_TX_ready)
 	begin
 		UART_TX <= WriteData_out[7:0];
 		UART_TX_valid <= 1'b1;
 	end
-	if (MemRead && dec_UART && UART_RX_valid)
+	if (MemRead && dec_UART_RX && UART_RX_valid)
 		UART_RX_ack <= 1'b1;
 end
 

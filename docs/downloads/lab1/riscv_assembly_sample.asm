@@ -12,6 +12,23 @@
 
 # This sample program for RISC-V simulation using RARS
 
+// Memory-mapped peripheral register offsets
+.set UART_RX_VALID_OFF	, 0x00 //RO, status bit
+.set UART_RX_OFF 		, 0x04 //WO out
+.set UART_TX_READY_OFF	, 0x08 //RO, status bit
+.set UART_TX_OFF 		, 0x0C //WO out
+.set OLED_COL_OFF 		, 0x20 //WO
+.set OLED_ROW_OFF 		, 0x24 //WO
+.set OLED_DATA_OFF 		, 0x28 //WO
+.set OLED_CTRL_OFF 		, 0x2C //WO 
+.set ACCEL_DATA_OFF 	, 0x40 //RO
+.set ACCEL_DREADY_OFF 	, 0x44 //RO, status bit
+.set LED_OFF 			, 0x60 //WO
+.set DIP_OFF 			, 0x64 //RO
+.set PB_OFF  			, 0x68 //RO
+.set SEVENSEG_OFF 		, 0x80 //WO
+.set CYCLECOUNT_OFF 	, 0xA0 //RO
+
 # ------- <code memory (ROM mapped to Instruction Memory) begins>
 .text	## IROM segment 0x00000000-0x000001FC
 # Total number of instructions should not exceed 128 (127 excluding the last line 'halt B halt').
