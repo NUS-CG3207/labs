@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 /*
 ----------------------------------------------------------------------------------
---	(c) Thao Nguyen and Rajesh Panicker
+--	(c) Rajesh Panicker
 --	License terms :
 --	You are free to use this code as long as you
 --		(i) DO NOT post it on any public repository;
@@ -26,65 +26,72 @@ module test_Wrapper #(
 	wire [N_LEDs_OUT-1:0] LED_OUT;
 	wire [6:0] LED_PC;			
 	wire [31:0] SEVENSEGHEX;	
-	wire [7:0] CONSOLE_OUT;
-	reg  CONSOLE_OUT_ready = 0;
-	wire CONSOLE_OUT_valid;
-	reg  [7:0] CONSOLE_IN = 0;
-	reg  CONSOLE_IN_valid = 0;
-	wire CONSOLE_IN_ack;
-	reg  RESET = 0;					
+	wire [7:0] UART_TX;
+	reg  UART_TX_ready = 0;
+	wire UART_TX_valid;
+	reg  [7:0] UART_RX = 0;
+	reg  UART_RX_valid = 0;
+	wire UART_RX_ack;
+	wire OLED_Write;
+	wire [6:0] OLED_Col;
+	wire [5:0] OLED_Row;
+	wire [23:0] OLED_Data;
+	reg [31:0] ACCEL_Data;
+	wire ACCEL_DReady;			
+	reg  RESET = 0;	
 	reg  CLK = 0;				
 	
 	// Instantiate UUT
-	Wrapper dut(DIP, PB, LED_OUT, LED_PC, SEVENSEGHEX, CONSOLE_OUT, CONSOLE_OUT_ready, CONSOLE_OUT_valid, CONSOLE_IN, CONSOLE_IN_valid, CONSOLE_IN_ack, RESET, CLK) ;
+    Wrapper dut(DIP, PB, LED_OUT, LED_PC, SEVENSEGHEX, UART_TX, UART_TX_ready, UART_TX_valid, UART_RX, UART_RX_valid, UART_RX_ack, OLED_Write, OLED_Col, OLED_Row, OLED_Data, ACCEL_Data, ACCEL_DReady, RESET, CLK) ;
+
 	
 	// Note: This testbench is for the Hello World program. Other assembly programs require appropriate modifications.
-	// Run for about 6 us. Set CONSOLE_OUT radix to ASCII to see the printed messages.
+	// Run for about 6 us. Set UART_TX radix to ASCII to see the printed messages.
 	// STIMULI
     initial
     begin
 	RESET = 1; #10; RESET = 0; //hold reset state for 10 ns.
-	CONSOLE_OUT_ready = 1'h1; // ok to keep it high continously in the testbench. In reality, it will be high only if UART is ready to send a data to PC
-        CONSOLE_IN = 8'h50;// 'P'. Will be read and ignored by the processor
-        CONSOLE_IN_valid = 1'h1;
-        wait(CONSOLE_IN_ack);
-        wait(~CONSOLE_IN_ack);
-        CONSOLE_IN_valid = 1'h0;
+	    UART_TX_ready = 1'h1; // ok to keep it high continously in the testbench. In reality, it will be high only if UART is ready to send a data to PC
+        UART_RX = 8'h50;// 'P'. Will be read and ignored by the processor
+        UART_RX_valid = 1'h1;
+        wait(UART_RX_ack);
+        wait(~UART_RX_ack);
+        UART_RX_valid = 1'h0;
         #105;
-        CONSOLE_IN = 8'h41;// 'A'
-        CONSOLE_IN_valid = 1'h1;
-        wait(CONSOLE_IN_ack);
-        wait(~CONSOLE_IN_ack);
-	CONSOLE_IN_valid = 1'h0;
+        UART_RX = 8'h41;// 'A'
+        UART_RX_valid = 1'h1;
+        wait(UART_RX_ack);
+        wait(~UART_RX_ack);
+	    UART_RX_valid = 1'h0;
         #105;
-        CONSOLE_IN = 8'h0D;// '\r'
-        CONSOLE_IN_valid = 1'h1;
-        wait(CONSOLE_IN_ack); // should print "Welcome to CG3207" following this.
-        wait(~CONSOLE_IN_ack);
-        CONSOLE_IN_valid = 1'h0;
+        UART_RX = 8'h0D;// '\r'
+        UART_RX_valid = 1'h1;
+        wait(UART_RX_ack); // should print "Welcome to CG3207" following this.
+        wait(~UART_RX_ack);
+        UART_RX_valid = 1'h0;
         #2500
         // Run the simulation for about 3 us to see the full printed message. 
         
         // We are triggering a print one more time to see if it goes back correctly.
         // Run the simulation for another 3 us to see the full printed message a second time.
         
-        CONSOLE_IN = 8'h50;// 'P'. Will be read and ignored by the processor
-        CONSOLE_IN_valid = 1'h1;
-        wait(CONSOLE_IN_ack);
-        wait(~CONSOLE_IN_ack);
-        CONSOLE_IN_valid = 1'h0;
+        UART_RX = 8'h50;// 'P'. Will be read and ignored by the processor
+        UART_RX_valid = 1'h1;
+        wait(UART_RX_ack);
+        wait(~UART_RX_ack);
+        UART_RX_valid = 1'h0;
         #105;
-        CONSOLE_IN = 8'h41;// 'A'
-        CONSOLE_IN_valid = 1'h1;
-        wait(CONSOLE_IN_ack);
-        wait(~CONSOLE_IN_ack);
-	CONSOLE_IN_valid = 1'h0;
+        UART_RX = 8'h41;// 'A'
+        UART_RX_valid = 1'h1;
+        wait(UART_RX_ack);
+        wait(~UART_RX_ack);
+	    UART_RX_valid = 1'h0;
         #105;
-        CONSOLE_IN = 8'h0D;// '\r'
-        CONSOLE_IN_valid = 1'h1;
-        wait(CONSOLE_IN_ack); // should print "Welcome to CG3207" following this.
-        wait(~CONSOLE_IN_ack);
-        CONSOLE_IN_valid = 1'h0;
+        UART_RX = 8'h0D;// '\r'
+        UART_RX_valid = 1'h1;
+        wait(UART_RX_ack); // should print "Welcome to CG3207" following this.
+        wait(~UART_RX_ack);
+        UART_RX_valid = 1'h0;
 		//insert rest of the stimuli here
     end
 	
