@@ -49,7 +49,7 @@ nav:
     - Assignment 4 [Weeks 9-12]: manuals/04/lab_04.md
   - Resources for RISC-V:
     - RISC-V Memory Map: rv/rv_memmap.md
-      - Peripheral guides:
+    - Peripheral guides:
       - Accelerometer: peripherals/accelerometer.md
       - Cycle Counter: peripherals/cycle_counter.md
       - OLED Display: peripherals/oled.md
