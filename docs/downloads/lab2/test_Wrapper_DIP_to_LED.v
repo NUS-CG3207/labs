@@ -53,13 +53,13 @@ module test_Wrapper #(
 	RESET = 1; #10; RESET = 0; //hold reset state for 10 ns.
 
         DIP = 16'hFFFF; // Set all DIP switches to ON
-        #20;
+        #120;
         DIP = 16'hAAAA; // Set all DIP switches to alternate on-off pattern
-        #20;
+        #150;
         DIP = 16'h5555; // Set all DIP switches to flipped alternate on-off pattern
-        #20;
+        #150;
         DIP = 16'h0000; // Set all DIP switches to OFF
-
+		#150;
 		//insert rest of the stimuli here
     end
 	
