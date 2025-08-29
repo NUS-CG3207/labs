@@ -7,9 +7,9 @@
 
 // Memory-mapped peripheral register offsets
 #define UART_RX_VALID_OFF	0x00 //RO, status bit
-#define UART_RX_OFF 		0x04 //WO out
+#define UART_RX_OFF 		0x04 //RO
 #define UART_TX_READY_OFF	0x08 //RO, status bit
-#define UART_TX_OFF 		0x0C //WO out
+#define UART_TX_OFF 		0x0C //WO
 #define OLED_COL_OFF 		0x20 //WO
 #define OLED_ROW_OFF 		0x24 //WO
 #define OLED_DATA_OFF 		0x28 //WO

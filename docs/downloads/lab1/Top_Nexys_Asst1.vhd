@@ -8,7 +8,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 
 entity lab1 is
--- fundamental clock 1MHz
+-- fundamental clock 100 MHz
 -- button BTNU for 4Hz speed
 -- button BTNC for pause
 -- 16 LEDs to display upper or lower 16 bits of memory data

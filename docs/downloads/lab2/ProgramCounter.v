@@ -41,15 +41,15 @@ module ProgramCounter(
     
     //Perhaps pass the default PC value as a parameter from Wrapper. For future.
     initial begin 
-        PC <= 32'h00400000; // Initialization for PC Should be the same as IROM_BASE in Wrapper.v, 
+        PC <= 32'h0040_0000; // Initialization for PC Should be the same as IROM_BASE in Wrapper.v, 
         					//  and the .txt starting address in RARS Memory Configuration.
-        					// RARS default = 32'h00400000. It is 32'h00000000 for compact memory configuration with .text at 0
+        					// RARS default = 32'h0040_0000. It is 32'h0000_0000 for compact memory configuration with .text at 0
     end
     
     always@( posedge CLK )
     begin
         if(RESET)
-            PC <= 32'h00400000; // Should be the same as the initial value above.
+            PC <= 32'h0040_0000; // Should be the same as the initial value above.
         else if(WE_PC)
             PC <= PC_IN ;        
     end

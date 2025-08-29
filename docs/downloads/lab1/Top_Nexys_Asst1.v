@@ -8,7 +8,7 @@
 
 
 module Top(
-    input clk,  			// fundamental clock 1MHz
+    input clk,  			// fundamental clock 100 MHz
     input btnU, 			// button BTNU for 4Hz speed
     input btnC, 			// button BTNC for pause
     output [15:0] led,  	// 16 LEDs to display upper or lower 16 bits of memory data
