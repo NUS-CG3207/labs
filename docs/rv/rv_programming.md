@@ -20,3 +20,6 @@ Debug and see if the program runs as intended. The standard debugging options ar
 ![Memory Dump Example](mem_dump.png)
 
 **Do the same thing with .data too**, and save it as AA_DMEM.mem, unless your program doesn't use any non-immediate constants / initialised variables at all. This is the data memory.
+
+Some of the useful RARS controls and tiles are highlighted below.
+![RARS Features](rars_features.png)

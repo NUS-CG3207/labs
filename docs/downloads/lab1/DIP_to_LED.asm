@@ -68,7 +68,7 @@ DMEM:
 
 delay_val: .word 4	# a constant, at location DMEM+0x00
 string1:
-.asciz "\r\nWelcome to CG3207..\r\n"	# string, from DMEM+0x4 to DMEM+0x1F (
+.asciz "\r\nWelcome to CG3207..\r\n"	# string, from DMEM+0x4 to DMEM+0x1F (including null character).
 var1: .word	1 		# a statically allocated variable (which can have an initial value, say 1), at location DMEM+0x60
 # Food for thought: What will be the address of var1 if string1 had one extra character, say  "..." instead of ".."? Hint: words are word-aligned.
 
