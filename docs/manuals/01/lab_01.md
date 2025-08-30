@@ -30,9 +30,9 @@ This task is not graded, but necessary to be able to complete the assignments me
 
 The goal of this task is to get familiar with the [RISC-V assembler/simulator](../../rv/rv_programming.md) or [ARM assembler/simulator](../../ARM/arm_programming.md) by simulating a sample program. We will simulate a system with memory-mapped input/output (MMIO).
 
-We assume that the LEDs on this system are mapped to address [`0x2400`]("`0xC00` for ARM"). This means that when we write to this memory address using [`sw`]("`STR` for ARM"), the least significant 16 bits of whatever data we write to this address is shown on the LEDs. For example, if we write `0xF0F0`, the first four LEDs from the left will be lit, then the next four will be unlit, the next four lit, and the last four unlit.
+We assume that the LEDs on this system are mapped to address [`0xFFFF0060`]("`0xC00` for ARM"). This means that when we write to this memory address using [`sw`]("`STR` for ARM"), the least significant 16 bits of whatever data we write to this address is shown on the LEDs. For example, if we write `0xF0F0`, the first four LEDs from the left will be lit, then the next four will be unlit, the next four lit, and the last four unlit.
 
-Similarly, we assume that the switches are mapped to address [`0x2404`]("`0xC04` for ARM"). This means that when we read data from this memory address using [`lw`]("`LDR` for ARM"), the least significant 16 bits of data read will correspond to the state of the switches. For example, if the switches are alternating between on (up) and off (down), with the first switch from the left being on, the data read will be `0xAAAA`.
+Similarly, we assume that the switches are mapped to address [`0xFFFF0064`]("`0xC04` for ARM"). This means that when we read data from this memory address using [`lw`]("`LDR` for ARM"), the least significant 16 bits of data read will correspond to the state of the switches. For example, if the switches are alternating between on (up) and off (down), with the first switch from the left being on, the data read will be `0xAAAA`.
 
 ### Task instructions
 
@@ -45,7 +45,7 @@ In this task, we will simulate the user providing some input to the switches, an
     !!! warning
         Remember to set the memory configuration correctly - from "Settings" -> "Memory Configuration", choose "Compact, Text at Address 0". Setting this correctly is **very important** - our simulation for this assignment depends on this memory configuration being selected, and our CPU design later will also assume this memory configuration.
     
-    Once you have assembled and begun to run the RISC-V code line-by-line, before executing line 28, simulate changing the input on the switches by modifying the memory at the address mapped to the DIP switches (`0x2404`). Then, continue running the code, including lines 28 and 29, one line at a time, until the memory at the address for the LEDs (`0x2400`) changes to reflect the new data. 
+    Once you have assembled and begun to run the RISC-V code line-by-line, before executing line 28, simulate changing the input on the switches by modifying the memory at the address mapped to the DIP switches (`0xFFFF0064`). Then, continue running the code, including lines 28 and 29, one line at a time, until the memory at the address for the LEDs (`0xFFFF0060`) changes to reflect the new data. 
 
     ![Screenshot of addresses in RARS](rars_address_ss.png)
 
@@ -71,7 +71,7 @@ In this task, we will simulate the user providing some input to the switches, an
 
 For the assessment, you must be able to demonstrate everything you just did in front of your assessor. You must also understand every line of the sample assembly program, as you may be quizzed on what a particular line (or set of lines) does.
 
-Finally, dump the instruction and data memories into .hex files. Click the "Dump Memory" button in RARS to do this. We need to dump the "text" (instruction) and "data" sections, using the "Hexadecimal Text" option, and finally choosing to "Dump to File...". Keep these files in a safe place to use in the next task. 
+Finally, dump the instruction and data memories. Click the "Dump Memory" button in RARS to do this. We need to dump the "text" (instruction) and "data" sections, using the "Hexadecimal Text" option, and finally choosing to "Dump to File...". Name these with .mem extension and keep them in a safe place to use in the next task.
 
 ## Task 2: Basic HDL simulation and implementation [5 points]
 
@@ -89,7 +89,7 @@ A block diagram of the system we want to implement
 
 ///
 
-`INSTR_MEM` and `DATA_CONST_MEM` are ROMs with 128 words each. We will use RARS to dump our assembly program into these ROMs, so `INSTR_MEM` will hold the instructions of the assembly program (in machine code, of course), while `DATA_CONST_MEM` will hold the constants we declare in the program. The ROMs are both combinational logic and do not need clocking. Both ROMs are only word-addressable, not byte-addressable.
+`IROM` and `DMEM` are ROMs with 128 words each. We will use RARS to dump our assembly program into these ROMs, so `IROM` will hold the instructions of the assembly program (in machine code, of course), while `DMEM` will hold the constants we declare in the program. The ROMs are both combinational logic and do not need clocking. Both ROMs are only word-addressable, not byte-addressable.
 
 The `Clock_Enable` block generates an `enable` signal, to be used in tandem with the system clock `clk`. A module using this clock enable should, at every edge of `clk`, check if `enable` is high, and only be enabled if it is. 
 
@@ -103,7 +103,7 @@ The `Clock_Enable` block generates an `enable` signal, to be used in tandem with
 
 The 9-bit counter is a sequential block. It uses the system clock `clk` and the clock enable signal `enable` to count up a 9-bit number `addr`. That is, for every positive edge of `clk`, if `enable` is high, the counter should increment by 1. `addr` is the only output of this module.
 
-`addr[7:1]` should be used to address both `INSTR_MEM` and `DATA_CONST_MEM`. The ROMs will both output whatever value is present in the address `addr[7:1]`. Then, depending on `addr[8]`, a multiplexer should choose whether to display the instruction memory or the data memory. The output of this multiplexer is `data`.
+`addr[7:1]` should be used to address both `IROM` and `DMEM`. The ROMs will both output whatever value is present in the address `addr[7:1]`. Then, depending on `addr[8]`, a multiplexer should choose whether to display the instruction memory or the data memory. The output of this multiplexer is `data`.
 
 `data` is connected as an input to `Seven_Seg` directly, and the seven-segment displays will display the value from `data` as a hexadecimal value on the seven-segment display on the board. `Seven_Seg_Nexys` is already created and does not need to be modified or understood at an implementation level.
 
@@ -111,25 +111,25 @@ The 9-bit counter is a sequential block. It uses the system clock `clk` and the 
 
 The sequence of events expected, if no buttons are pressed, is:
 
-1. For one second, the seven-segment displays display the content of `INSTR_MEM[0]`, while the LEDs show `INSTR_MEM[0][31:16]`.
+1. For one second, the seven-segment displays display the content of `IROM[0]`, while the LEDs show `IROM[0][31:16]`.
 
-2. For one second, the seven segment displays display the content of `INSTR_MEM[0]`, while the LEDs show `INSTR_MEM[0][15:0]`.
+2. For one second, the seven segment displays display the content of `IROM[0]`, while the LEDs show `IROM[0][15:0]`.
 
-3. For one second, the seven segment displays display the content of `INSTR_MEM[1]`, while the LEDs show `INSTR_MEM[1][31:16]`.
+3. For one second, the seven segment displays display the content of `IROM[1]`, while the LEDs show `IROM[1][31:16]`.
 
-4. For one second, the seven segment displays display the content of `INSTR_MEM[1]`, while the LEDs show `INSTR_MEM[1][15:0]`.
+4. For one second, the seven segment displays display the content of `IROM[1]`, while the LEDs show `IROM[1][15:0]`.
 
-5. Repeat until the last instruction in `INSTR_MEM` is displayed.
+5. Repeat until the last instruction in `IROM` is displayed.
 
-6. For one second, the seven-segment displays display the content of `DATA_CONST_MEM[0]`, while the LEDs show `DATA_CONST_MEM[0][31:16]`.
+6. For one second, the seven-segment displays display the content of `DMEM[0]`, while the LEDs show `DMEM[0][31:16]`.
 
-7. For one second, the seven segment displays display the content of `DATA_CONST_MEM[0]`, while the LEDs show `DATA_CONST_MEM[0][15:0]`.
+7. For one second, the seven segment displays display the content of `DMEM[0]`, while the LEDs show `DMEM[0][15:0]`.
 
-8. For one second, the seven segment displays display the content of `DATA_CONST_MEM[1]`, while the LEDs show `DATA_CONST_MEM[1][31:16]`.
+8. For one second, the seven segment displays display the content of `DMEM[1]`, while the LEDs show `DMEM[1][31:16]`.
 
-9. For one second, the seven segment displays display the content of `DATA_CONST_MEM[1]`, while the LEDs show `DATA_CONST_MEM[1][15:0]`.
+9. For one second, the seven segment displays display the content of `DMEM[1]`, while the LEDs show `DMEM[1][15:0]`.
 
-10. Repeat until the last datum (singular form of "data"!) in `DATA_CONST_MEM` is displayed.
+10. Repeat until the last datum (singular form of "data"!) in `DMEM` is displayed.
 
 11. Start again from step 1.
 

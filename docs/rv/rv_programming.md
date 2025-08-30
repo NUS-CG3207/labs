@@ -4,9 +4,10 @@ Use RARS assembler / simulator which can be downloaded [from their GitHub reposi
 
 The .jar program can be run by double-clicking it. It is portable across operating systems and needs no installation. It is a very simple and easy to use application. Linux users may need to use `java -jar filename.jar` - note the `-jar` option required to run a Java archive. 
 
-You can use [.asm](https://github.com/NUS-CG3207/lab-skeletons/blob/main/lab1/riscv_assembly_sample.asm) to get started. Download it, and open with RARS - **File** **\>** **Open**. Note : RARS assumes that SP(x2) and GP(x3) are initialized to 0x3ffc and 0x1800 respectively, and other registers are initialized to 0s. In the register file provided in the templates, only register zero (x0) is guaranteed to be 0, and others are uninitialized. You need to write a value to all registers other than x0 before you read them.
+You can use [.asm](../downloads/lab1/DIP_to_LED.asm) to get started. Download it, and open with RARS - **File** **\>** **Open**. Note : RARS assumes that SP(x2) and GP(x3) are initialized to 0x3ffc and 0x1800 respectively, and other registers are initialized to 0s. In the register file provided in the templates, only register zero (x0) is guaranteed to be 0, and others are uninitialized. You need to write a value to all registers other than x0 before you read them.
 
-**Settings > Memory Configuration >** Select **Compact, Text at Address 0** > **Apply and Close**.
+**Settings > Memory Configuration >** Make sure **Default** is selected > **Apply and Close**.
+It is also possible to select other configurations such as **Compact, Text at Address 0**, but needs appropriate changes in your Wrapper, ProgramCounter, and C program.
 
 Write/modify the code as necessary. You may want to look at these pages - [RARS Supported Instructions](https://github.com/TheThirdOne/rars/wiki/Supported-Instructions), [Assembly Directives](https://github.com/TheThirdOne/rars/wiki/Assembler-Directives).
 
@@ -16,8 +17,6 @@ Debug and see if the program runs as intended. The standard debugging options ar
 
 **File > Dump Memory**. You can also do so by clicking the button in the toolbar as shown below. First, select the .text memory segment. Save it as Hexadecimal text with the name AA_IROM.mem. This is the instruction memory.
 
-![](mem_dump.png)
+![Memory Dump Example](mem_dump.png)
 
-**Do the same thing with .data too**, and save it as AA_DMEM.mem, unless your program doesn't use any non-immediate constants at all. This is the data memory. 
-
-Note : The memory-mapped peripherals of RARS use a different address as compared to the one used by Wrapper. We will stick with the addresses in the Wrapper, and use memory locations to simulate the effect of peripherals - the peripherals in RARS have a slightly different behavior as compared to the one implemented in Wrapper/TOP. This can be changed in the Wrapper if need be though.
+**Do the same thing with .data too**, and save it as AA_DMEM.mem, unless your program doesn't use any non-immediate constants / initialised variables at all. This is the data memory.

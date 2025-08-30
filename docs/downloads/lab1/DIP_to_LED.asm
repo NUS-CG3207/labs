@@ -33,7 +33,7 @@
 # ------- <code memory (Instruction Memory ROM) begins>
 .text	## IROM segment: IROM_BASE to IROM_BASE+2^IROM_DEPTH_BITS-1
 # Total number of real instructions should not exceed 2^IROM_DEPTH_BITS/4 (127 excluding the last line 'halt B halt' if IROM_DEPTH_BITS=9).
-# Pseudoinstructions (e.g., li, la) may be implemented using more than one actual instruction. See the assembled code in the Execute tab of RARS
+# Pseudoinstructions (e.g., li, la) may be implemented using more than one actual instruction. See the assembled code in the Execute tab of RARS.
 
 # You can also use the actual register numbers directly. For example, instead of s1, you can write x9
 
@@ -63,14 +63,6 @@ halt:
 #------- <Data Memory begins>									
 .data  ## DMEM segment: DMEM_BASE to DMEM_BASE+2^DMEM_DEPTH_BITS-1
 # Total number of constants+variables should not exceed 2^DMEM_DEPTH_BITS/4 (128 if DMEM_DEPTH_BITS=9).
-# This kind of a data memory is slightly unrealistic and possible only in FPGAs. 
-# In embedded systems, the data memory has two parts - constants stored in a ROM/Flash (non-volatile) and variables stored in RAM. 
-#   Constants are available for reading without a prior writing (and can't normally be written). 
-#	Variables that are initialized are explicitly set to their initial value via writes (sw instructions). Variables should't be read (lw) without a prior write (sw) somewhere.
-# In desktop systems, the data memory is typically all RAM, but has constants stored in read-only area that is initalised explicitly via writes (sw) and are not modified further.
-#   As with embedded systems, variables that are initialized are explicitly set to their initial value via writes (sw instructions). Variables should't be read (lw) without a prior write (sw) somewhere.
-# In contrast, the FPGA-based systems often have a more flexible memory architecture*, allowing for RAM to be used like ROM, i.e., variables are auto-initialised - can be read without prior writes, but can also be modified.
-#	*At least the way it is used in our case, which necessitates the memory to be small and implemented using block or distributed RAMs available within the FPGA fabric and initialised using GSR.
 
 DMEM:
 
@@ -82,8 +74,6 @@ var1: .word	1 		# a statically allocated variable (which can have an initial val
 
 .align 9	# To set the address at this point to be 512-byte aligned, i.e., DMEM+0x200
 STACK_INIT:	# Stack pointer can be initialised to this location - DMEM+0x200 (i.e., the address of stack_top)
-				# stack grows downwards, so stack pointer should be decremented when pushing and incremented when popping.
-				# stack can be used for function calls and local variables.
-			# Not allocating any heap, as it is unlikely to be used in this simple program. If we need dynamic memory allocation,
-				# we need to allocate heap and would typically use a heap manager.
+			# stack grows downwards, so stack pointer should be decremented when pushing and incremented when popping.Stack can be used for function calls and local variables.
+		# Not allocating any heap, as it is unlikely to be used in this simple program. If we need dynamic memory allocation,we need to allocate memory and imeplement a heap manager.
 #------- <Data Memory ends>													

@@ -1,7 +1,7 @@
 #define IROM_BASE 0x00400000		// Should be the same as the .txt address based on the Memory Configuration set in the assembler/linker, 
                                         // Wrapper.v and the PC default value as well as reset value in **ProgramCounter.v** 
 #define DMEM_BASE 0x10010000   	// Should be the same as the .data address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
-#define DMEM_SIZE 0x400         // 2**DMEM_DEPTH_BITS, as in Wrapper.v
+#define DMEM_SIZE 0x200         // 2**DMEM_DEPTH_BITS, as in Wrapper.v
 #define MMIO_BASE 0xFFFFF0000   // Should be the same as the .mmio address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
 #define STACK_INIT DMEM_BASE + DMEM_SIZE // Top of RAM to allow stack to grow downwards
 

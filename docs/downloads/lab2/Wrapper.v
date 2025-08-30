@@ -74,7 +74,7 @@ localparam DMEM_BASE = 32'h1001_0000;    	// make sure this is the same as the .
 localparam MMIO_BASE = 32'hFFFF_0000;
 
 localparam IROM_DEPTH_BITS = 9;		//9 for 128 words. Change if your program is larger.
-localparam DMEM_DEPTH_BITS = 9;		//9 for 128 words. Change if your data (const+variable) is larger.
+localparam DMEM_DEPTH_BITS = 9;		//9 for 128 words. Change if your data (const+variable) is larger, and in C/Assembly to set STACK_INIT appropriately.
 localparam MMIO_DEPTH_BITS = 8;
 
 // Memory-mapped peripheral register offsets
