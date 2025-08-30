@@ -1,4 +1,39 @@
-## OLED
+
+# UART and RealTerm
+
+## UART Details
+
+In the following lines, 'read's and 'write's are from the perspective of the RISC-V processor (assembly language program), and act as 'console in' and 'console out' respectively.
+
+* Read from the UART only if CONSOLE\_IN\_valid is set. Similarly, write to the UART only if CONSOLE\_OUT\_ready is set  (not very important if the processor runs on a slow clock).
+* Successive writes to the UART (**sw** / **STR** followed by **sw** / **STR**, i.e., consecutive **sw**s / **STR**s in your assembly language program) are not supported. Similarly, successive reads (consecutive **lw**s / **LDR**s) are not supported.
+* Allow sufficient time for the program to read a character before sending the next character from RealTerm. Any character received while one character is waiting to be read would be ignored. This shouldn't be a problem if your processor runs at high speed (CLK\_DIV\_BITS is low).
+
+* A 32-bit number can be sent as hexadecimal in ASCII format (8 characters), which will require some processing in your program before it can be used as a 32-bit operand (note : '0' is 0x30 and 'A' is 0x41 in ASCII). It is a good idea to echo characters so that you can check whether UART has received it correctly. Also, note that backspace doesn't work to 'delete' the sent characters unless you implement such a functionality explicitly in your assembly language program.
+
+* If you use a console, some parts of your program could be repetitive, best implemented using a subroutine. A subroutine is normally implemented using a **BL**/**jal** instruction which we have not implemented. A workaround can be seen in the HelloWorld program for Lab 2.
+
+* In the simulation with UART, setting radix to ASCII could help.
+* Read the instructions in Wrapper.v/vhd before using it.
+
+## Realterm
+
+[Realterm](https://canvas.nus.edu.sg/courses/62251/files/folder/Lab%20Resources?preview=4733363) is an amazing serial monitor program, which could be very useful. You can use this for sending and receiving data through the UART console. Teraterm (used in EE2028) is fine too, just that RealTerm is TeraTerm on steriods. RealTerm needs [.NET framework](https://canvas.nus.edu.sg/courses/62251/files/folder/Lab%20Resources?preview=4733365) to be installed.
+
+![](realterm_setting1.png)
+
+Note : The baud rate used depends on the baud rate set in TOP.vhd. In the template provided, it is 115200.
+
+![](realterm_setting2.png)
+
+**Figure 1(a) and 1(b)** : Screenshot illustrating RealTerm settings.
+
+RealTerm allows you to send and display data that is not necessarily ASCII. Sending and receiving raw bytes can be very very useful. In fact, it is THE most effective way to get data in/out of the system.  
+
+(to do: Provide a screenshot here illustrating sending bytes, and perhaps even an example assembly language program).
+
+
+# OLED
 
 OLED uses PMOD **B**.
 
@@ -38,17 +73,17 @@ This requires changing
 
 When you export byte arrays in the data segment from Godbolt to RARS, there could be an issue - RARS doesn't recognize the octal escape sequence emitted by compilers. A workaround is to copy-paste the actual C array into the data segment of RARS with a .byte declaration, instead of using the .ascii array emitted by the compiler. The rest of the generated assembly is fine. This is illustrated in the figures below.  
 
-![C Code](CCode-1.png)  
+![C Code](CCode.png)  
 C Code  
 
-![Octal array emitted by the compiler](OctalData-1.png)  
+![Octal array emitted by the compiler](OctalData.png)  
 Octal array emitted by the compiler  
 
-![Copy-pasted array fix](FixInRARS-1.png)  
+![Copy-pasted array fix](FixInRARS.png)  
 Copy-pasted array fix in RARS with .byte declaration
 
 
-### Food for thought
+## Food for thought
 
 * It may be better to use synchronous read and use block RAMs if you have many images. Else, you will quickly run out of LUTs.
 * Image pixels being sent column-wise is advantageous if the conversion tool can give a column-major format for the array. This is because multiplication by 64 is easier than by 96.
@@ -56,3 +91,22 @@ Copy-pasted array fix in RARS with .byte declaration
   * It is not uncommon to allocate memory that is larger than the required size to make the buffer dimensions powers of two - trading off memory for performance!
   * Possible enhancement: Implementing a mode where the row/column indices autoincrement in a row-major/column-major manner can accelerate the loading of raster images. Only one write per pixel will suffice, with the ability to feed data from a C array without maintaining separate row/column indices. You will need to implement some control bits in the control register to enable this (and an additional bit if you wish to allow the user to choose between row-major / column-major formats), along with other changes in the Wrapper. 
 * It is not possible to read back what you wrote to the OLED. Something = *OLED_DATA_ADDR does not work. These are memory-mapped peripherals; do not treat like memory. However, it is possible to modify the Wrapper and TOP to accomplish this, but has some issues such as needing 2 clock cycles for a read.
+
+
+# Accelerometer
+
+The accelerometer gives the temperature and X, Y, Z accelerations.  
+ACCEL_DATA is a 32-bit value packing 4 independent 8-bit values <temperature, X, Y, Z> MSB downto LSB.  
+Each value is in 8-bit signed format with a range of +/- 2g. So a reading of 1g is 0x40 and -1g is 0xC0.  
+The sensor in fact gives a 12-bit reading, but uses only 8 bits for simplicity.  
+The calibration is not perfect on all boards, so do not be surprised if there is a fixed offset to all your readings.  
+
+If you want only a specific axis or temperature, use a combination of logical operators and shift e.g., extract Y using (*ACC_DATA_ADDR & 0x0000FF00) >> 8. If your processor can do `lbu`, the required byte can be read directly.  
+
+ACCEL_DREADY indicates data readiness, which is useful only when attempting to read at a high rate.
+
+# Cycle Counter
+
+Cycle counter gives the number of processor cycles that have elapsed since the last reset.  
+Cycle counter rolls over at 42 seconds at 100 MHz (CLK_DIV_BITS = 0), but is much longer at lower frequencies.  
+Change counter width and bits used in Wrapper for a longer duration, but lower cycles precision.  
