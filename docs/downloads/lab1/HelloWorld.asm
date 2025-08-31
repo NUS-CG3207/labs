@@ -10,8 +10,9 @@
 #--		(vi) retain this notice in this file and any files derived from this.
 #----------------------------------------------------------------------------------
 
-# This sample program prints "Welcome to CG3207" in response to "A\r" (A+Enter) received from Console. There should be a sufficient time gap between the press of 'A' and '\r'
-# if the processor is run at a low freq.
+# This sample program prints "Welcome to CG3207" in response to "A\r" or "A\n" (A+Enter*) received from Console. 
+# *Some terminal programs send '\r' (default in TeraTerm), whereas some such as the RARS Keyboard and Display MMIO simulator sends '\n'.
+# There should be a sufficient time gap between the press of 'A' and '\r' or '\n'if the processor is run at a low freq.
 
 .eqv LSB_MASK 0xFF # A mask to extract the least significant byte.
 
@@ -60,20 +61,22 @@ ECHO_A:
 	sw t0, (s7)		# show received character (ASCII) on the LEDs
 	li t2, 'A'
 	bne t0, t2, WAIT_A	# not 'A'. Continue waiting
-WAIT_CR:			# 'A' received. Need to wait for '\r' (Carriage Return - CR).
+WAIT_CRorLF:			# 'A' received. Need to wait for '\r' (Carriage Return - CR).
 	lw t1, (s9)		# read the new character flag
-	beqz t1, WAIT_CR	# go back and wait if there is no new character
+	beqz t1, WAIT_CRorLF	# go back and wait if there is no new character
 	lw t0, (s10) 		# read UART (second character. '\r' expected)
-ECHO_CR:
+ECHO_CRorLF:
 	lw t1, (s8)		# check if the UART is ready to be written
-	beqz t1, ECHO_CR
+	beqz t1, ECHO_CRorLF
 	sw t0, (s11)		# echo received character to the console
 	sw t0, (s5)		# show received character (ASCII) on the 7-Seg display
 	sw t0, (s7)		# show received character (ASCII) on the LEDs
-	beq t0, t2, WAIT_CR 	# perhaps the user is trying again before completing the pervious attempt, or 'A' was repeated. Just a '\r' needed as we already got an 'A'
+	beq t0, t2, WAIT_CRorLF	# perhaps the user is trying again before completing the pervious attempt, or 'A' was repeated. Just a '\r' needed as we already got an 'A'
 	li t1, '\r'
-	bne t0, t1, WAIT_A	# not the correct pattern. try all over again.
-	# "A\r" received. 
+	beq t0, t1, ACCEPT_CRorLF # if t0 == '\r', go to ACCEPT_CRorLF
+	li t1, '\n'
+	bne t0, t1, WAIT_A	# if t0 != '\r' or '\n', not the correct pattern. try all over again.
+ACCEPT_CRorLF:	# "A\r" or "A\n" received.
 	la a0, string1		# a0 stores the value to be displayed. This is the argument passed to PRINT_S
 PRINT_S:			# Call PRINT_S subroutine (not implemented as a subroutine for now as jal doesn't have link and jalr is not implemented)		
 	lw t0, (a0)		# load the word (4 characters) to be displayed

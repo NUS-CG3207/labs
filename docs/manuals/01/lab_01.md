@@ -73,6 +73,20 @@ For the assessment, you must be able to demonstrate everything you just did in f
 
 Finally, dump the instruction and data memories. Click the "Dump Memory" button in RARS to do this. We need to dump the "text" (instruction) and "data" sections, using the "Hexadecimal Text" option, and finally choosing to "Dump to File...". Name these with .mem extension and keep them in a safe place to use in the next task.
 
+#### Optional but Recommended
+Simulate a 'Hello World' Program. 
+There are 2 versions provided - 
+
+* [Hello World](../../downloads/lab1/HelloWorld.asm) that doesn't use subroutines and can be done using instructions implemented in Assignment 2 and 
+* [Hello World with subroutine](../../downloads/lab1/HelloWorld.asm) that use subroutines and requires full `jal` and `jalr` support.
+
+Since we are using a simulator now and isn't worried about processor capabilities, you can simulate either or both.
+Read the UART peripheral details to understand the 4 registers involved.
+To simulate it, you need to go to Tools>Keyboard and Display MMIO simulator, and the 'Connect to Program'. The following screenshot will be handy.
+
+![Hello World](HelloWorld.png)
+Note that if you are single-stepping, you need to give the keyboard inputs at the appropriate time - after the previous keypress has been ready by the program - there is no buffer to store characters if you send them at a rate faster than the program can consume it.
+
 ## Task 2: Basic HDL simulation and implementation [5 points]
 
 In this task, we will implement a simple hardware demo, that reads data from two Read-Only Memories (ROMs) and displays them on the seven-segment display on the FPGA. Note that we are **not** (yet) building a CPU, or anything that actually executes the instructions, so what instructions we use is somewhat irrelevant.
