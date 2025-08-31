@@ -37,9 +37,9 @@ extra:
 
 nav:
   - Home: index.md
-  - How to use this website: setup_guides/howto.md
   - Preparing for labs:
-    - Lab Prerequisites: prereq.md
+    - How to use this website: setup_guides/howto.md
+    - Lab Prerequisites: setup_guides/prereq.md
     - Getting to know your Nexys 4: setup_guides/nexys4.md
     - Installation Guide for Vivado: setup_guides/vivado_install_guide.md
   - Lab manuals:
