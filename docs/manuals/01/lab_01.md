@@ -154,7 +154,7 @@ In total, we will need `Top_Nexys`, `Seven_Seg_Nexys`, `Clock_Enable`, `Get_MEM`
 
 We need to fill out `Clock_Enable`, `Get_MEM` and `Top_Nexys` to achieve the functionality described above. 
 
-To use the `.hex` files we must first rename them to use the `.mem` file extension. No conversion is needed. These files can be imported into our Vivado project as design sources, and used to initialise memories using the `$readmemh()` command. 
+The hexadecimal text dump should be saved with a `.mem` file extension. These files can be imported into our Vivado project as design sources, and used to initialise memories using the `$readmemh()` command. 
 
 Do **NOT** use a clock divider, like you may have used in EE2026. They can cause all sorts of issues, since it becomes difficult for the synthesis tool to route the clocks. 
 
