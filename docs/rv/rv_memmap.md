@@ -33,37 +33,43 @@ Assuming default memory configuration, IROM_DEPTH_BITS = DMEM_DEPTH_BITS = 9.
 ### A Note on Data Memory.
 
 This kind of a data memory is slightly unrealistic and possible only in FPGAs. 
+
 In embedded systems, the data memory has two parts - constants stored in a ROM/Flash (non-volatile) and variables stored in RAM. 
 Constants are available for reading without a prior writing (and can't normally be written). 
 Variables that are initialized are explicitly set to their initial value via writes (sw instructions). Variables should't be read (lw) without a prior write (sw) somewhere.
+
 In desktop systems, the data memory is typically all RAM, but has constants stored in read-only area that is initalised explicitly via writes (sw) and are not modified further.
 As with embedded systems, variables that are initialized are explicitly set to their initial value via writes (sw instructions). Variables should't be read (lw) without a prior write (sw) somewhere.
+
 In contrast, the FPGA-based systems often have a more flexible memory architecture*, allowing for RAM to be used like ROM, i.e., variables are auto-initialised - can be read without prior writes, but can also be modified.
+
 *At least the way it is used in our case, which necessitates the memory to be small and implemented using block or distributed RAMs available within the FPGA fabric and initialised using GSR.
 
 
 ### Sizes of various segments, base addresses, and peripheral address offsets.
 
 
-The RARS default memory configuration is as follows. Can be changed if need be.
+The RARS default memory configuration is as follows.
 
-DMEM_BASE is 0x10010000   	// Should be the same as the .data address based on the Memory Configuration set in the assembler/linker, Wrapper.v, C program.
-MMIO_BASE is 0xFFFFF0000   // Should be the same as the .mmio address based on the Memory Configuration set in the assembler/linker, Wrapper.v, C program.
-IROM_BASE = 0x00400000. This should be the same as the .txt address based on the Memory Configuration set in the assembler/linker, Wrapper.v and the PC default value as well as reset value in **ProgramCounter.v**
+* IROM_BASE = 0x00400000. This should be the same as the .txt address based on the Memory Configuration set in the assembler/linker, Wrapper.v and the PC default value as well as reset value in ProgramCounter.v
+* DMEM_BASE is 0x10010000   	// Should be the same as the .data address based on the Memory Configuration set in the assembler/linker, Wrapper.v, C program.
+* MMIO_BASE is 0xFFFFF0000   // Should be the same as the .mmio address based on the Memory Configuration set in the assembler/linker, Wrapper.v, C program.
+
+
+It is possible to change the configuration to others supported by RARS, such as compact with .txt at 0. MMIO base can be changed freely in any configuration, though if you need to use RARS simulated peripherals, it to be the default value.
 
 Instruction and data memory sizes can be bigger than 128 words. Be mindful of the potentially increased synthesis time though, esp if not using synch read (block RAM).
 
-Depth (size) = 2**DEPTH_BITS. e.g.,if DEPTH_BITS = 9, depth = 512 bytes = 128 words. 
+DMEM_DEPTH_BITS = 9. DMEM_SIZE = 2**DMEM_DEPTH_BITS = 0x200 = 512 bytes = 128 words by default. Changing this will need changes to Wrapper.v. Set STACK_INIT in C / asm program (via .align in asm, via DMEM_SIZE) in C.
 
-DMEM_DEPTH_BITS = 9. DMEM_SIZE = 2**DMEM_DEPTH_BITS = 0x200 by default. Changing this will need changes to Wrapper.v. Set STACK_INIT in C / asm program (via .align in asm, via DMEM_SIZE) in C.
 IROM_DEPTH_BITS=9. Changing this will need changes to Wrapper.v
-
-IROM_BASE = 32'h00400000 and DMEM_BASE = 32'h10010000 in RARS.
 
 ### Endianness
 
-The instruction and data memory are WORD addressable (NOT byte-addressable) for our labs. => Endianness doesn't matter for our hardware. Endianness matters only when each byte in the memory has an address, but we read/write one word (4 bytes) in one go. For example, if we store two words 0xABCD1234 and 0xEF567890 in the memory starting at the address 0x00000000, the two words will be stored at word addresses 0x00000000 and 0x00000004 respectively. In a system with a little-endian processor like RISC-V, the byte address 0x00000000 will have the content 0x34, byte address 0x00000001 will have the content 0x12, byte address 0x00000003 will have the content 0xAB, byte address 0x00000004 will have the content 0x90, byte address 0x00000007 will have the content 0xEF. 
+The instruction and data memory are WORD addressable (NOT byte-addressable) for our labs. => Endianness doesn't matter for our hardware. Endianness matters only when each byte in the memory has an address, but we read/write one word (4 bytes) in one go. 
+
+For example, if we store two words 0xABCD1234 and 0xEF567890 in the memory starting at the address 0x00000000, the two words will be stored at word addresses 0x00000000 and 0x00000004 respectively. In a system with a little-endian processor like RISC-V, the byte address 0x00000000 will have the content 0x34, byte address 0x00000001 will have the content 0x12, byte address 0x00000003 will have the content 0xAB, byte address 0x00000004 will have the content 0x90, byte address 0x00000007 will have the content 0xEF. 
 
 In CG3207 labs, we use a system that cannot deal with byte addresses such as 0x00000001 and 0x00000002*. We can only send word addresses (addresses which are multiples of 4), i.e., like 0x00000000 and 0x00000004, and get the corresponding 32-bit contents. Hence, for our hardware, endianness doesn't matter*.
 
-*unless you explicitly enable it by adding support for lb/lbu/lh/lhu/sb/sh - optional, later.
+*unless you explicitly enable it by adding support for lb/lbu/lh/lhu/sb/sh - which is optional, and for later assignments.
