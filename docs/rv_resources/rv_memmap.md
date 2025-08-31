@@ -17,15 +17,15 @@ Assuming default memory configuration, IROM_DEPTH_BITS = DMEM_DEPTH_BITS = 9.
 | 0xFFFF000C                  | WO (Write Only) | UART_TX                   | UART Transmit (output, to display). Only LSByte is writeable. Same settings as RX|
 | 0xFFFF0020                  | WO              | OLED_COL                  | The OLED pixel column index, between 0 and 95.|
 | 0xFFFF0024                  | WO              | OLED_ROW                  | The OLED pixel row index, between 0 and 63.|
-| 0xFFFF0028                  | WO              | OLED_DATA                 |Please see the [peripherals](peripherals.md) page for details on choosing OLED data format via OLED_CTRL register.|
-| 0xFFFF002C                  | WO              | OLED_CTRL                 ||
-| 0xFFFF0040                  | RO              | ACCEL_DATA                | Please see the [peripherals](peripherals.md) page for details on accelerometer data format.|
+| 0xFFFF0028                  | WO              | OLED_DATA                 |Please see the [peripherals](peripherals.md#oled) page for details on choosing OLED data format via OLED_CTRL register.|
+| 0xFFFF002C                  | WO              | OLED_CTRL                 | Controls OLED data format and modes of operation.|
+| 0xFFFF0040                  | RO              | ACCEL_DATA                | Please see the [peripherals](peripherals.md#accelerometer) page for details on accelerometer data format.|
 | 0xFFFF0044                  | RO              | ACCEL_DREADY              | A new reading is available if the LSBit of this register is set. Not necessary to check this if ACCEL_DATA is read at a low frequency (a few times a second).|
 | 0xFFFF0060                  | WO              | LED                       | LED[7:0]. Only the least significant 8 bits written to this location are used. LED[8] is used to show the divided clock. LED[15:9] shows PC[8:2]. PC[1:0] will always be 0 and hence not shown.|
 | 0xFFFF0064                  | RO              | DIP                       | DIP switches. Only the least significant 16 bits read from this location are valid, corresponding to SW[15:0].|
 | 0xFFFF0068                  | RO              | PB                        | PushButton switches. [2:0] →  BTNL, BTNC, BTNR. Only the least significant 3 bits read from this location are valid. BTND is used as RESET and BTNU is used as PAUSE.|
 | 0xFFFF0080                  | WO              | SEVENSEG                  | 7-Segment LED display. The data written to this location will appear as an 8-digit hexadecimal number on the display. For the Basys 3 board, the two half-words will keep displaying in alternation.|
-| 0xFFFF00A0                  | RO              | CYCLECOUNT                ||
+| 0xFFFF00A0                  | RO              | CYCLECOUNT                |Cycles elapsed since the system came out of reset.|
 
 
 #### Table 1: Memory map summary
