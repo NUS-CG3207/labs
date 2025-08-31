@@ -42,7 +42,7 @@ To make the most of the labs, we recommend doing some reading before you come fo
 | 1   | [Familiarisation with HDL/FPGA and Assembly Language](asst_manuals/Asst_01/Asst_01.md). <br> Omae wa mou shindeiru.    | 10     | Individual exercise   |
 | 2   | [Basic CPU design](asst_manuals/Asst_02/Asst_02.md).   <br> All your base are belong to us.                            | 30     | Teams of 2 or 3 students  |
 | 3   | [ALU Design](asst_manuals/Asst_03/Asst_03.md).  <br> Billions of blue blistering barnacles.                            | 20+5$  | Teams of 2 or 3 students  |
-| 4   | [Advanced CPU design](asst_manuals/Asst_03/Asst_04.md).  <br>   It was the best of times, it was the worst of times.   | 15+10$ | Teams of 2 or 3 students  |
+| 4   | [Advanced CPU design](asst_manuals/Asst_04/Asst_04.md).  <br>   It was the best of times, it was the worst of times.   | 15+10$ | Teams of 2 or 3 students  |
 |     |**Total**                                                                                                		       | 90     | = 45% of the module grade     |
 
 [The lab assignment repository](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates) contains all the files you need to download. Some other useful resources can also be found using the menu on the left of this page.
