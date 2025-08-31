@@ -1,7 +1,9 @@
 
-# UART and RealTerm
+# Advanced Peripherals
 
-## UART Details
+## UART
+
+### UART Details
 
 In the following lines, 'read's and 'write's are from the perspective of the RISC-V processor (assembly language program), and act as 'console in' and 'console out' respectively.
 
@@ -16,7 +18,7 @@ In the following lines, 'read's and 'write's are from the perspective of the RIS
 * In the simulation with UART, setting radix to ASCII could help.
 * Read the instructions in Wrapper.v/vhd before using it.
 
-## Realterm
+### Realterm - Terminal for UART
 
 [Realterm](https://canvas.nus.edu.sg/courses/62251/files/folder/Lab%20Resources?preview=4733363) is an amazing serial monitor program, which could be very useful. You can use this for sending and receiving data through the UART console. Teraterm (used in EE2028) is fine too, just that RealTerm is TeraTerm on steriods. RealTerm needs [.NET framework](https://canvas.nus.edu.sg/courses/62251/files/folder/Lab%20Resources?preview=4733365) to be installed.
 
@@ -33,7 +35,7 @@ RealTerm allows you to send and display data that is not necessarily ASCII. Send
 (to do: Provide a screenshot here illustrating sending bytes, and perhaps even an example assembly language program).
 
 
-# OLED
+## OLED
 
 OLED uses PMOD **B**.
 
@@ -80,7 +82,7 @@ Octal array emitted by the compiler
 Copy-pasted array fix in RARS with .byte declaration
 
 
-## Food for thought
+### Food for thought
 
 * It may be better to use synchronous read and use block RAMs if you have many images. Else, you will quickly run out of LUTs.
 * Image pixels being sent column-wise is advantageous if the conversion tool can give a column-major format for the array. This is because multiplication by 64 is easier than by 96.
@@ -90,7 +92,7 @@ Copy-pasted array fix in RARS with .byte declaration
 * It is not possible to read back what you wrote to the OLED. Something = *OLED_DATA_ADDR does not work. These are memory-mapped peripherals; do not treat like memory. However, it is possible to modify the Wrapper and TOP to accomplish this, but has some issues such as needing 2 clock cycles for a read.
 
 
-# Accelerometer
+## Accelerometer
 
 The accelerometer gives the temperature and X, Y, Z accelerations.  
 ACCEL_DATA is a 32-bit value packing 4 independent 8-bit values <temperature, X, Y, Z> MSB downto LSB.  
@@ -102,7 +104,7 @@ If you want only a specific axis or temperature, use a combination of logical op
 
 ACCEL_DREADY indicates data readiness, which is useful only when attempting to read at a high rate.
 
-# Cycle Counter
+## Cycle Counter
 
 Cycle counter gives the number of processor cycles that have elapsed since the last reset.  
 Cycle counter rolls over at 42 seconds at 100 MHz (CLK_DIV_BITS = 0), but is much longer at lower frequencies.  
