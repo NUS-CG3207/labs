@@ -31,21 +31,21 @@ To make the most of the labs, we recommend doing some reading before you come fo
 
 2. Next, the [prerequisites for the lab](getting_started/setprereq.md). If you have any concerns with these prerequisites, please approach the teaching team as early as possible. The background knowledge outlined in this page is critical for you to do well in this course.
 
-3. Make sure you read [Getting to know your Nexys 4](guides/nexys4.md) and [install Vivado](guides/vivado_install_guide.md) on your personal computer as soon as possible. If you do not have access to a Windows or Linux (preferred) PC, you should try your best to get/borrow one for this course. Vivado does work in Parallels Desktop on a Mac, but this is an expensive piece of software, and not entirely a supported configuration.
+3. Make sure you read [Getting to know your Nexys 4](getting_started/nexys4.md) and [install Vivado](getting_started/vivado_install_guide.md) on your personal computer as soon as possible. If you do not have access to a Windows or Linux (preferred) PC, you should try your best to get/borrow one for this course. Vivado does work in Parallels Desktop on a Mac, but this is an expensive piece of software, and not entirely a supported configuration.
 
-4. Finally, choose an architecture that you want to work with for the labs. You may choose between RISC-V (recommended), or ARM (deprecated, not well supported by teaching team). This might also be a good time to form teams of two to three people for labs 2, 3, and 4. Note that Lab 1 will be an individual exercise, and you will not be assessed as a team - though, of course, we encourage you to work together (academically honestly, of course - no copying or direct sharing of work, please).
+4. Finally, choose an architecture that you want to work with for the labs. You may choose between RISC-V (recommended), or ARM (deprecated, not well-supported by teaching team). This might also be a good time to form teams of two to three people for labs 2, 3, and 4. Note that Lab 1 will be an individual exercise, and you will not be assessed as a team - though, of course, we encourage you to work together (academically honestly, of course - no copying or direct sharing of work, please).
 
 ## Lab outline
 
 | Lab | Description                                                                                                 | Marks  | Remarks                   |
 |-----|-------------------------------------------------------------------------------------------------------------|--------|---------------------------|
-| 1   | [Familiarisation with HDL/FPGA and Assembly Language](manuals/01/lab_01.md). <br> Omae wa mou shindeiru.    | 10     | Individual exercise       |
-| 2   | [Basic CPU design](manuals/02/lab_02.md).   <br> All your base are belong to us.                            | 30     | Teams of 2 or 3 students  |
-| 3   | [ALU Design](manuals/03/lab_03.md).  <br> Billions of blue blistering barnacles.                            | 20+5$  | Teams of 2 or 3 students  |
-| 4   | [Advanced CPU design](manuals/04/lab_04.md).  <br>   It was the best of times, it was the worst of times.   | 15+10$ | Teams of 2 or 3 students  |
-|     |**Total**                                                                                                    | 90     | = 45% of the module grade |
+| 1   | [Familiarisation with HDL/FPGA and Assembly Language](asst_manuals/Asst_01/Asst_01.md). <br> Omae wa mou shindeiru.    | 10     | Individual exercise   |
+| 2   | [Basic CPU design](asst_manuals/Asst_02/Asst_02.md).   <br> All your base are belong to us.                            | 30     | Teams of 2 or 3 students  |
+| 3   | [ALU Design](asst_manuals/Asst_03/Asst_03.md).  <br> Billions of blue blistering barnacles.                            | 20+5$  | Teams of 2 or 3 students  |
+| 4   | [Advanced CPU design](asst_manuals/Asst_03/Asst_04.md).  <br>   It was the best of times, it was the worst of times.   | 15+10$ | Teams of 2 or 3 students  |
+|     |**Total**                                                                                                		       | 90     | = 45% of the module grade     |
 
-[The lab repository](https://github.com/nus-cg3207/labs) contains all the files you need to download. Some other useful resources can also be found using the menu on the left of this page.
+[The lab assignment repository](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates) contains all the files you need to download. Some other useful resources can also be found using the menu on the left of this page.
 
 ## Lab Schedule
 
@@ -64,4 +64,4 @@ To make the most of the labs, we recommend doing some reading before you come fo
 
 ## License
 
- [NUS CG3207 Labs](https://github.com/nus-cg3207/labs) © 2025 by [NUS CG3207 Team](https://github.com/nus-cg3207) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)  
+ [NUS CG3207 Lab Assignments](https://github.com/nus-cg3207/labs) © 2025 by [NUS CG3207 Team](https://github.com/nus-cg3207) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)  
