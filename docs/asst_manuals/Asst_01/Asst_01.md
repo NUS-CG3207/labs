@@ -32,7 +32,7 @@ The goal of this task is to get familiar with the [RISC-V assembler/simulator](.
 
 We assume that the LEDs on this system are mapped to address [`0xFFFF0060`]("`0xC00` for ARM"). This means that when we write to this memory address using [`sw`]("`STR` for ARM"), the least significant 16 bits of whatever data we write to this address is shown on the LEDs. For example, if we write `0xF0F0`, the first four LEDs from the left will be lit, then the next four will be unlit, the next four lit, and the last four unlit.
 
-Similarly, we assume that the switches are mapped to address [`0xFFFF0064`]("`0xC04` for ARM"). This means that when we read data from this memory address using [`lw`]("`LDR` for ARM"), the least significant 16 bits of data read will correspond to the state of the switches. For example, if the switches are alternating between on (up) and off (down), with the first switch from the left being on, the data read will be `0xAAAA`.
+Similarly, we assume that the DIP switches are mapped to address [`0xFFFF0064`]("`0xC04` for ARM"). This means that when we read data from this memory address using [`lw`]("`LDR` for ARM"), the least significant 16 bits of data read will correspond to the state of the switches. For example, if the switches are alternating between on (up) and off (down), with the first switch from the left being on, the data read will be `0xAAAA`.
 
 ### Task instructions
 
