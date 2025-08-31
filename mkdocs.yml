@@ -37,12 +37,12 @@ extra:
 
 nav:
   - Home: index.md
-  - Preparing for labs:
+  - Getting Started:
     - How to use this website: getting_started/howto.md
     - Lab Prerequisites: getting_started/prereq.md
     - Getting to know your Nexys 4: getting_started/nexys4.md
     - Installation Guide for Vivado: getting_started/vivado_install_guide.md
-  - Lab manuals:
+  - Assignment manuals:
     - Assignment 1 [Weeks 4-5]: asst_manuals/Asst_01/Asst_01.md
     - Assignment 2 [Weeks 5-7]: asst_manuals/Asst_02/Asst_02.md
     - Assignment 3 [Weeks 7-9]: asst_manuals/Asst_03/Asst_03.md
