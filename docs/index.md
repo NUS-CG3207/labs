@@ -27,9 +27,9 @@ You will learn:
 
 To make the most of the labs, we recommend doing some reading before you come for your first session.
 
-1. First, the page on [how to use this website](guides/howto.md). Pay special attention to the section on "How to get help", as it is very important.
+1. First, the page on [how to use this website](getting_started/howto.md). Pay special attention to the section on "How to get help", as it is very important.
 
-2. Next, the [prerequisites for the lab](prereq.md). If you have any concerns with these prerequisites, please approach the teaching team as early as possible. The background knowledge outlined in this page is critical for you to do well in this course.
+2. Next, the [prerequisites for the lab](getting_started/setprereq.md). If you have any concerns with these prerequisites, please approach the teaching team as early as possible. The background knowledge outlined in this page is critical for you to do well in this course.
 
 3. Make sure you read [Getting to know your Nexys 4](guides/nexys4.md) and [install Vivado](guides/vivado_install_guide.md) on your personal computer as soon as possible. If you do not have access to a Windows or Linux (preferred) PC, you should try your best to get/borrow one for this course. Vivado does work in Parallels Desktop on a Mac, but this is an expensive piece of software, and not entirely a supported configuration.
 
