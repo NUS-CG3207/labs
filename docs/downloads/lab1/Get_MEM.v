@@ -14,11 +14,11 @@ module Get_MEM(
     output upper_lower);      	// 1-bit signal rerequied for LEDs, indicating which half of the Memory data is displaying on LEDs
 								// upper_lower = 1 to display upper half of the Memory data on LEDs
     
-// declare INSTR_MEM and DATA_CONST_MEM
-reg [31:0] INSTR_MEM [0:127];
-reg [31:0] DATA_CONST_MEM [0:127];
+// declare IROM and DMEM
+reg [31:0] IROM [0:127];
+reg [31:0] DMEM [0:127];
 
-// declare indics of INSTR_MEM and DATA_CONST_MEM
+// declare indics of IROM and DMEM
 reg [8:0] addr;
 reg [8:0] i, j;
 
