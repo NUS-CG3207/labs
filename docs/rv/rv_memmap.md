@@ -10,32 +10,22 @@ Assuming default memory configuration, IROM_DEPTH_BITS = DMEM_DEPTH_BITS = 9.
 | Address                     | Attributes      | DESCRIPTION                                                                                                                                                                                                                                        |
 |-----------------------------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 0x00000000 to 0x000001FC    | RO (Read Only)  | Instruction memory (IROM). 128 words (0x200 bytes) - total number of instructions should not exceed this (127 excluding the last line 'halt B halt'). Word addressable - only multiples of 4 are valid addresses. This might cause warnings about 2 unused bits, but that's ok.                                                                                     |
-| 0x00002000 to 0x000021FC    | RW (See notes below)              | Data memory (DMEM). 128 words (0x200 bytes) - Total number of constants+variables should not exceed this. Word addressable - only multiples of 4 are valid addresses.                                                                                          |
-| 0x00                  | WO (Write Only) | LED[7:0]. Only the least significant 8 bits written to this location are used. LED[8] is used to show the divided clock. LED[15:9] shows PC[8:2]. PC[1:0] will always be 0 and hence not shown.                                                    |
-| 0x04                  | RO              | DIP switches. Only the least significant 16 bits read from this location are valid, corresponding to SW[15:0].                                                                                                                                     |
-| 0x08                  | RO              | PushButton switches. [2:0] →  BTNL, BTNC, BTNR. Only the least significant 3 bits read from this location are valid. BTND is used as RESET and BTNU is used as PAUSE.                                                                              |
-| 0x0C                  | WO              | 7-Segment LED display. The data written to this location will appear as an 8-digit hexadecimal number on the display. For the Basys 3 board, the two half-words will keep displaying in alternation.                                          |
-| 0x10                  | RW              | UART Console (both in and out). UART Settings : Baud Rate 115200. 8-bit. No Parity. 1 Stop bit. More details given below. Only the least significant 8 bits in this location can be read/written. UART and RealTerm is a good console application. |
-| 0x14                  | RO              | CONSOLE_IN_valid.                                                                                                                                                                                                                                  |
-| 0x18                  | RO              | CONSOLE_OUT_ready.                                                                                                                                                                                                                                 |
-To Do: Put into table above.
-
-Memory-mapped peripheral register offsets - mostly not compliant with any standards (UART registers have the same address as the keyboard/display simulator of RARS).
-UART_RX_VALID_OFF	0x00 //RO, status bit
-UART_RX_OFF 		0x04 //RO
-UART_TX_READY_OFF	0x08 //RO, status bit
-UART_TX_OFF 		0x0C //WO
-OLED_COL_OFF 		0x20 //WO
-OLED_ROW_OFF 		0x24 //WO
-OLED_DATA_OFF 		0x28 //WO
-OLED_CTRL_OFF 		0x2C //WO 
-ACCEL_DATA_OFF 		0x40 //RO
-ACCEL_DREADY_OFF 	0x44 //RO, status bit
-LED_OFF 			0x60 //WO
-DIP_OFF 			0x64 //RO
-PB_OFF  			0x68 //RO
-SEVENSEG_OFF 		0x80 //WO
-CYCLECOUNT_OFF 		0xA0 //RO
+| 0x00002000 to 0x000021FC    | RW (See notes below)              | Data memory (DMEM). 128 words (0x200 bytes) - Total number of constants+variables should not exceed this. Word addressable - only multiples of 4 are valid addresses.
+| 0xFFFF0000                  | RO              | UART_RX_VALID. Data can be read from UART_RX (is valid) only when the least significant bit of this register is set. |
+| 0xFFFF0004                  | RO              | UART_RX. UART Transmit (input, from keyboard). UART Settings : Baud Rate 115200. 8-bit. No Parity. 1 Stop bit. Only LSB is readable. RealTerm is a good console application.|
+| 0xFFFF0008                  | RO              | UART_TX_READY. Data can be written to UART_TX only when the least significant bit of this register is set|
+| 0xFFFF000C                  | WO              | UART_TX. UART Transmit (output, to display). Only LSB is writeable. Same settings as RX|
+| 0xFFFF0020                  | WO              | OLED_COL. Please see the [peripherals](peripherals.md) page for details on OLED.|
+| 0xFFFF0024                  | WO              | OLED_ROW |
+| 0xFFFF0028                  | WO              | OLED_DATA|
+| 0xFFFF002C                  | WO              | OLED_CTRL|
+| 0xFFFF0040                  | RO              | ACCEL_DATA. Please see the [peripherals](peripherals.md) page for details on accelerometer|
+| 0xFFFF0044                  | RO              | ACCEL_DREADY|
+| 0xFFFF0060                  | WO              | LED. LED[7:0]. Only the least significant 8 bits written to this location are used. LED[8] is used to show the divided clock. LED[15:9] shows PC[8:2]. PC[1:0] will always be 0 and hence not shown.|
+| 0xFFFF0064                  | RO              | DIP. DIP switches. Only the least significant 16 bits read from this location are valid, corresponding to SW[15:0].|
+| 0xFFFF0068                  | RO              | PB. PushButton switches. [2:0] →  BTNL, BTNC, BTNR. Only the least significant 3 bits read from this location are valid. BTND is used as RESET and BTNU is used as PAUSE.|
+| 0xFFFF0080                  | WO              | SEVENSEG. 7-Segment LED display. The data written to this location will appear as an 8-digit hexadecimal number on the display. For the Basys 3 board, the two half-words will keep displaying in alternation.|
+| 0xFFFF00A0                  | RO              | CYCLECOUNT|
 
 
 #### Table 1: Memory map summary
