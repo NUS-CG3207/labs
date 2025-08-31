@@ -36,7 +36,7 @@ Similarly, we assume that the switches are mapped to address [`0xFFFF0064`]("`0x
 
 ### Task instructions
 
-In this task, we will simulate the user providing some input to the switches, and observe the provided assembly program display said input on the LEDs. The first step, of course, is to download the [RISC-V assembly sample](../../code_templates/Asst_01/riscv_assembly_sample.asm) program or the [ARM assembly sample](../../code_templates/Asst_01/arm_assembly_sample.s) program. Then, we can open our sample file in RARS or Keil MDK and start simulating.
+In this task, we will simulate the user providing some input to the switches, and observe the provided assembly program display said input on the LEDs. The first step, of course, is to download the [RISC-V assembly sample](../../code_templates/Asst_01/DIP_to_LED.asm) program or the [ARM assembly sample](../../code_templates/Asst_01/arm_assembly_sample.s) program. Then, we can open our sample file in RARS or Keil MDK and start simulating.
 
 === "RISC-V (RARS)"
 
@@ -78,7 +78,7 @@ Simulate a 'Hello World' Program.
 There are 2 versions provided - 
 
 * [Hello World](../../code_templates/Asst_01/HelloWorld.asm) that doesn't use subroutines and can be done using instructions implemented in Assignment 2 and 
-* [Hello World with subroutine](../../code_templates/Asst_01/HelloWorld.asm) that use subroutines and requires full `jal` and `jalr` support.
+* [Hello World with subroutine](../../code_templates/Asst_01/HelloWorld_jal_jalr.asm) that use subroutines and requires full `jal` and `jalr` support.
 
 Since we are using a simulator now and isn't worried about processor capabilities, you can simulate either or both.
 Read the UART peripheral details to understand the 4 registers involved.

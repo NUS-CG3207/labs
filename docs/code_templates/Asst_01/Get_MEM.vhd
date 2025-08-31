@@ -12,7 +12,7 @@ entity Get_MEM is
 -- fundamental clock 100MHz
 -- enable signal to read the next content
 -- 32 bits memory contents for 7-segments display
--- 1-bit signal rerequied for LEDs, indicating which half of the Memory data is displaying on LEDs
+-- 1-bit signal required for LEDs, indicating which half of the Memory data is displaying on LEDs
     Port ( clk : in std_logic;
            enable : in std_logic;
            data : out std_logic_vector(31 downto 0);
@@ -21,10 +21,10 @@ entity Get_MEM is
 end Get_MEM;
 
 architecture Behavioral of Get_MEM is
-	-- declare address for INSTR_MEM and DATA_CONST_MEM
+	-- declare address for IROM and DMEM
     signal addr : std_logic_vector(8 downto 0) := (others => '0');
 	
-	-- declare INSTR_MEM and DATA_CONST_MEM
+	-- declare IROM and DMEM
     type MEM_128x32 is array (0 to 127) of std_logic_vector (31 downto 0); 
     
     ----------------------------------------------------------------
@@ -32,23 +32,18 @@ architecture Behavioral of Get_MEM is
     ----------------------------------------------------------------
 
 	
-	
-	
-	
-	
-	
+	    signal IROM : MEM_128x32 := (
+        -- Load the instruction memory from the memory file "IROM.mem"
+        );
 	
 	
     ----------------------------------------------------------------
-    -- Data (Constant) Memory
+    -- Data Memory
     ----------------------------------------------------------------
 
-
-
-
-
-
-
+        signal DMEM : MEM_128x32 := (
+            -- Load the data memory from the memory file "DMEM.mem"
+        );
 
 	
 begin

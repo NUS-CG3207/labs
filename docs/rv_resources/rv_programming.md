@@ -4,7 +4,7 @@ Use RARS assembler / simulator which can be downloaded [from their GitHub reposi
 
 The .jar program can be run by double-clicking it. It is portable across operating systems and needs no installation. It is a very simple and easy to use application. Linux users may need to use `java -jar filename.jar` - note the `-jar` option required to run a Java archive. 
 
-You can use [.asm](../downloads/lab1/DIP_to_LED.asm) to get started. Download it, and open with RARS - **File** **\>** **Open**. Note : RARS assumes that SP(x2) and GP(x3) are initialized to 0x3ffc and 0x1800 respectively, and other registers are initialized to 0s. In the register file provided in the templates, only register zero (x0) is guaranteed to be 0, and others are uninitialized. You need to write a value to all registers other than x0 before you read them.
+You can use [RISC-V assembly sample](../code_templates/Asst_01/DIP_to_LED.asm) to get started. Download it, and open with RARS - **File** **\>** **Open**. Note : RARS assumes that SP(x2) and GP(x3) are initialized to 0x3ffc and 0x1800 respectively, and other registers are initialized to 0s. In the register file provided in the templates, only register zero (x0) is guaranteed to be 0, and others are uninitialized. You need to write a value to all registers other than x0 before you read them.
 
 **Settings > Memory Configuration >** Make sure **Default** is selected > **Apply and Close**.
 It is also possible to select other configurations such as **Compact, Text at Address 0**, but needs appropriate changes in your Wrapper, ProgramCounter, and C program.
