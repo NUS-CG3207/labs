@@ -20,7 +20,7 @@ To comfortably complete Assignment 1 (and 2 and 3 and 4, for that matter), solid
 
 If you are not confident of your Vivado-wrangling and FPGA-whispering capabilities, you should go to [the CS2100DE website](https://nus-cs2100de.github.io/labs) and attempt Lab 1 through Lab 4.
 
-If you have already read through, and followed the instructions in [Lab Prerequisites](../../prereq.md), as you should have done, then congratulations - you are ready for the tasks ahead! If not, now is the time to do so.
+If you have already read through, and followed the instructions in [Lab Prerequisites](../../getting_started/prereq.md), as you should have done, then congratulations - you are ready for the tasks ahead! If not, now is the time to do so.
 
 This task is not graded, but necessary to be able to complete the assignments meaningfully. Please do not take it lightly.
 
@@ -28,7 +28,7 @@ This task is not graded, but necessary to be able to complete the assignments me
 
 ### Task overview
 
-The goal of this task is to get familiar with the [RISC-V assembler/simulator](../../rv/rv_programming.md) or [ARM assembler/simulator](../../ARM/arm_programming.md) by simulating a sample program. We will simulate a system with memory-mapped input/output (MMIO).
+The goal of this task is to get familiar with the [RISC-V assembler/simulator](../../rv_resources/rv_programming.md) or [ARM assembler/simulator](../../ARM/arm_programming.md) by simulating a sample program. We will simulate a system with memory-mapped input/output (MMIO).
 
 We assume that the LEDs on this system are mapped to address [`0xFFFF0060`]("`0xC00` for ARM"). This means that when we write to this memory address using [`sw`]("`STR` for ARM"), the least significant 16 bits of whatever data we write to this address is shown on the LEDs. For example, if we write `0xF0F0`, the first four LEDs from the left will be lit, then the next four will be unlit, the next four lit, and the last four unlit.
 
