@@ -20,7 +20,7 @@ In the following lines, 'read's and 'write's are from the perspective of the RIS
 
 ### Realterm - Terminal for UART
 
-[Realterm](https://canvas.nus.edu.sg/courses/62251/files/folder/Lab%20Resources?preview=4733363) is an amazing serial monitor program, which could be very useful. You can use this for sending and receiving data through the UART console. Teraterm (used in EE2028) is fine too, just that RealTerm is TeraTerm on steriods. RealTerm needs [.NET framework](https://canvas.nus.edu.sg/courses/62251/files/folder/Lab%20Resources?preview=4733365) to be installed.
+[Realterm](https://sourceforge.net/projects/realterm/files/Realterm/2.0.0.70/) is an amazing serial monitor program, which could be very useful. You can use this for sending and receiving data through the UART console. Teraterm (used in EE2028) is fine too, just that RealTerm is TeraTerm on steriods. RealTerm needs .NET framework to be installed.
 
 ![](realterm_setting1.png)
 
