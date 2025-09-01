@@ -64,10 +64,10 @@ IROM_DEPTH_BITS = 9. Changing this will need changes to Wrapper.v.
 
 ### Endianness
 
-The instruction and data memory are WORD addressable (NOT byte-addressable) for our labs. => Endianness doesn't matter for our hardware. Endianness matters only when each byte in the memory has an address, but we read/write one word (4 bytes) in one go. 
+The instruction and data memory are WORD addressable (NOT byte-addressable) for our labs. => Endianness doesn't matter for our hardware. Endianness matters only when each byte in the memory has an address, but we read/write one word (4 bytes) in one go.
 
 For example, if we store two words 0xABCD1234 and 0xEF567890 in the memory starting at the address 0x10010000, the two words will be stored at word addresses 0x10010000 and 0x10010004 respectively. In a system with a little-endian processor like RISC-V, the byte address 0x10010000 will have the content 0x34, byte address 0x10010001 will have the content 0x12, byte address 0x10010003 will have the content 0xAB, byte address 0x10010004 will have the content 0x90, byte address 0x10010007 will have the content 0xEF.
 
-In CG3207 labs, we use a system that cannot deal with byte addresses such as 0x10010001 and 0x10010002*. We can only send word addresses (addresses which are multiples of 4), i.e., like 0x10010000 and 0x10010004, and get the corresponding 32-bit contents. Hence, for our hardware, endianness doesn't matter*.
+In CG3207 labs, we use a system that cannot deal with byte addresses such as 0x10010001 and 0x10010002\*. We can only send word addresses (addresses which are multiples of 4), i.e., like 0x10010000 and 0x10010004, and get the corresponding 32-bit contents. Hence, for our hardware, endianness doesn't matter*.
 
-*Unless you explicitly enable it by adding support for `lb`/`lbu`/`lh`/`lhu`/`sb`/`sh` - which is optional, and for later assignments.
+\*Unless you explicitly enable it by adding support for `lb`/`lbu`/`lh`/`lhu`/`sb`/`sh` - which is optional, and for later assignments.
