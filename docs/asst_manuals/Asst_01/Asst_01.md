@@ -1,7 +1,7 @@
 # Assignment 1: Familiarisation with Assembly Language and HDL/FPGA
 
-!!! danger "Work in progress!"
-    This document is a draft. It may change until **31 August 2025**, after which no further significant changes will be made. Corrections and clarifications may still be made after this date. 
+!!! success "Final"
+    This page is now final. Updates will be minimal, and will be highlighted. 
 
 !!! info
     Assignment 1 consists of **2** tasks, worth **5** points each, for a total of **10 points**.
@@ -43,7 +43,7 @@ In this task, we will simulate the user providing some input to the switches, an
     Refer to [Lab 4 from CS2100DE](https://nus-cs2100de.github.io/labs/manuals/04/lab_04/#getting-started-with-rars) for some help on how to open a RISC-V assembly file in RARS. The guide is written for a different sample program, but the steps to open, assemble and run the code are identical.
 
     !!! warning
-        Remember to set the memory configuration correctly - from "Settings" -> "Memory Configuration", choose "Compact, Text at Address 0". Setting this correctly is **very important** - our simulation for this assignment depends on this memory configuration being selected, and our CPU design later will also assume this memory configuration.
+        Remember to set the memory configuration correctly - from "Settings" -> "Memory Configuration", choose "Default". Setting this correctly is **very important** - our simulation for this assignment depends on this memory configuration being selected, and our CPU design later will also assume this memory configuration.
     
     Once you have assembled and begun to run the RISC-V code line-by-line, before executing line 28, simulate changing the input on the switches by modifying the memory at the address mapped to the DIP switches (`0xFFFF0064`). Then, continue running the code, including lines 28 and 29, one line at a time, until the memory at the address for the LEDs (`0xFFFF0060`) changes to reflect the new data. 
 
