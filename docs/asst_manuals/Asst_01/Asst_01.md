@@ -45,7 +45,7 @@ In this task, we will simulate the user providing some input to the switches, an
     !!! warning
         Remember to set the memory configuration correctly - from "Settings" -> "Memory Configuration", choose "Default". Setting this correctly is **very important** - our simulation for this assignment depends on this memory configuration being selected, and our CPU design later will also assume this memory configuration.
     
-    Once you have assembled and begun to run the RISC-V code line-by-line, before executing line 28, simulate changing the input on the switches by modifying the memory at the address mapped to the DIP switches (`0xFFFF0064`). Then, continue running the code, including lines 28 and 29, one line at a time, until the memory at the address for the LEDs (`0xFFFF0060`) changes to reflect the new data. 
+    Once you have assembled and begun to run the RISC-V code line-by-line, before executing line 48, simulate changing the input on the switches by modifying the memory at the address mapped to the DIP switches (`0xFFFF0064`). Then, continue running the code, including lines 48 and 49, one line at a time, until the memory at the address for the LEDs (`0xFFFF0060`) changes to reflect the new data. 
 
     ![Screenshot of addresses in RARS](rars_address_ss.png)
 
