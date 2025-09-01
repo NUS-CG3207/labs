@@ -103,7 +103,7 @@ A block diagram of the system we want to implement
 
 ///
 
-`IROM` and `DMEM` are ROMs with 128 words each. We will use RARS to dump our assembly program into these ROMs, so `IROM` will hold the instructions of the assembly program (in machine code, of course), while `DMEM` will hold the constants and initialised variables we declare in the program. In later assignments, the `DMEM` hardware we implement will be writeable, but for now, we assume that it is not, and hence a 'ROM'. The ROMs are both combinational logic and do not need clocking. Both ROMs are only word-addressable, not byte-addressable.
+`IROM` (`INSTR_MEM` in the figure above) and `DMEM` (`DATA_CONST_MEM` in the figure above) are ROMs with 128 words each. We will use RARS to dump our assembly program into these ROMs, so `IROM` will hold the instructions of the assembly program (in machine code, of course), while `DMEM` will hold the constants and initialised variables we declare in the program. In later assignments, the `DMEM` hardware we implement will be writeable, but for now, we assume that it is not, and hence a 'ROM'. The ROMs are both combinational logic and do not need clocking. Both ROMs are only word-addressable, not byte-addressable.
 
 The `Clock_Enable` block generates an `enable` signal, to be used in tandem with the system clock `clk`. A module using this clock enable should, at every edge of `clk`, check if `enable` is high, and only be enabled if it is. 
 
