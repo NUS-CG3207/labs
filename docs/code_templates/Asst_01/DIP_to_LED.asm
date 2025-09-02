@@ -68,12 +68,13 @@ DMEM:
 
 delay_val: .word 4	# a constant, at location DMEM+0x00
 string1:
-.asciz "\r\nWelcome to CG3207..\r\n"	# string, from DMEM+0x4 to DMEM+0x1F (including null character).
-var1: .word	1 		# a statically allocated variable (which can have an initial value, say 1), at location DMEM+0x60
+.asciz "\r\nWelcome to CG3207..\r\n"	# string, from DMEM+0x4 to DMEM+0x1B (including null character). #correction: 0x1B, not 0x1F
+var1: .word	1 		# a statically allocated variable (which can have an initial value, say 1), at location DMEM+0x20
+#correction: 0x20, not 0x60
 # Food for thought: What will be the address of var1 if string1 had one extra character, say  "..." instead of ".."? Hint: words are word-aligned.
 
 .align 9	# To set the address at this point to be 512-byte aligned, i.e., DMEM+0x200
 STACK_INIT:	# Stack pointer can be initialised to this location - DMEM+0x200 (i.e., the address of stack_top)
-			# stack grows downwards, so stack pointer should be decremented when pushing and incremented when popping.Stack can be used for function calls and local variables.
+			# stack grows downwards, so stack pointer should be decremented when pushing and incremented when popping (if the stack is full-descending). Stack can be used for function calls and local variables.
 		# Not allocating any heap, as it is unlikely to be used in this simple program. If we need dynamic memory allocation,we need to allocate memory and imeplement a heap manager.
 #------- <Data Memory ends>													
