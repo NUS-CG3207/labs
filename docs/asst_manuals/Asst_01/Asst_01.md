@@ -110,11 +110,15 @@ The `Clock_Enable` block generates an `enable` signal, to be used in tandem with
 
 `Clock_Enable` takes in the upper and center push buttons as inputs, and uses them as follows:
 
-1. If `btnU` is pressed, `enable` is pulled high at a frequency of 4 Hz. That is, once every 250 milliseconds, `enable` should go high for one edge of `clk`, and then go back low for the next 250 milliseconds.
+1. If `btnU` is pressed, `enable` is pulled high every once every 250 milliseconds, and stays high for one clock cycle. 
+    
+    Example: At t=0 ms, `enable` is high. Then, at the next clock edge, `enable` should be low, and it should remain low until t=250 ms. At t=250 ms, enable should be pulled high. Repeat.  
 
 2. If `btnC` is pressed, `enable` is never pulled high. 
 
-3. If neither `btnU` nor `btnC` are pressed, `enable` is pulled high at a frequency of 1 Hz. That is, once every second, `enable` should go high for one edge of `clk`, and then go back low for the next second.
+3. If neither `btnU` nor `btnC` are pressed, `enable` is pulled high once every 1000 ms (1 second), and stays high for one clock cycle. 
+    
+    Example: At t=0 ms, `enable` is high. Then, at the next clock edge, `enable` should be low, and it should remain low until t=1000 ms. At t=1000 ms, enable should be pulled high. Repeat. 
 
 The 9-bit counter is a sequential block. It uses the system clock `clk` and the clock enable signal `enable` to count up a 9-bit number `addr`. That is, for every positive edge of `clk`, if `enable` is high, the counter should increment by 1. `addr` is the only output of this module.
 
@@ -172,6 +176,55 @@ We need to fill out `Clock_Enable`, `Get_MEM` and `Top_Nexys` to achieve the fun
 The hexadecimal text dump should be saved with a `.mem` file extension. These files can be imported into our Vivado project as design sources, and used to initialise memories using the `$readmemh()` command. 
 
 Do **NOT** use a clock divider, like you may have used in EE2026. They can cause all sorts of issues, since it becomes difficult for the synthesis tool to route the clocks. 
+
+### How to design a clock enable
+
+Here is some example code that may help better illustrate how a clock enable should be implemented. This is just an example, not necessarily something you will be able to just copy/paste and use; but it should give you an idea of how it should be implemented. 
+
+Do **either** of the two depending on your situation. Else, you might have to wait for **2^26 cycles** (for a ~1Hz clock) before you can see the effect of 1 clock edge in simulation! This will take a long long time, and is really unnecessary in the simulation. 
+
+=== "Verilog"
+    ```verilog
+    always @(posedge clk) begin
+        count_fast <= count_fast+1;
+        if(count_fast == 26'h3FFFFFF) begin // EITHER change this to a lower value (say 26'h0000004) for simulation
+            count_slow_enable <= 1'b1;
+        end
+        else begin
+            count_slow_enable <= 1'b0; // OR change this to 1'b1 for simulation
+        end
+    end
+
+    always @(posedge clk) begin
+        if(count_slow_enable) begin
+            count <= count+1;
+        end
+    end 
+    ```
+=== "VHDL"
+    ```VHDL
+    process(clk)
+        variable count_fast :std_logic_vector(25 downto 0):=(others=>'0');
+    begin
+        if clk'event and clk='1' then
+            count_fast := count_fast+1;
+            if count_fast = x"3FFFFFF" then -- EITHER change this to a lower value (say x"0000004") for simulation
+                count_slow_enable <= '1';
+            else
+                count_slow_enable <= '0'; -- OR change this to '1' for simulation;
+            end if;
+        end if;
+    end process;
+    
+    process(clk)
+    begin
+        if clk'event and clk='1' then 
+            if count_slow_enable = '1' then
+                count <= count+1;
+            end if;
+        end if;
+    end process; 
+    ```
 
 ### Simulation
 
