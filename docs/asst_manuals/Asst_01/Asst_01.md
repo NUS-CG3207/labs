@@ -163,7 +163,7 @@ There is no need to add more logic to skip through the empty parts of `IROM` and
 
 We do not care about what happens when the empty/uninitialized parts of `IROM` and `DMEM` are accessed, neither in simulation nor in hardware. It can be all `X` or all `0`, or anything random. The synthesis tool will probably initialize the empty parts to `0` or repeat the valid data to fill the uninitialized parts anyway. In a real computer system, access to these unused parts of memory would be considered illegal anyway, and should never happen in a properly written program. 
 
-### Implementation guide
+### Design guide
 
 Download the template for Assignment 1 from [the labs file repository](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates/Asst_01). Choose the files appropriate for your setup - that is, in your language of preference (Verilog or VHDL), and the constraints file corresponding to the FPGA board model you have. Create a new project and import these files, setting the Top module correctly.
 
@@ -188,13 +188,11 @@ Do **NOT** use a clock divider, like you may have used in EE2026. They can cause
 
 Here is some example code that may help better illustrate how a clock enable should be implemented. This is just an example, not necessarily something you will be able to just copy/paste and use; but it should give you an idea of how it should be implemented. 
 
-Do **either** of the two depending on your situation. Else, you might have to wait for **2^26 cycles** (for a ~1Hz clock) before you can see the effect of 1 clock edge in simulation! This will take a long long time, and is really unnecessary in the simulation. 
-
 === "Verilog"
     ```verilog
     always @(posedge clk) begin
         count_fast <= count_fast+1;
-        if(count_fast == 26'h3FFFFFF) begin // EITHER change this to a lower value (say 26'h0000004) for simulation
+        if(count_fast == 26'h3FFFFFF) begin // EITHER change this to a lower value (say 26'h0000004) for simulation (recommended)
             count_slow_enable <= 1'b1;
         end
         else begin
@@ -242,9 +240,11 @@ Feel free to make your simulation more rigorous by automatically checking test c
 !!! warning
     Do not move on to the next step without writing a good simulation, and making sure the design can pass it! If the simulation doesn't work, there is no chance the hardware will. However, if the simulation does work, the hardware is almost guaranteed to work too. The most common reason for designs that work in simulation not to work on hardware is mistakes in the constraints file, or faulty hardware. 
 
-### Implementation
+Do **either** of the two modifications mentioned as comments in the code in the previous section. Else, you will have to wait for about **2^26 cycles** (for a ~1Hz clock) before you can see the effect of 1 clock edge in simulation! This will take a long long time, and is really unnecessary in the simulation. Do not forget to revert these changes before synthesis and implementation. 
 
-Before starting the implementation process, remember to set up the constraints file correctly. Uncomment the lines corresponding to the pins used - no more, no less. Make sure the names in the constraints file match the inputs and outputs of the `Top_Nexys` module. Then, run Synthesis, Implementation and Generate Bitstream to generate the bitstream to upload to your board. 
+### Constraints
+
+Before run synthesis and implementation, remember to set up the constraints file correctly. Uncomment the lines corresponding to the pins used - no more, no less. Make sure the names in the constraints file match the inputs and outputs of the `Top_Nexys` module. Then, run Synthesis, Implementation and Generate Bitstream to generate the bitstream to upload to your board. 
 
 ## Tips
 
