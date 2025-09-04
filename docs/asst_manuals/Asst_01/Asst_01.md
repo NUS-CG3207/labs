@@ -110,15 +110,18 @@ The `Clock_Enable` block generates an `enable` signal, to be used in tandem with
 
 `Clock_Enable` takes in the upper and center push buttons as inputs, and uses them as follows:
 
-1. If `btnU` is pressed, `enable` is pulled high every once every 250 milliseconds, and stays high for one clock cycle. 
+1. If `btnU` is pressed, `enable` is pulled high every once every 250 milliseconds, and stays high for one clock cycle. Thus, the counter is incremented at 4 Hz.
     
     Example: At t=0 ms, `enable` is high. Then, at the next clock edge, `enable` should be low, and it should remain low until t=250 ms. At t=250 ms, enable should be pulled high. Repeat.  
 
 2. If `btnC` is pressed, `enable` is never pulled high. 
 
-3. If neither `btnU` nor `btnC` are pressed, `enable` is pulled high once every 1000 ms (1 second), and stays high for one clock cycle. 
+3. If neither `btnU` nor `btnC` are pressed, `enable` is pulled high once every 1000 ms (1 second), and stays high for one clock cycle. Thus, the counter is incremented at 1 Hz.
     
     Example: At t=0 ms, `enable` is high. Then, at the next clock edge, `enable` should be low, and it should remain low until t=1000 ms. At t=1000 ms, enable should be pulled high. Repeat. 
+
+!!! tip
+    The counter does **not** need to be exactly 1 Hz or 4 Hz. We will allow some (generous) margin of error. However, when `btnU` is pressed, the counter should be *exactly* 4 times faster than when it isn't pressed. 
 
 The 9-bit counter is a sequential block. It uses the system clock `clk` and the clock enable signal `enable` to count up a 9-bit number `addr`. That is, for every positive edge of `clk`, if `enable` is high, the counter should increment by 1. `addr` is the only output of this module.
 
@@ -155,6 +158,10 @@ The sequence of events expected, if no buttons are pressed, is:
 If `btnU` is pressed, the sequence should be the same, but the interval should be shortened to 250 milliseconds instead of 1 second. The display should not be interrupted or reset, only sped up.
 
 If `btnC` is pressed, the sequence should be paused as long as it is held down, and resume from the same place as soon as it is released.
+
+There is no need to add more logic to skip through the empty parts of `IROM` and `DMEM`. The design can cycle through the whole memory. 
+
+We do not care about what happens when the empty/uninitialized parts of `IROM` and `DMEM` are accessed, neither in simulation nor in hardware. It can be all `X` or all `0`, or anything random. The synthesis tool will probably initialize the empty parts to `0` or repeat the valid data to fill the uninitialized parts anyway. In a real computer system, access to these unused parts of memory would be considered illegal anyway, and should never happen in a properly written program. 
 
 ### Implementation guide
 
