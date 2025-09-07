@@ -120,8 +120,11 @@ The `Clock_Enable` block generates an `enable` signal, to be used in tandem with
     
     Example: At t=0 ms, `enable` is high. Then, at the next clock edge, `enable` should be low, and it should remain low until t=1000 ms. At t=1000 ms, enable should be pulled high. Repeat. 
 
+4. <span style="color: brown;">The system behaviour when both `btnU` and `btnC` are pressed together is unspecified. It is left to your choice.</span>
+
 !!! tip
-    The counter does **not** need to be exactly 1 Hz or 4 Hz. We will allow some (generous) margin of error. However, when `btnU` is pressed, the counter should be *exactly* 4 times faster than when it isn't pressed. 
+    The counter does **not** need to be exactly 1 Hz or 4 Hz. We will allow some (generous) margin of error. <span style="color: brown;">
+Using clock enable thresholds that are powers of two could make the hardware simpler, if done properly (How?)</span>. However, when `btnU` is pressed, the counter should be *exactly* 4 times faster than when it isn't pressed. 
 
 The 9-bit counter is a sequential block. It uses the system clock `clk` and the clock enable signal `enable` to count up a 9-bit number `addr`. That is, for every positive edge of `clk`, if `enable` is high, the counter should increment by 1. `addr` is the only output of this module.
 
@@ -165,7 +168,8 @@ We do not care about what happens when the empty/uninitialized parts of `IROM` a
 
 ### Design guide
 
-Download the template for Assignment 1 from [the labs file repository](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates/Asst_01). Choose the files appropriate for your setup - that is, in your language of preference (Verilog or VHDL), and the constraints file corresponding to the FPGA board model you have. Create a new project and import these files, setting the Top module correctly.
+Download the template for Assignment 1 from [the labs file repository](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates/Asst_01). Choose the files appropriate for your setup - that is, in your language of preference (Verilog or VHDL), and the constraints file corresponding to the FPGA board model you have. Create a new project and import these files, setting the Top module correctly. <span style="color: brown;"> Note that using these templates is not mandatory; you may wish to implement completely on your own. </span>
+
 
 !!! tip
 
@@ -235,12 +239,30 @@ Here is some example code that may help better illustrate how a clock enable sho
 
 Simulation is required for this assignment, but nothing too complicated - a simple simulation of the `Top_Nexys` module will suffice. The simulation should cover all possible input cases. Needless to say, the simulation should be show the correct result!
 
+<span style="color: brown;">
+For more info on simulation controls, see the [CS2100DE section on simulation](https://nus-cs2100de.github.io/labs/manuals/01/lab_01/#running-simulation). These are extremely handy once you figure out how to use them. Similar in spirit to using a software debugger, but with notable differences given HDLs have very different semantics.</span>
+
+<span style="color: brown;">
+For simulation, checking the raw 32-bit `data[31:0]` to the Seven_Seg module will suffice, as making sense of anodes and cathodes, especially given the time-division multiplexing used, is hard. It can be checked by dragging it into the waveform window; there is no need to make it as a port of the top level module just for simulation purposes. To see data, go to scope window > testbench_name > uut, and then drag `data` signal from object window to the waveform window (scope and object windows are to the immediate left of the waveform window). Need to rerun (no need to relaunch) the simulation to see the `data` waveform. Save the waveform configuration file (Ctrl+S) and add it to the project (it will ask whether you wish to add to project when you save), and it'll be available when you stimulate in the future.
+</span>
+
 Feel free to make your simulation more rigorous by automatically checking test cases, and using $error() to halt the simulation if any don't pass. This is not required, but will make for an impressive demo. 
+
 
 !!! warning
     Do not move on to the next step without writing a good simulation, and making sure the design can pass it! If the simulation doesn't work, there is no chance the hardware will. However, if the simulation does work, the hardware is almost guaranteed to work too. The most common reason for designs that work in simulation not to work on hardware is mistakes in the constraints file, or faulty hardware. 
 
 Do **either** of the two modifications mentioned as comments in the code in the previous section. Else, you will have to wait for about **2^26 cycles** (for a ~1Hz clock) before you can see the effect of 1 clock edge in simulation! This will take a long long time, and is really unnecessary in the simulation. Do not forget to revert these changes before synthesis and implementation. 
+
+<span style="color: brown;">
+We can get a very very good sense of whether it will work on hardware by doing a post-synthesis functional simulation by Simulate > Post-synthesis functional simulation. Obviously, synthesis should be done before this, but further steps such as implementation need not be done.
+The same testbench can be used, so it requires zero extra effort. However, debugging is much harder than it is with behavioral simulation as some of the internal signals are optimized away and/or renamed (still easier than try to debug directly on hardware).
+As with standard simulation, use a low value for clock enable threshold, so that you don't have to run sim for very long to see results. For actual hardware implementation, change the threshold to the original high value, run synthesis and implementation.
+</span>
+
+<span style="color: brown;">
+Simulation (especially when done at the top/system level) is meant to simulate a real life user interacting with the system. Say, you plan to press `btnU` 3 seconds after powering on, and release it 2 seconds after pressing. In your testbench initial block, delay by 3 x threshold_count x 10 ns (#480 if the threshold is 16), assert `btnU`, wait for 320 ns (#320), deassert `btnU`.
+</span>
 
 ### Constraints
 
@@ -249,7 +271,7 @@ Before run synthesis and implementation, remember to set up the constraints file
 ## Tips
 
 * Chapter 2 from the lecture notes contains important design guidelines - these should be followed religiously. In particular, Chapter 2B explains how to write synthesisable HDL code, which is very useful for making designs that work optimally and as intended.
-* Clock enables should be used if the clock needs only be active in certain situations. Clock dividers should be avoided.
+* Clock enables should be used if the clock needs only be active in certain situations, i.e., to get the effect of a slow clock, e.g., to change data on LEDs. Clock dividers should be avoided.
 * Instead of making the whole design in one go and praying that it synthesises correctly, we can always set individual modules as Top and synthesise one by one. This makes errors and bugs much easier to detect and solve.
 * "View Elaborated Design" -> "Schematic" is a very powerful tool to visualise the circuit generated. Liberal use of the schematic can help prevent bugs and unexpected design oddities.
 * Similarly, the synthesis report can contain some hints on where things are going wrong. We can check to see if the primitives being inferred make sense for our design.
