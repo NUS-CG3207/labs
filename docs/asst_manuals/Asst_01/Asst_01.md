@@ -117,8 +117,10 @@ The `Clock_Enable` block generates an `enable` signal, to be used in tandem with
 2. If `btnC` is pressed, `enable` is never pulled high. 
 
 3. If neither `btnU` nor `btnC` are pressed, `enable` is pulled high once every 1000 ms (1 second), and stays high for one clock cycle. Thus, the counter is incremented at 1 Hz.
-    
-    Example: At t=0 ms, `enable` is high. Then, at the next clock edge, `enable` should be low, and it should remain low until t=1000 ms. At t=1000 ms, enable should be pulled high. Repeat. 
+
+    Example: At t=0 ms, `enable` is high. Then, at the next clock edge, `enable` should be low, and it should remain low until t=1000 ms. At t=1000 ms, enable should be pulled high. Repeat.
+
+4. Both buttons being pressed simultaneously is undefined behaviour. You may choose the outcome in this case.
 
 4. <span style="color: brown;">The system behaviour when both `btnU` and `btnC` are pressed together is unspecified. It is left to your choice.</span>
 
