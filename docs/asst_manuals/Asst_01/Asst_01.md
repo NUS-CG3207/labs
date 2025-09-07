@@ -1,7 +1,7 @@
 # Assignment 1: Familiarisation with Assembly Language and HDL/FPGA
 
 !!! success "Final"
-    This page is now final. Updates will be minimal, and will be highlighted. 
+    This page is now final. Updates will be minimal, and will be <span style="color: brown;">highlighted</span>. 
 
 !!! info
     Assignment 1 consists of **2** tasks, worth **5** points each, for a total of **10 points**.
