@@ -1,43 +1,24 @@
-# Lab 2: Implementation of a RISC-V 32-bit (RV32I) Processor
+# Assignment 2: Implementation of a RISC-V 32-bit (RV32I) Processor
 
-!!! info
-
-    Assignment 2 consists of 1 task, with 2 subtasks, for a total of **30 points**. 
-
-    Assignment 2 is a group exercise. You will be assessed as a group, but scored individually. 
+!!! danger "Work in progress!"
+    This document is a draft. It may change until **7 September 2025**, after which no further significant changes will be made. Corrections and clarifications may still be made after this date. 
 
 ## Objective
 
-In this assignment, we will be implementing the basic RISC-V (or ARM!) processor supporting only limited 32-bit integer instructions.
+In this assignment, you will be implementing the basic RISC-V or ARM processor supporting only limited 32-bit integer instructions.
 
-=== "RISC-V"
+Essentially, it should support the following instructions \[HDL simulation as well as hardware\]
 
-    For 20 points, implement the following instructions:
+*   **add**, **addi**, **sub**, **and**, **andi**, **or**, **ori**
+*   **lw**, **sw**
+*   **beq**, **bne**, **jal** (without linking, that is, without saving the return address). 
 
-    *   `add`, `addi`, `sub`, `and`, `andi`, `or`, `ori`
-    *   `lw`, `sw`
-    *   `beq`, `bne`, `jal` (without linking, that is, without saving the return address). 
+Further, improve the processor by adding the following features \[HDL simulation as well as hardware\]
 
-    Further, improve the processor by adding the following features
+*   **lui**, **auipc** (5 marks)
+*   **sll**, **srl**, **sra** (5 marks)
 
-    *   `lui`,` auipc` (5 points)
-    *   `sll`, `srl`, `sra` (5 points)
-
-=== "ARM"
-
-    For 20 points, implement the following instructions:
-
-    * `LDR`, `STR` (Both with positive immediate offsets)
-    * `AND`, `OR`, `ADD`, `SUB` (Where `Src2` is register or immediate without shifts)
-    * `B`
-
-    Further, improve the processor by adding the following features 
-
-    * `CMP` (3 points)
-    * `LDR`, `STR` (4 points)
-    * Immediate shift support for `Src2` in DP instructions (i.e. `LSL`, `LSR`, `ASR`, `ROR`) (3 points)
-
-No extra points will be awarded for performance enhancements / adding support for more instructions (that's for Labs 3 and 4). However, a lack of convincing demos (with carefully crafted assembly language programs) can result in the deduction of points.
+No extra marks will be awarded for performance enhancements / adding support for more instructions (that's for Labs 3 and 4). However, a lack of convincing demos (with carefully crafted assembly language programs) can result in the deduction of marks.
 
 ## Design Files
 
@@ -98,7 +79,7 @@ Wrapper.v for ARM and RISC-V are almost identical. The only real difference is i
 *   Make sure that the align directive in the assembly programme is set according to the sizes of the various segments. The size of a data segment affects the next segment alignment and address. Keep in mind that large memory sizes can cause synthesis times to be longer, esp if not using synch read (block RAM)
 *   There is no requirement that you should use all the peripherals supported by the Wrapper. As long as your demo is convincing, it is fine to use only a limited set of peripherals (say, LEDs and DIP switches \- at least one input and one output). [RISC-V Memory Map](../Lab_1/RV_Memory_Map.md) page has more details about the address and usage of the supported peripherals.
 *   You can add more peripherals (RGB LED, accelerometer, VGA display, etc.) to the Wrapper if you wish. The corresponding changes will also need to be done in the top-level .vhd and .xdc files.
-*   Learn how to use debugging options such as single stepping, breakpoints, running for a specified time, etc which can help tremendously. However, note that some options such as single stepping work a bit differently from conventional software debugging, due to the inherent parallel nature of HDLs, as well as the fact that non-blocking assignments do not have an instantaneous effect on the LHS. Some additional info is given in the Tips section, and there is a demo on this during the lab briefing.
+*   Learn how to use debugging options such as single stepping, breakpoints, running for a specified time, etc which can help tremendously. However, note that some options such as single stepping work a bit differently from conventional software debugging, due to the inherent parallel nature of HDLs, as well as the fact that non-blocking assignments do not have an instantaneous effect on the LHS. Some additional info is given in the Tips section, and there is a demo on this during the assignment briefing.
 
 ### RISC Programming Instructions
 
