@@ -1,7 +1,9 @@
 # Assignment 2: Implementation of a RISC-V 32-bit (RV32I) Processor
 
-!!! success "Final"
-    This page is now final. Updates will be minimal, and will be <span style="color: brown;">highlighted</span>.
+!!! warning "Subject to change"
+    This page is mostly final now. Instructions will remain largely the same for the assignment.
+    However, we are still in the process of updating and testing new code with shiny new features for you.
+    Feel free to read through to get a general understanding of the assignment, but do not start working on it yet. 
 
 !!! info
 
