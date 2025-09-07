@@ -19,7 +19,7 @@ module Clock_Enable(
 
 initial
 begin
-	counter <= 0;
+	counter = 0;
 end
 	
 	

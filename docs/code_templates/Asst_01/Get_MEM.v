@@ -20,7 +20,6 @@ reg [31:0] DMEM [0:127];
 
 // declare indics of IROM and DMEM
 reg [8:0] addr;
-reg [8:0] i, j;
 
 initial
 begin
