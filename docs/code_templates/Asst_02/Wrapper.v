@@ -138,7 +138,7 @@ dec_CYCLECOUNT				// Cycle count signal
 // Memory declaration
 //-----------------------------------------------------------------
 reg [31:0] IROM	[0:2**(IROM_DEPTH_BITS-2)-1];	// instruction memory aka IROM
-reg [31:0] DMEM	[0:2**(DMEM_DEPTH_BITS-2)-1];	// data (constant) memory + data (variable) memory.
+reg [31:0] DMEM	[0:2**(DMEM_DEPTH_BITS-2)-1];	// data (constant + variable) memory.
 
 //----------------------------------------------------------------
 // Memory initialisation
