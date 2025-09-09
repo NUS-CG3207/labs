@@ -15,6 +15,7 @@ extra_css:
   - stylesheets/extra.css
 markdown_extensions:
   - admonition
+  - footnotes
   - pymdownx.details
   - pymdownx.superfences
   - attr_list
