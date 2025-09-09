@@ -43,8 +43,8 @@ module Wrapper
 (
 	input  [N_DIPs-1:0] DIP, 		// 16-bit DIP switch inputs. Not debounced.
 	input  [N_PBs-1:0] PB,  		// 3-bit PB switch inputs. Not debounced.
-	output reg [N_LEDs_OUT-1:0] LED_OUT, 	// 8-bit LED(15 downto 8)
-	output [6:0] LED_PC, 			// LED(6 downto 0) showing PC(8 downto 2).
+	output reg [N_LEDs_OUT-1:0] LED_OUT, 	// 8-bit LED[7:0]
+	output [6:0] LED_PC, 			// LED[15:9] showing PC[8:2].
 	output reg [31:0] SEVENSEGHEX, 		// 32-bit value for 8-digit 7 Seg LED Display. 
 	output reg [7:0] UART_TX,           	// 8-bit CONSOLE (UART TX) Output. Character sent to PC/testbench via UART.
 						// s/w should check if UART_TX_ready is set before writing to this location esp if your CLK_DIV_BITS is small. No consecutive stores
@@ -64,7 +64,7 @@ module Wrapper
 	input [31:0] ACCEL_Data,		// Packed <Temp, X, Y, Z> from MSB to LSB. X, Y, Z are in +/-2g range, 8-bit signed.
 	input ACCEL_DReady,			// Accelerometer data ready signal. Mostly not necessary unless you are reading at a very high rate.
 	input  RESET,				// Active high. Implemented in TOP as not(BTND) or Internal_reset.
-	input  CLK				// Divided Clock from TOP.
+	input  CLK				// Divided Clock from TOP, shown on LED[8].
 );
 
 // Set the base address according to your memory configuration in RARS. Set the size (Depth bits) appropriately as well.
@@ -131,7 +131,7 @@ dec_LED						,
 dec_DIP						,
 dec_PB						,
 dec_SEVENSEG				,
-dec_CYCLECOUNT				,
+dec_CYCLECOUNT				// Cycle count signal
 ;
 
 //----------------------------------------------------------------
