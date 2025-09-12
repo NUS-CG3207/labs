@@ -119,7 +119,7 @@ reg
 dec_DMEM					,
 dec_UART_RX_VALID			,
 dec_UART_RX					,
-dec_UART_RX_READY			,
+dec_UART_TX_READY			,
 dec_UART_TX					,
 dec_OLED_COL				,
 dec_OLED_ROW				,
@@ -173,7 +173,7 @@ always@(*) begin
 	bad_MEM_addr 			<= 1'b0;
 	dec_UART_RX_VALID		<= 1'b0;
 	dec_UART_RX				<= 1'b0;
-	dec_UART_RX_READY		<= 1'b0;
+	dec_UART_TX_READY		<= 1'b0;
 	dec_UART_TX				<= 1'b0;
 	dec_OLED_COL			<= 1'b0;
 	dec_OLED_ROW			<= 1'b0;
@@ -193,7 +193,7 @@ always@(*) begin
 		case (ALUResult[MMIO_DEPTH_BITS-1:2])
 			UART_RX_VALID_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_RX_VALID <= 1'b1;
 			UART_RX_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_RX <= 1'b1;
-			UART_TX_READY_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_RX_READY <= 1'b1;
+			UART_TX_READY_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_TX_READY <= 1'b1;
 			UART_TX_OFF[MMIO_DEPTH_BITS-1:2]: dec_UART_TX <= 1'b1;
 			OLED_COL_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_COL <= 1'b1;
 			OLED_ROW_OFF[MMIO_DEPTH_BITS-1:2]: dec_OLED_ROW <= 1'b1;
@@ -213,7 +213,7 @@ always@(*) begin
 		bad_MEM_addr <= 1'b1;
 end
 
-assign dec_MMIO_read = MemRead || dec_DIP || dec_PB || dec_UART_RX_VALID || dec_UART_RX || dec_UART_RX_READY || dec_UART_TX || dec_CYCLECOUNT || dec_ACCEL_DATA || dec_ACCEL_DREADY ;
+assign dec_MMIO_read = MemRead || dec_DIP || dec_PB || dec_UART_RX_VALID || dec_UART_RX || dec_UART_TX_READY || dec_UART_TX || dec_CYCLECOUNT || dec_ACCEL_DATA || dec_ACCEL_DREADY ;
 assign MemWrite = MemWrite_out[3] || MemWrite_out[2] || MemWrite_out[1] || MemWrite_out[0];
 
 //----------------------------------------------------------------
@@ -288,7 +288,7 @@ else if (dec_UART_RX && UART_RX_valid)
 	ReadData_MMIO <= {24'd0, UART_RX};
 else if (dec_UART_RX_VALID)
 	ReadData_MMIO <= {31'd0, UART_RX_valid};	
-else if (dec_UART_RX_READY)
+else if (dec_UART_TX_READY)
 	ReadData_MMIO <= {31'd0, UART_TX_ready};
 else if (dec_CYCLECOUNT)
 	ReadData_MMIO <= cycle_count;
