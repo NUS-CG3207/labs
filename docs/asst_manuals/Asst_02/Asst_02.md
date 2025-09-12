@@ -19,29 +19,23 @@ In this assignment, we will be implementing the basic RISC-V (or ARM!) processor
 
 === "RISC-V"
 
-    For 20 points, implement the following instructions:
+    Implement the following instructions:
 
     *   `add`, `addi`, `sub`, `and`, `andi`, `or`, `ori`
     *   `lw`, `sw`
     *   `beq`, `bne`, `jal` (without linking, that is, without saving the return address). 
-
-    Further, improve the processor by adding the following features
-
-    *   `lui`,` auipc` (5 points)
-    *   `sll`, `srl`, `sra` (5 points)
+    *   `lui`,` auipc`
+    *   `sll`, `srl`, `sra`
 
 === "ARM"
 
-    For 20 points, implement the following instructions:
+    Implement the following instructions:
 
     * `LDR`, `STR` (Both with positive immediate offsets)
     * `AND`, `OR`, `ADD`, `SUB` (Where `Src2` is register or immediate without shifts)
     * `B`
-
-    Further, improve the processor by adding the following features 
-
-    * `CMP` (3 points)
-    * `LDR`, `STR` (4 points)
+    * `CMP`
+    * `LDR`, `STR`
     * Immediate shift support for `Src2` in DP instructions (i.e. `LSL`, `LSR`, `ASR`, `ROR`) (3 points)
 
 No extra points will be awarded for performance enhancements / adding support for more instructions (that's for Labs 3 and 4). However, a lack of convincing demos (with carefully crafted assembly language programs) can result in the deduction of points.
@@ -117,9 +111,9 @@ Choose the appropriate constraint file for your board.[^1] The files are pretty 
 
 ### Why does the Wrapper exist?
 
-`Wrapper` is a convenient testbed to plug our processor (RV) into and simulate it using `test_Wrapper` as the testbench - see below for more details on how to modify the `test_Wrapper` appropriately. `Wrapper` provides instruction/data memory and a set of abstract peripherals with easy-to-view signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals (e.g., `CONSOLE_IN`/`CONSOLE_OUT` of the Wrapper to `RX`/`TX` of UART; anode and cathode activation signals of the 7-segment display) by `TOP_Nexys.vhd`. Writing a testbench to simulate RV directly is unnecessary.
+`Wrapper` is a convenient testbed to plug our processor (RV) into and simulate it using `test_Wrapper` as the testbench - see below for more details on how to modify the `test_Wrapper` appropriately. `Wrapper` provides instruction/data memory and a set of abstract peripherals with easy-to-view signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals by `TOP_Nexys.vhd`. For example, `UART_RX`/`UART_TX` (parallel) of the Wrapper to `RX`/`TX` (serial, external signals) of UART, anode and cathode activation signals of the 7-segment display. Writing a testbench to simulate RV directly is unnecessary.
 
-`Wrapper.v` for ARM and RISC-V are almost identical. The only real difference is in the memory map.
+`Wrapper.v` for ARM and RISC-V are almost identical. The only notable difference is in the memory map, and also the fact that the wrapper for ARM has not been updated since 2024.
 
 ## What code to modify
 
