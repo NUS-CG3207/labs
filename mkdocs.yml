@@ -49,9 +49,10 @@ nav:
     - Assignment 3 [Weeks 7-9]: asst_manuals/Asst_03/Asst_03.md
     - Assignment 4 [Weeks 9-12]: asst_manuals/Asst_04/Asst_04.md
   - Resources for RISC-V:
-    - RISC-V Memory Map: rv_resources/rv_memmap.md
+    - Memory Map: rv_resources/rv_memmap.md
+    - Programming Guide: rv_resources/rv_programming.md
     - Peripheral Guides: rv_resources/peripherals.md
-    - RISC-V Programming Guide: rv_resources/rv_programming.md
-  - Resources for ARM [DEPRECATED]:
+    - Using Compiled Code: rv_resources/using_compiled_code.md
+  - Resources for ARM [Deprecated]:
     - ARM Memory Map: ARM/arm_memmap.md
     - ARM Programming Guide: ARM/arm_programming.md
