@@ -4,6 +4,9 @@
 
 # Assemble this using RARS. Dump memory => .txt as AA_IROM.mem and .data as AA_DMEM.mem, in hexadecimal text format.
 
+# Important note: This program requires more than 128 instructions. The IROM_DEPTH_BITS has to be adjusted accordingly.
+# DMEM_DEPTH_BITS need not be changed, as the program uses only 1 word in data memory for storing a constant. No variables at all!
+
 main:
         addi    sp, sp, -32
         sw      ra, 28(sp)
@@ -12,9 +15,10 @@ main:
         sw      s2, 16(sp)
         sw      s3, 12(sp)
         sw      s4, 8(sp)
-        lui     s0, 1048560     # This and the previous 6 instructions can be deleted safely. There is no caller for main() here
+# The previous 7 instructions can be deleted safely. There is no caller for main() here
+        lui     s0, 1048560
         lui     sp, 65552
-        addi    sp, sp, 1024
+        addi    sp, sp, 512
         li      s2, 24
         lui     s1, 1044480
         lui     s3, %hi(CYCLECOUNT_ADDR)
@@ -31,20 +35,20 @@ main:
         lw      a2, 8(s0)
         beqz    a2, .LBB0_3
         srl     a2, a0, a1
-        sub     a4, s2, a1
         sw      a2, 12(s0)
-        sll     a5, a0, a4
-        and     a2, a5, s1
-        bgez    a5, .LBB0_6
-        neg     a2, a2
-.LBB0_6:
-        srl     a4, a2, a4
-.LBB0_7:
-        lw      a5, 8(s0)
-        beqz    a5, .LBB0_7
-        add     a3, a3, a4
-        srli    a2, a2, 24
-        sw      a2, 12(s0)
+.LBB0_5:
+        lw      a2, 8(s0)
+        beqz    a2, .LBB0_5
+        sub     a2, s2, a1
+        sll     a5, a0, a2
+        and     a4, a5, s1
+        bgez    a5, .LBB0_8
+        neg     a4, a4
+.LBB0_8:
+        srl     a2, a4, a2
+        srli    a4, a4, 24
+        add     a3, a3, a2
+        sw      a4, 12(s0)
         addi    a2, a1, -8
         bnez    a1, .LBB0_2
         slli    a3, a3, 1
@@ -61,7 +65,7 @@ main:
         j       .LBB0_1
 
 drawFilledMidpointCircleSinglePixelVisit:
-        bltz    a2, .LBB1_20
+        bltz    a2, .LBB1_19
         li      t1, 0
         lui     t3, 1048560
         li      a6, 1
@@ -69,85 +73,78 @@ drawFilledMidpointCircleSinglePixelVisit:
         li      a7, 33
 .LBB1_2:
         mv      t2, t1
-        sub     t1, a0, a2
-        add     a4, a2, a0
-        add     a5, t2, a1
-        sw      a5, 36(t3)
-        sw      a7, 44(t3)
-        sw      a3, 40(t3)
-        bge     a4, t1, .LBB1_5
-        beqz    t2, .LBB1_10
-        sub     a4, a1, t2
+        add     a4, t1, a1
         sw      a4, 36(t3)
         sw      a7, 44(t3)
         sw      a3, 40(t3)
-        j       .LBB1_10
-.LBB1_5:
+        bltz    a2, .LBB1_8
+        sub     t1, a0, a2
         slli    t4, a2, 1
         addi    t4, t4, 1
         mv      a4, t4
         mv      a5, t1
-.LBB1_6:
+.LBB1_4:
         sw      a5, 32(t3)
         addi    a4, a4, -1
         addi    a5, a5, 1
-        bnez    a4, .LBB1_6
+        bnez    a4, .LBB1_4
         beqz    t2, .LBB1_10
         sub     a4, a1, t2
         sw      a4, 36(t3)
         sw      a7, 44(t3)
         sw      a3, 40(t3)
-.LBB1_9:
+.LBB1_7:
         sw      t1, 32(t3)
         addi    t4, t4, -1
         addi    t1, t1, 1
-        bnez    t4, .LBB1_9
+        bnez    t4, .LBB1_7
+        j       .LBB1_10
+.LBB1_8:
+        beqz    t2, .LBB1_10
+        sub     a4, a1, t2
+        sw      a4, 36(t3)
+        sw      a7, 44(t3)
+        sw      a3, 40(t3)
 .LBB1_10:
         addi    t1, t2, 1
-        bltz    t0, .LBB1_18
-        bge     t2, a2, .LBB1_17
-        sub     t5, a0, t2
-        add     t6, t2, a0
+        bltz    t0, .LBB1_17
+        bge     t2, a2, .LBB1_16
+        sub     t4, a0, t2
         add     a4, a2, a1
         sw      a4, 36(t3)
         sw      a7, 44(t3)
         sw      a3, 40(t3)
-        sub     t4, a1, a2
         mv      a4, a6
-        mv      a5, t5
-        bge     t6, t5, .LBB1_14
-        sw      t4, 36(t3)
-        sw      a7, 44(t3)
-        sw      a3, 40(t3)
-        j       .LBB1_17
-.LBB1_14:
+        mv      a5, t4
+.LBB1_13:
         sw      a5, 32(t3)
         addi    a4, a4, -1
         addi    a5, a5, 1
-        bnez    a4, .LBB1_14
-        sw      t4, 36(t3)
+        bnez    a4, .LBB1_13
+        sub     a4, a1, a2
+        sw      a4, 36(t3)
         sw      a7, 44(t3)
         sw      a3, 40(t3)
         mv      a4, a6
-.LBB1_16:
-        sw      t5, 32(t3)
+.LBB1_15:
+        sw      t4, 32(t3)
         addi    a4, a4, -1
-        addi    t5, t5, 1
-        bnez    a4, .LBB1_16
-.LBB1_17:
+        addi    t4, t4, 1
+        bnez    a4, .LBB1_15
+.LBB1_16:
         addi    a2, a2, -1
         sub     a4, t1, a2
         slli    a4, a4, 1
         addi    a4, a4, 2
-        j       .LBB1_19
-.LBB1_18:
+        j       .LBB1_18
+.LBB1_17:
         slli    a4, t1, 1
         addi    a4, a4, 1
-.LBB1_19:
+.LBB1_18:
         add     t0, t0, a4
         addi    a6, a6, 2
         blt     t2, a2, .LBB1_2
-.LBB1_20:
+.LBB1_19:
         ret
 
 delay:
@@ -179,3 +176,11 @@ drawHorizontalLine:
 
 CYCLECOUNT_ADDR:
         .word   4294901920
+
+# The following lines can be deleted
+.Ldebug_list_header_start0:
+        .half   5
+        .byte   4
+        .byte   0
+        .word   33
+.Ldebug_list_header_end0:
