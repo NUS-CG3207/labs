@@ -30,7 +30,7 @@ Note : The baud rate used depends on the baud rate set in TOP.vhd. In the templa
 
 **Figure 1(a) and 1(b)** : Screenshot illustrating RealTerm settings.
 
-RealTerm allows you to send and display data that is not necessarily ASCII. Sending and receiving raw bytes can be very very useful. In fact, it is THE most effective way to get data in/out of the system.  
+RealTerm allows you to send and display data that is not necessarily ASCII. Sending and receiving raw bytes can be very useful. In fact, it is **THE** most effective way to get data in/out of the system.  
 
 (to do: Provide a screenshot here illustrating sending bytes, and perhaps even an example assembly language program).
 

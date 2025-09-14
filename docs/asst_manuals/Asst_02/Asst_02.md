@@ -111,7 +111,7 @@ Choose the appropriate constraint file for your board.[^1] The files are pretty 
 
 ### Why does the Wrapper exist?
 
-`Wrapper` is a convenient testbed to plug our processor (RV) into and simulate it using `test_Wrapper` as the testbench - see below for more details on how to modify the `test_Wrapper` appropriately. `Wrapper` provides instruction/data memory and a set of abstract peripherals with easy-to-view signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals by `TOP_Nexys.vhd`. For example, `UART_RX`/`UART_TX` (parallel) of the Wrapper to `RX`/`TX` (serial, external signals) of UART, anode and cathode activation signals of the 7-segment display. Writing a testbench to simulate RV directly is unnecessary.
+`Wrapper` is a convenient testbed to plug our processor (RV) into and simulate it using `test_Wrapper` as the testbench - see below for more details on how to modify the `test_Wrapper` appropriately. `Wrapper` provides instruction/data memory and a set of abstract peripherals with easy-to-view signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals by `TOP_Nexys.vhd`. For example, `UART_RX`/`UART_TX` (parallel) of the Wrapper to `RX`/`TX` (serial, external signals) of UART, anode and cathode activation signals of the 7-segment display. Writing a testbench to simulate RV directly is unnecessary. The Wrapper is not very modular, but was kept that way to make it self-contained and hence avoid having too many files.
 
 `Wrapper.v` for ARM and RISC-V are almost identical. The only notable difference is in the memory map, and also the fact that the wrapper for ARM has not been updated since 2024.
 
@@ -155,7 +155,7 @@ All Shift operations on 32-bit numbers should be done in the Shifter unit.
 
 **DO NOT create additional entities/modules**. Components such as multiplexers are easily implemented using when-else / with-select / if / case statements. Leave PC_Logic and Decoder separate (do not combine them into one ControlUnit entity). However, the interfaces for entities could be modified slightly to meet the design requirements.
 
-DO NOT modify the ports of the entity RISC-V, unless you want to take responsibility for the top-level wrapper module.
+DO NOT modify the ports of the entity RISC-V, unless you want to take responsibility for the wrapper module.
 
 It is a good idea to use `-` (VHDL) or `X` (Verilog) for don't cares, as it could simplify the combinational logic. However, there are 2 points to note:
 
