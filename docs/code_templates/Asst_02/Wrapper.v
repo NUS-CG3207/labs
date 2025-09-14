@@ -339,7 +339,7 @@ end
 //----------------------------------------------------------------
 reg [7:0] OLED_ctrl_reg = 8'd0;// control register. 
 // Lower nibble controlling whether the row or column or mode is varied. Upper nibble controlling the colour mode. 
-// [3:0] - 0000: vary_pix_data_mode; 0001: vary_col_mode (x); 0010: vary_row_mode (y); 0100: autoadvance col (row major); 0101: autoadvance row (column major)
+// [3:0] - 0000: vary_pix_data_mode; 0001: vary_col_mode (x); 0010: vary_row_mode (y); 0100: autoadvance_col (row major); 0101: autoadvance_row (column major)
 // [7:4] - 0000: 8-bit colour mode; 0001: 16-bit colour mode; 0010: 24-bit colour mode
 reg autoadvance_row = 1'b0; // good idea to initialize it as the assignment inside the always blk below takes effect only in cycle 2.
 reg autoadvance_col = 1'b0;
@@ -358,7 +358,7 @@ always@(posedge CLK) begin
 				autoadvance_row <= 1'b0;
 				autoadvance_col <= 1'b0;
 			end
-		4'b0100: 		// autoadvance col
+		4'b0100: 		// autoadvance_col (row major)
 			begin
 				if(MemWrite_out[0] && dec_OLED_DATA) begin
 					OLED_Write <= 1'b1;
@@ -373,7 +373,7 @@ always@(posedge CLK) begin
 						else OLED_Col <= OLED_Col+1;
 				end
 			end
-		4'b0101: 		// autoadvance row
+		4'b0101: 		// autoadvance_row (column major)
 			begin
 				if(MemWrite_out[0] && dec_OLED_DATA) begin
 					OLED_Write <= 1'b1;

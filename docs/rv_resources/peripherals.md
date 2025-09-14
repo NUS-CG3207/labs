@@ -48,8 +48,13 @@ OLED_CTRL register functionality is described below.
 OLED_CTRL[3:0] : Change that triggers write. We can vary one of them (e.g., column) while keeping the other two the same. This can be efficient in applications like  [vector](https://en.m.wikipedia.org/wiki/Vector_graphics) graphics, where replicating a pixel along a row or column is common. In the example program where a line with a specified colour is drawn, we vary only x (columns).
 
 * 0x0: vary_pixel_data_mode
-* 0x1: vary_COL_mode (x)
-* 0x2: vary_ROW_mode (y)
+* 0x1: vary_col_mode (x)
+* 0x2: vary_row_mode (y)
+* 0x4: autoadvance_col (row major)
+* 0x5: autoadvance_row (column major)
+
+Autoadvance mode is similar to vary_pixel_data_mode, but automatically increments row/column indices in a row-major/column-major manner with appropriate wrapping of row/column boundaries and incrementing to the next column/row in hardware. It can accelerate the loading of raster images - the data can simply be streamed in; one write per pixel will suffice. We can feed data from a C array in a 1-D manner without maintaining separate row/column indices. Please note that this feature is experimental, the implementation/code isn't that structured.
+
 
 OLED_CTRL[7:4] : Colour format.
 
@@ -90,8 +95,7 @@ Copy-pasted array fix in RARS with `.byte` declaration
 * Image pixels being sent column-wise is advantageous if the conversion tool can give a column-major format for the array. This is because multiplication by 64 is easier than by 96.
   * Clang emits `mul` instructions when you multiply by 96, GCC does y\*64+y\*32 instead in some optimization modes.
   * It is not uncommon to allocate memory that is larger than the required size to make the buffer dimensions powers of two - trading off memory for performance!
-  * Possible enhancement: Implementing a mode where the row/column indices autoincrement in a row-major/column-major manner can accelerate the loading of raster images. Only one write per pixel will suffice, with the ability to feed data from a C array without maintaining separate row/column indices. You will need to implement some control bits in the control register to enable this (and an additional bit if you wish to allow the user to choose between row-major / column-major formats), along with other changes in the Wrapper. 
-* It is not possible to read back what you wrote to the OLED. Something = *OLED_DATA_ADDR does not work. These are memory-mapped peripherals; do not treat like memory. However, it is possible to modify the Wrapper and TOP to accomplish this, but has some issues such as needing 2 clock cycles for a read.
+* It is not possible to read back what you wrote to the OLED. Something = *OLED_DATA_ADDR does not work. These are memory-mapped peripherals; do not treat like memory. However, it is possible to modify the Wrapper and TOP to accomplish this, but has some hurdles such as needing 2 clock cycles for a read.
 
 
 ## Accelerometer

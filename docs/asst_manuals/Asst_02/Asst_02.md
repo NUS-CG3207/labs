@@ -126,7 +126,7 @@ There are 5 files we must populate/modify:
 3. `PC_Logic.v`
 4. `RV.v`
 5. `Wrapper.v`: we need to add our Instruction and Data ROMs here. This can be done in the same way as [Assignment 1](../../Asst_01/Asst_01/#design-guide).
-6. `TOP_Nexys.vhd`: we may need to modify `CLK_DIV_BITS` depending on the processor clock speed we want to achieve (we can keep it to a low number like 5 if we are using UART). This need not be changed for simulation as `TOP_Nexys.vhd` is not simulated.
+6. `TOP_Nexys.vhd`: we may need to modify `CLK_DIV_BITS` depending on the processor clock speed we want to achieve (we can keep it to a low number like 5 if we are using UART). This need not be changed for simulation as `TOP_Nexys.vhd` is not simulated. Changing CLK_DIV_BITS to 0 causes the frequency to be 100 MHz, but unless you do lots of optimizations such as pipelining.
 
 !!! tip
     Read the comments (especially about the input and output ports / interfaces) in the `Wrapper.v` carefully.
