@@ -3,7 +3,7 @@
 !!! warning "Subject to change"
     This page is mostly final now. Instructions will remain largely the same for the assignment.
     However, we are still in the process of updating and testing new code with shiny new features for you.
-    Feel free to read through to get a general understanding of the assignment, but do not start working on it yet. 
+    Feel free to read through to get a general understanding of the assignment, but do not start working on it yet.
 
 !!! info
 
@@ -157,10 +157,10 @@ All Shift operations on 32-bit numbers should be done in the Shifter unit.
 
 DO NOT modify the ports of the entity RISC-V, unless you want to take responsibility for the top-level wrapper module.
 
-It is a good idea to use `-` (VHDL) or `X` (Verilog) for don't cares, as it could simplify the combinational logic. However, there are 2 issues:
+It is a good idea to use `-` (VHDL) or `X` (Verilog) for don't cares, as it could simplify the combinational logic. However, there are 2 points to note:
 
 1. Using don't cares with signals which change the processor state (RegWrite, PCSrc, MemWrite) would make the system vulnerable to illegal instructions.
-2. Don't cares can cause different behavior in simulation and synthesis. Don't cares are treated as a don't cares in simulation, whereas in synthesis, it could be a random 0 or 1 (whichever simplifies logic better).
+2. Don't cares can cause different behavior in simulation and synthesis. Don't cares are treated as don't cares in simulation, whereas in synthesis, it could be a random 0 or 1 (whichever simplifies logic better).
 
 Reset resets only the program counter. The register initial values are not guaranteed to be zero. This requires you to write to a register before using/reading it.
 
@@ -205,6 +205,8 @@ The following section details some tips and tricks that will make your life a lo
 
 ### Hardware design tips
 
+* Re-run synthesis if you have changed the .mem file contents, even when the tool tells you that synthesis is up to date.
+
 * Synthesize modules that you edit, such as decoder and conditional logic by setting them as top-level modules even before simulation. The synthesis tool is much smarter than the simulation tool - **synthesis reports and warnings** can give you a wealth of information.
 
 * Looking at RTL Analysis > Open Elaborated design gives you insights into the schematic (block design) inferred from your code. This can be very useful in debugging. Pay particular attention to the bit widths for each connection etc. You can get even more information from the synthesis report.
@@ -225,13 +227,22 @@ The following section details some tips and tricks that will make your life a lo
 
 ### Simulation tips and tricks
 
-* Please **SIMULATE** your design before spending your time on bitstream generation. Make sure your design synthesizes without warnings (if at all there are warnings, you should know the reasons and you should ensure that the warnings do not affect the functionality). If you don't simulate and click 'generate bitstream' hoping it would work on the board, you are probably wasting your time. This can't be emphasized enough.
+* Please **SIMULATE** your design before spending your time on bitstream generation. Make sure your design synthesizes without warnings (if at all there are warnings, you should know the reasons, and you should ensure that the warnings do not affect the functionality). If you don't simulate and click 'generate bitstream' hoping it would work on the board, you are probably wasting your time. This can't be emphasized enough.
 
-* You can get a very very good sense of whether your design will work on hardware by doing a **post-synthesis functional simulation** by Simulate > Post-synthesis functional simulation. The same testbench can be used, so it requires zero extra effort. However, debugging is much harder than it is with behavioral simulation as some of the internal signals are optimized away and/or renamed (still easier than it is with hardware). For post-synthesis functional simulation, either the Wrapper or the TOP should be set as the top-level module for synthesis, and then the module should be synthesized before it can be (Post-synthesis) simulated.
+* You can get a very very good sense of whether your design will work on hardware by doing a **post-synthesis functional simulation** by Simulation > Run Simulation > Post-synthesis functional simulation (Instead of the usual Behavioural Simulation).
+  * The same testbench can be used, so it requires zero extra effort.
+  * Debugging is much harder than it is with behavioral simulation as some internal signals are optimized away and/or renamed (still easier than it is with hardware).
+  * For post-synthesis functional simulation, _either_ the Wrapper or the TOP should be set as the top-level module for synthesis, and then the module should be synthesized before it can be (post-synthesis) simulated. Note, however, though that setting the Wrapper as top for synthesis will cause a lot of warnings as there are mismatches in location constriants with the .xdc file; the top level module for synthesis will have to be changed back to TOP anyway for implementation.
+
+* Make sure that the HDL testbench, .asm, .mem always correspond.
+
+* Relaunch simulation after changing .mem.
+
+* A self-checking testbench can be quite useful. You may use LLM tools for that. Tools such as Claude tends to do a better job than ChatGPT for this (in our experience). Declare LLM tool+version, and prompts used as a comment. For example, the [test_Wrapper_DIP_to_LED.v](../../code_templates/Asst_02/test_Wrapper_DIP_to_LED.v) is convereted to sel-checking [test_Wrapper_DIP_to_LED_self_checking.v](../../code_templates/Asst_02/test_Wrapper_DIP_to_LED_self_checking.v) via a prompt that is declared as a comment in the latter file.
 
 * You can go into the subunits and see their value for each instruction (Scope-Objects) - this is much easier than what most of you think. This is more powerful than dragging the various signals into the waveform. Note that the values you see are those at the time the simulation has stopped/paused, not the time corresponding to the yellow vertical bar in the waveforms window. Double-clicking the Scope-Objects will lead you to the source code - you can then hover the mouse pointer above various objects to see their values.
 
-* Make sure your radix in the waveform window / Scope-Objects is set correctly. Looking at hexadecimal and assuming them to be decimal or vice versa is a common mistake. Saving the waveform window (`.wcfg`) and adding it to the project will ensure that such settings get saved. For Console input/output, setting the radix to ASCII can be useful.
+* Make sure your radix in the waveform window / Scope-Objects is set correctly. Looking at hexadecimal and assuming them to be decimal or vice versa is a common mistake. Saving the waveform window (`.wcfg`) and adding it to the project will ensure that such settings get saved. For UART input/output, setting the radix to ASCII can be useful.
 
 * Have the RARS simulator side by side so that you can compare the register/memory values between that in RARS and HDL register/memory objects. While you single step in RARS, you can also run by 10 more ns to have the same effect in HDL simulation. It helps to have the PC and Instr values in the waveform window to see the correspondence between RARS and HDL simulations, i.e., to ensure that you are looking at the same instruction on the two tools.
 
@@ -248,21 +259,21 @@ The following section details some tips and tricks that will make your life a lo
 * **Warnings (~100 in number) about unconnected stuff being removed**: chances are that you haven't initialized the ROMs.
 
 * If you are synthesizing after setting a module other than TOP as the top-level module, you will get warnings such as those below. If your intention is to check the synthesizability of modules one by one, these warnings can be safely ignored (Why?).
-    * `'set_property' expects at least one object.`
-    * `create_clock:No valid object(s) found for '-objects [get_ports CLK_undiv]'`
+  * `'set_property' expects at least one object.`
+  * `create_clock:No valid object(s) found for '-objects [get_ports CLK_undiv]'`
 
 ## Submission Info
 
 * You will have to demonstrate your design during your designated lab session in **Week 7**. The presentation schedule can be found on Canvas.
 * One single program demonstrating all the features is desirable.
-* Please upload a *single archive* containing all the relevant files to Canvas within 1 hour of your demo.
+* Please upload a _single archive_ containing all the relevant files to Canvas within 1 hour of your demo.
 * Include:
-    * `.vhd`/`.v` files you have created/modified (RTL Sources, Testbench(es))
-    * `.bit` files
-    * `.asm` and `.c` (if applicable) files
-    * a `readme.txt`, mentioning the purpose of each file (only those you have created/modified) briefly
+  * `.vhd`/`.v` files you have created/modified (RTL Sources, Testbench(es))
+  * `.bit` files
+  * `.asm` and `.c` (if applicable) files
+  * a `readme.txt`, mentioning the purpose of each file (only those you have created/modified) briefly
 
-in an archive with the filename `Assignment2_<lab day><group number>.zip`, e.g. Assignment2_Monday01.zip. One submission per group is sufficient – if there are multiple submissions, the file with the latest timestamp will be taken as the final submission. 
+in an archive with the filename `Assignment2_<lab day><group number>.zip`, e.g. Assignment2_Monday01.zip. One submission per group is sufficient – if there are multiple submissions, the file with the latest timestamp will be taken as the final submission.
 
 !!! warning
     **_Do not_** zip and upload the complete project folder – only those files mentioned above should be included. **The files should be the exact same files that you used for the demo**.
@@ -274,7 +285,7 @@ Congratulations on completing Assignment 2! You now have a somewhat-working RISC
 The next two assignments will build upon, extend, and improve this CPU, to a very impressive design by the end. We hope you're as excited for this as us!
 
 !!! success "What we have learned"
-    * The basic microarchitecture for a simple, single-cycle RISC-V CPU.
+    *The basic microarchitecture for a simple, single-cycle RISC-V CPU.
     * How to use Vivado and HDL to implement a fairly complex design on an FPGA.
-    * The importance of proper simulation to verify functionality, as well as the steps to create this.
+    *The importance of proper simulation to verify functionality, as well as the steps to create this.
     * How to write assembly language programs, and how they are executed by a CPU.

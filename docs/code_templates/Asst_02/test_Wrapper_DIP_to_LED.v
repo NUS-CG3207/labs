@@ -45,21 +45,25 @@ module test_Wrapper #(
     Wrapper dut(DIP, PB, LED_OUT, LED_PC, SEVENSEGHEX, UART_TX, UART_TX_ready, UART_TX_valid, UART_RX, UART_RX_valid, UART_RX_ack, OLED_Write, OLED_Col, OLED_Row, OLED_Data, ACCEL_Data, ACCEL_DReady, RESET, CLK) ;
 
 	
-	// Note: This testbench is for the Hello World program. Other assembly programs require appropriate modifications.
-	// Run for about 6 us. Set UART_TX radix to ASCII to see the printed messages.
+	// Note: This testbench is for DIP_to_LED program. Other assembly programs require appropriate modifications.
 	// STIMULI
     initial
     begin
 	RESET = 1; #10; RESET = 0; //hold reset state for 10 ns.
 
-        DIP = 16'hFFFF; // Set all DIP switches to ON
-        #120;
+	DIP = 16'hFFFF; // Set all DIP switches to ON
+        #220;			
         DIP = 16'hAAAA; // Set all DIP switches to alternate on-off pattern
-        #150;
+		// This is pressing DIP during the lw instruction that reads it. It is good not to be able to read it so 'promptly'; 
+		// better to sychronise using an FF (in TOP) before being read by the processor. However, not doing that for now.
+        #160;
         DIP = 16'h5555; // Set all DIP switches to flipped alternate on-off pattern
-        #150;
+        	        	// Changes during sw, can't capture it as lw has passed.
+        #120;
+        				// 16'h5555 is lost as it doesn't stay until lw instruction.
         DIP = 16'h0000; // Set all DIP switches to OFF
-		#150;
+	#150;
+		
 		//insert rest of the stimuli here
     end
 	

@@ -58,8 +58,8 @@ module Wrapper
 	output reg UART_RX_ack,              	// A signal from to UART hardware that the processor has read the newly received data byte.
 	                                        // The testbench should clear UART_RX_valid when this is set.
 	output reg OLED_Write,			// Indicates that the pixel is to be updated. This could happen when you change row or col or data depending on OLED_CTRL[3:0]
-	output reg [6:0] OLED_Col,
-	output reg [5:0] OLED_Row,
+	output reg [6:0] OLED_Col = 7'd0,
+	output reg [5:0] OLED_Row = 6'd0,
 	output reg [23:0] OLED_Data,		// 24-bit pixel so as to see easily on the display. <5R, 6G, 8B>, each extended to 8 bits left aligned.
 	input [31:0] ACCEL_Data,		// Packed <Temp, X, Y, Z> from MSB to LSB. X, Y, Z are in +/-2g range, 8-bit signed.
 	input ACCEL_DReady,			// Accelerometer data ready signal. Mostly not necessary unless you are reading at a very high rate.
@@ -72,6 +72,7 @@ localparam IROM_BASE = 32'h0040_0000;		// make sure this is the same as the .txt
                                             	// and the PC default value as well as reset value in **ProgramCounter.v** 
 localparam DMEM_BASE = 32'h1001_0000;    	// make sure this is the same as the .data address based on the Memory Configuration set in the assembler/linker
 localparam MMIO_BASE = 32'hFFFF_0000;
+localparam PC_INIT = IROM_BASE;			// PC initialization value - same as IROM_BASE
 
 localparam IROM_DEPTH_BITS = 9;		//9 for 128 words. Change if your program is larger.
 localparam DMEM_DEPTH_BITS = 9;		//9 for 128 words. Change if your data (const+variable) is larger, and in C/Assembly to set STACK_INIT appropriately.
@@ -338,21 +339,65 @@ end
 //----------------------------------------------------------------
 reg [7:0] OLED_ctrl_reg = 8'd0;// control register. 
 // Lower nibble controlling whether the row or column or mode is varied. Upper nibble controlling the colour mode. 
-// [3:0] - 0000: vary_pix_data_mode; 0001: vary_COL_mode (x); 0010: vary_ROW_mode (y)
+// [3:0] - 0000: vary_pix_data_mode; 0001: vary_col_mode (x); 0010: vary_row_mode (y); 0100: autoadvance col (row major); 0101: autoadvance row (column major)
 // [7:4] - 0000: 8-bit colour mode; 0001: 16-bit colour mode; 0010: 24-bit colour mode
+reg autoadvance_row = 1'b0; // good idea to initialize it as the assignment inside the always blk below takes effect only in cycle 2.
+reg autoadvance_col = 1'b0;
 always@(posedge CLK) begin
+	OLED_Write <=  1'b0;
 	case (OLED_ctrl_reg[3:0]) // mapping OLED_Write direclty to TOP will write at the fast clock rate. Not an issue, but unnecessary writes
-		4'b0001: OLED_Write <= MemWrite_out[0] && dec_OLED_COL;	//vary_COL_mode (x)
-		4'b0010: OLED_Write <= MemWrite_out[0] && dec_OLED_ROW;  //vary_ROW_mode (y)
-		default: OLED_Write <= MemWrite && dec_OLED_DATA; //vary_pix_data_mode
+		4'b0001: 		//vary_col_mode (x)
+			if(MemWrite_out[0] && dec_OLED_COL) begin
+				OLED_Write <=  1'b1;
+				autoadvance_row <= 1'b0;
+				autoadvance_col <= 1'b0;
+			end
+		4'b0010: 		 //vary_row_mode (y)
+			if(MemWrite_out[0] && dec_OLED_ROW) begin
+				OLED_Write <=  1'b1; 
+				autoadvance_row <= 1'b0;
+				autoadvance_col <= 1'b0;
+			end
+		4'b0100: 		// autoadvance col
+			begin
+				if(MemWrite_out[0] && dec_OLED_DATA) begin
+					OLED_Write <= 1'b1;
+					autoadvance_row <= 1'b0;
+					autoadvance_col <= 1'b1;
+					if(autoadvance_col)
+						if(OLED_Col>=95) begin // >= as software could write >95
+							OLED_Col <= 7'd0; 
+							if(OLED_Row==63) OLED_Row <= 6'd0;	// this is redundant, as it will roll over to 0 anyway. Leaving it for comprehensibility, no h/w cost 
+							else OLED_Row <= OLED_Row+1;
+						end
+						else OLED_Col <= OLED_Col+1;
+				end
+			end
+		4'b0101: 		// autoadvance row
+			begin
+				if(MemWrite_out[0] && dec_OLED_DATA) begin
+					OLED_Write <= 1'b1;
+					autoadvance_row <= 1'b1;
+					autoadvance_col <= 1'b0;
+     				if(autoadvance_row)
+						if(OLED_Row==63) begin
+					   		OLED_Row <= 6'd0; 	//redundant
+					   		if(OLED_Col>=95) OLED_Col <= 7'd0; 
+					   		else OLED_Col <= OLED_Col+1;
+					  	end
+					   	else OLED_Row <= OLED_Row+1;
+				end
+			end
+		default:
+			begin		//vary_pix_data_mode
+				if(MemWrite && dec_OLED_DATA) begin
+					OLED_Write <=  1'b1; 
+					autoadvance_row <= 1'b0;
+					autoadvance_col <= 1'b0;
+				end
+			end
 	endcase
-
-	if( MemWrite_out[0] && dec_OLED_CTRL )
-        OLED_ctrl_reg <= WriteData_out[7:0] ;
-	if( MemWrite_out[0] && dec_OLED_ROW ) 
-        OLED_Row <= WriteData_out[5:0] ;
-	if( MemWrite_out[0] && dec_OLED_COL ) 
-        OLED_Col <= WriteData_out[6:0] ; 
+        
 	case (OLED_ctrl_reg[7:4])
 		4'b0001: 		// 16-bit colour mode 5R-6G-5B - can only be written as whole world or lower half-word.
 			if( MemWrite_out[1] && MemWrite_out[0] && dec_OLED_DATA )
@@ -369,7 +414,15 @@ always@(posedge CLK) begin
 		default: 		// 8-bit colour mode 3R-3G-2B (1 byte) - LSB byte, lower half-word, and whole word accessible
 			if( MemWrite_out[0] && dec_OLED_DATA )
 				OLED_Data <= { WriteData_out[7:5], 5'd0, WriteData_out[4:2], 5'd0, WriteData_out[1:0], 6'd0}; 
-	endcase        
+	endcase 
+	
+	if( MemWrite_out[0] && dec_OLED_CTRL )
+        OLED_ctrl_reg <= WriteData_out[7:0] ;
+	if( MemWrite_out[0] && dec_OLED_ROW ) 
+        OLED_Row <= WriteData_out[5:0] ;
+	if( MemWrite_out[0] && dec_OLED_COL )
+        OLED_Col <= WriteData_out[6:0] ;
+           
 end
 
 
@@ -396,7 +449,7 @@ assign LED_PC = PC[15-N_LEDs_OUT+1 : 2]; // debug showing PC
 //----------------------------------------------------------------
 // RV port map
 //----------------------------------------------------------------
-RV RV1(
+RV #(.PC_INIT(PC_INIT)) RV1(
 	CLK,
 	RESET,
 	Instr,

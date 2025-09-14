@@ -37,7 +37,9 @@
 // For multiplexing with number of inputs > 2, a case construct within an always block is a natural fit. DO NOT to use nested ternary assignment operator as it hampers the readability of your code.
 
 
-module RV(
+module RV #(
+    parameter PC_INIT = 32'h00400000
+)(
     input CLK,
     input RESET,
     //input Interrupt,      // for optional future use.
@@ -48,7 +50,7 @@ module RV(
     output [31:0] PC,
     output [31:0] ALUResult,
     output [31:0] WriteData_out		// Name mangled to support sb/sw
-    );
+);
     
     // Please read Lab 4 Enhancement: Implementing additional instructions on how to support lb/lbu/lh/lhu/sb/sh
         
@@ -177,11 +179,11 @@ module RV(
                 );                
     
     // Instantiate ProgramCounter    
-    ProgramCounter ProgramCounter1(
+    ProgramCounter #(.PC_INIT(PC_INIT)) ProgramCounter1(
                     CLK,
                     RESET,
                     WE_PC,    
                     PC_IN,
                     PC  
-                );                             
+                );                         
 endmodule
