@@ -287,7 +287,7 @@ Congratulations on completing Assignment 2! You now have a somewhat-working RISC
 The next two assignments will build upon, extend, and improve this CPU, to a very impressive design by the end. We hope you're as excited for this as us!
 
 !!! success "What we have learned"
-    *The basic microarchitecture for a simple, single-cycle RISC-V CPU.
+    * The basic microarchitecture for a simple, single-cycle RISC-V CPU.
     * How to use Vivado and HDL to implement a fairly complex design on an FPGA.
-    *The importance of proper simulation to verify functionality, as well as the steps to create this.
+    * The importance of proper simulation to verify functionality, as well as the steps to create this.
     * How to write assembly language programs, and how they are executed by a CPU.
