@@ -40,7 +40,7 @@ No extra points will be awarded for performance enhancements / adding support fo
 
 ## Design Files
 
-The design files can be found [on the GitHub repository](https://github.com/NUS-CG3207/labs/tree/](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates/Asst_02). Download them and import them into a new Vivado project, using the same settings as Assignment 1.
+The design files can be found [on the GitHub repository](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates/Asst_02). Download them and import them into a new Vivado project, using the same settings as Assignment 1.
 
 !!! warning
     The FPGA part number we need is `xc7a100tcsg324-1`. Using the wrong, or any random, part number, will **not** work. Actually, even worse - it will work until we try to generate the bitstream, and then error out. ~Fun!
