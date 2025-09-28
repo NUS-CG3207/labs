@@ -109,9 +109,11 @@ Choose the appropriate constraint file for your board.[^1] The files are pretty 
 
 ### Why does the Wrapper exist?
 
-`Wrapper` is a convenient testbed to plug our processor (RV) into and simulate it using `test_Wrapper` as the testbench - see below for more details on how to modify the `test_Wrapper` appropriately. `Wrapper` provides instruction/data memory and a set of abstract peripherals with easy-to-view signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals by `TOP_Nexys.vhd`. For example, `UART_RX`/`UART_TX` (parallel) of the Wrapper to `RX`/`TX` (serial, external signals) of UART, anode and cathode activation signals of the 7-segment display. Writing a testbench to simulate RV directly is unnecessary. The Wrapper is not very modular, but was kept that way to make it self-contained and hence avoid having too many files.
+`Wrapper` is a convenient testbed to plug our processor (RV) into and simulate it using `test_Wrapper` as the testbench - see below for more details on how to modify the `test_Wrapper` appropriately. `Wrapper` provides instruction/data memory and a set of abstract peripherals with easy-to-view <span style="color: brown;">(parallel)</span> signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals <span style="color: brown;"> (often serial/not easy to make sense of)</span> by `TOP_Nexys.vhd`. For example, `UART_RX`/`UART_TX` (parallel) of the Wrapper to `RX`/`TX` (serial, external signals) of UART, anode and cathode activation signals of the 7-segment display. Writing a testbench to simulate RV directly is unnecessary. The Wrapper is not very modular, but was kept that way to make it self-contained and hence avoid having too many files.
 
 `Wrapper.v` for ARM and RISC-V are almost identical. The only notable difference is in the memory map, and also the fact that the wrapper for ARM has not been updated since 2024.
+
+<span style="color: brown;">When simulating, the `test_Wrapper` -> `Wrapper` -> `RV` relationship is analogous to that of a User -> System/Motherboard -> Processor.</span>.
 
 ## What code to modify
 
