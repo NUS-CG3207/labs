@@ -113,7 +113,7 @@ Choose the appropriate constraint file for your board.[^1] The files are pretty 
 
 `Wrapper.v` for ARM and RISC-V are almost identical. The only notable difference is in the memory map, and also the fact that the wrapper for ARM has not been updated since 2024.
 
-<span style="color: brown;">When simulating, the `test_Wrapper` -> `Wrapper` -> `RV` relationship is analogous to that of a User -> System/Motherboard -> Processor.</span>.
+<span style="color: brown;">When simulating, the `test_Wrapper` -> `Wrapper` -> `RV` relationship is analogous to that of a User -> System/Motherboard -> Processor.</span>
 
 ## What code to modify
 
