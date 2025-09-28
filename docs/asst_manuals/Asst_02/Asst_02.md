@@ -109,9 +109,11 @@ Choose the appropriate constraint file for your board.[^1] The files are pretty 
 
 ### Why does the Wrapper exist?
 
-`Wrapper` is a convenient testbed to plug our processor (RV) into and simulate it using `test_Wrapper` as the testbench - see below for more details on how to modify the `test_Wrapper` appropriately. `Wrapper` provides instruction/data memory and a set of abstract peripherals with easy-to-view signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals by `TOP_Nexys.vhd`. For example, `UART_RX`/`UART_TX` (parallel) of the Wrapper to `RX`/`TX` (serial, external signals) of UART, anode and cathode activation signals of the 7-segment display. Writing a testbench to simulate RV directly is unnecessary. The Wrapper is not very modular, but was kept that way to make it self-contained and hence avoid having too many files.
+`Wrapper` is a convenient testbed to plug our processor (RV) into and simulate it using `test_Wrapper` as the testbench - see below for more details on how to modify the `test_Wrapper` appropriately. `Wrapper` provides instruction/data memory and a set of abstract peripherals with easy-to-view <span style="color: brown;">(parallel)</span> signals. The abstract peripherals of the Wrapper are converted to real protocol/interfacing signals <span style="color: brown;"> (often serial/not easy to make sense of)</span> by `TOP_Nexys.vhd`. For example, `UART_RX`/`UART_TX` (parallel) of the Wrapper to `RX`/`TX` (serial, external signals) of UART, anode and cathode activation signals of the 7-segment display. Writing a testbench to simulate RV directly is unnecessary. The Wrapper is not very modular, but was kept that way to make it self-contained and hence avoid having too many files.
 
 `Wrapper.v` for ARM and RISC-V are almost identical. The only notable difference is in the memory map, and also the fact that the wrapper for ARM has not been updated since 2024.
+
+<span style="color: brown;">When simulating, the `test_Wrapper` -> `Wrapper` -> `RV` relationship is analogous to that of a User -> System/Motherboard -> Processor.</span>
 
 ## What code to modify
 
@@ -147,7 +149,7 @@ You are not required to implement your own carry look ahead or ripple carry adde
 
 [^2]: carry chain, carry lookahead logic - Google for CARRY4
 
-`=` should not be used on 32-bit numbers for Lab 2.The comparison for conditional branch should be done inside the ALU through subtraction. `=` may be used in other places such as the control unit, to implement multiplexers in the datapath, for checking the value of counter(s) for Lab 3 MCycle unit, etc., but this comparison is done on values that are much less than 32 bits.[^3]
+`=` should not be used on 32-bit numbers for Lab 2. The comparison for conditional branch should be done inside the ALU through subtraction. `=` may be used in other places such as the control unit, to implement multiplexers in the datapath, for checking the value of counter(s) for Lab 3 MCycle unit, etc., but this comparison is done on values that are much less than 32 bits.[^3]
 
 [^3]: We may need `=` on 32-bit numbers in Lab 4 if we are implementing branch prediction, but that is optional and far away from where we are now :).
 
@@ -176,9 +178,9 @@ It will be incredibly useful to learn how to use debugging options such as singl
 
 ### Assembly Programming
 
-Use your own, well-crafted assembly language programs for a convincing demo (to demonstrate that all the required instructions and variants work). **One single program demonstrating all the features is desirable**. Conversely, make sure that your program only uses the features that you have already implemented; notably, we cannot use any multiplication operations, nor many shift operations or `xor`. If you were unable to implement some of the required instructions, make sure your assembly program doesn't use those, otherwise the demo will be quite disappointing.
+Use your own, well-crafted assembly language programs for a convincing demo (to demonstrate that all the required instructions and variants work). **One single program demonstrating all the features is desirable**. Conversely, make sure that your program only uses the features that you have already implemented; notably, we cannot use any multiplication operations, nor many shift operations or `xor`. If you were unable to implement some of the required instructions, make sure your assembly program doesn't use those; otherwise, the demo will be quite disappointing.
 
-By 'convincing demo', what we mean is having an assembly language program that tests all the features of all instructions of a particular type. For example, if you demonstrate `addi`, you don't really have to show `andi`, `ori` as it can be expected to work, as the datapath activated is the same. Instructions such as conditional branches should be used such as both possibilities - i.e., branch taken and branch not taken should be demonstrated. In other words, it should provide an exhaustive 'coverage' of your HDL code. Your program should be crafted such that if one instruction misbehaves, the overall behavior of the program should be different (this is the case for most programs, as long as you use the result from every instruction in a subsequent instruction).
+By 'convincing demo', what we mean is having an assembly language program that tests all the features of all instructions of a particular type. For example, if you demonstrate `addi`, you don't really have to show `andi`, `ori`, as it can be expected to work, as the datapath activated is the same, <span style="color: brown;">and the control signals are derived in a manner that is unlikely to be wrong for one if it is correct for the other (this isn't the case, for example, for `srl` and `sra`)</span>. Instructions such as conditional branches should be used, such that both possibilities - i.e., branch taken and branch not taken should be demonstrated. In other words, it should provide an exhaustive 'coverage' of your HDL code. Your program should be crafted such that if one instruction misbehaves, the overall behavior of the program should be different - this is the case for most programs, as long as you use the result from every instruction in a subsequent instruction <span style="color: brown;">- i.e., there is no 'dead code' or have pairs/groups of instructions that cancel each others' effect (e.g., addition and subtraction by the same amount - which could have correct results even if both instructions misbehave)</span>.
 
 Please follow the instructions in the [RISC-V Programming](../../rv_resources/rv_programming.md) page to configure RARS and to write programs. The .hex file generated by the program is inserted into the ROMs within Wrapper.v directly to "program" the RISC-V processor. Note: Instruction and data memory sizes can be bigger than 128 words. Be mindful of the potentially increased synthesis time though. Addresses except `IROM_BASE` and `DMEM_BASE` are hierarchically derived instead of hard-coding.
 
@@ -191,9 +193,9 @@ Byte (`sb`) and half-word (`sh`) writes are supported for data memory and periph
 !!! tip
     Byte and half-word read don't require any Wrapper support - you can simply read the whole byte, extract the byte/half-word, and extend as necessary.
 
-The provided assembly language programs are neither meant to be comprehensive programs that tests everything. Do not use the programs under Optional_Stuff as your first program. Use the DIP_to_LED.asm instead. Even this will need appropriate modifications to include instructions such as **DP reg type**, **bne**, and shifts in a meaningful manner.
+The provided assembly language programs are neither meant to be comprehensive programs that test everything. Do not use the programs under Optional_Stuff as your first program. Use the DIP_to_LED.asm instead. Even this will need appropriate modifications to include instructions such as **DP reg type**, **bne**, and shifts in a meaningful manner.
 
-The `test_Wrapper.v` you use is specific to the assembly language program being run. It simulates the scenario of giving inputs externally manually/from sensors, and getting the output on various displays/UART. Depending on the inputs your .asm program expect, the stimuli of your testbench will have to change too.
+The `test_Wrapper.v` you use is specific to the assembly language program being run. It simulates the scenario of giving inputs externally manually/from sensors, and getting the output on various displays/UART. Depending on the inputs your .asm program expects, the stimuli of your testbench will have to change too.
 
 You could use the program that you simulated in RARS in Lab 1 as a starting point if you have implemented `lui` and `auipc`. However, you will need to make appropriate modifications to include instructions such as R type, `bne`, and shifts in a meaningful manner. The `test_Wrapper` should be modified to give appropriate stimuli, as mentioned in the previous point. You can use it even before incorporating `lui` and `auipc`, but you will need to change it such that s1 and s2 are loaded from memory.
 
