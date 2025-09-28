@@ -17,9 +17,6 @@ markdown_extensions:
   - admonition
   - footnotes
   - pymdownx.details
-  - pymdownx.superfences
-  - attr_list
-  - md_in_html
   - pymdownx.blocks.caption
   - attr_list
   - md_in_html
