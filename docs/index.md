@@ -6,9 +6,6 @@ title: Home
 
 Welcome to CG3207! In this repository, you will find the manuals for each of the 4 lab exercises you will complete for this course, as well as instructions on how to set up the tools you'll need.
 
-!!! danger "Work in progress!"
-	For AY25/26 Sem 1, this website is being significantly overhauled. Until **31 August 2025**, all pages on this website should be considered drafts, and the contents may change significantly. After 31 August 2025, pages that are still non-final will still be clearly demarcated as such, with a warning message that looks like this one, but any other pages can be considered final. 
-
 Labs for this course are generally free and easy. Physical attendance is recommended, but not necessary **EXCEPT FOR ASSESSMENTS**. There are 4 lab assignments in total, each of which will first be introduced in a briefing, and then assessed in a subsequent (not necessarily the next) week. At least one member of the teaching team will always be present in the lab during lab sessions to assist with any doubts you have.
 
 Check [NUSMods](https://nusmods.com/courses/CG3207/computer-architecture) for the lab venue corresponding to your lab slot. 

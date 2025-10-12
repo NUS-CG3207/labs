@@ -3,8 +3,9 @@
 !!! success "Final"
     This page is now final. Updates will be minimal, and will be <span style="color: brown;">highlighted</span>. 
 
-## Tasks
-Assignment 3 involves 2 compulsory tasks and one open-ended task.
+!!! info 
+
+    Assignment 3 involves 2 compulsory tasks worth 13 and 7 points, and one open-ended task worth 5 points.
 
 ### Task 1: Implementing division (13 points)
 

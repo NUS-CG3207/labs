@@ -1,8 +1,5 @@
 # Assignment 2: Implementation of a RISC-V 32-bit (RV32I) Processor
 
-!!! success "Final"
-    This page is now final. Updates will be minimal, and will be <span style="color: brown;">highlighted</span>. 
-
 !!! info
 
     Assignment 2 consists of 1 task, with 2 subtasks, for a total of **30 points**. 
