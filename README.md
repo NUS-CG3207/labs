@@ -12,6 +12,44 @@
 
 * Use the GitHub Releases and Milestones functions to mark your progress. We suggest creating a release for every lab assignment, with your code submission zip file as the release file. 
 
+## Build instructions
+
+### Prerequisites
+
+You must have Python 3.12 or greater installed on your machine. Older versions are not guaranteed to work. 
+
+The environment is tested on Windows with WSL, macOS, and multiple Linux distributions. I have no idea if it will work on a native Windows environment - it should, but I haven't and do not intend to try. 
+
+You may choose to use [uv](https://docs.astral.sh/uv/), [Anaconda](https://www.anaconda.com/download), or just plain old pip to set up the development environment. 
+
+Clone the repository to your machine to get started. The instructions below will assume you have a terminal opened, and the current working directory is the cloned repository. 
+
+### Using uv (recommended)
+
+Simply run `uv sync`. This will read `pyproject.toml` and install all the required dependencies. 
+
+To run the development server, run `uv run -- mkdocs serve`.
+
+### Using conda
+
+Create a new conda environment to run mkdocs, let's say by running `conda create -n mkdocs-env`.
+
+Switch to the new conda environment by running `conda activate mkdocs-env`. 
+
+Install mkdocs by running `conda install mkdocs-material`.
+
+To run the development server, run `mkdocs serve`. 
+
+### Using pip
+
+Create a new virtual environment using `python -m venv .venv`. 
+
+Activate the new virtual environment using `source .venv/bin/activate`. Use `activate.csh`, `activate.fish` or `activate.ps1` as required by whatever shell you use. 
+
+Install the requirements by running `pip install -r requirements.txt`. 
+
+To run the development server, run `mkdocs serve`. 
+
 ## License 
 
- [NUS CG3207 Lab Assignments](https://github.com/nus-cg3207/labs) © 2024 by [NUS CG3207 Team](https://github.com/nus-cg3207) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)  
+[NUS CG3207 Lab Assignments](https://github.com/nus-cg3207/labs) © 2024 by [NUS CG3207 Team](https://github.com/nus-cg3207) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)  
