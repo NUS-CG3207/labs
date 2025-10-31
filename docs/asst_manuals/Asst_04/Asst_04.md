@@ -26,7 +26,7 @@ Support for byte and half-word load / store is NOT a basic requirement. They can
 
 Implement basic pipelining. Hazard hardware is optional and will count as an open-ended enhancement if done, but it is not counted for the compulsory task points. Pipelining should be done such that the processor supports all the requirements for Assignment 2, Assignment 3, and the additional instructions / features mentioned in Assignment 4 Compulsory Task 1 above.
 
-As long as your code works after inserting sufficient `NOP`s, this task requirement can be satisfied. If you have full hazard hardware, of course, `NOP`s are unnecessary.
+As long as your code works after inserting sufficient `nop`s, this task requirement can be satisfied. If you have full hazard hardware, of course, `nop`s are unnecessary.
 
 ??? tip "Tips for implementing pipelining"
 
@@ -62,14 +62,15 @@ As long as your code works after inserting sufficient `NOP`s, this task requirem
 
     5. Initialize all your signals and registers to zero. Add a condition that sets all these signals and registers to zero when RESET is asserted, and otherwise, assigns the RHS to the LHS at the clock edge.
 
-    6. Modify the Register file slightly, to read the clock at negative edges:
+    6. Modify the Register file slightly, to read the clock at negative edges as follows. updated since 2024.
+<span style="color: brown;">Alternatively, you can leave it as posedge clk, and insert 3 `nop`s later instead of 2.</span>
 
         * **VHDL**: `CLK'event and CLK='1'` becomes `CLK'event and CLK='0'`.
         * **Verilog**: `always @(posedge clk)` becomes `always @(negedge clk)`.
 
-    7. Your processor should now be pipelined, your old program may not work as it did. You will need to add `NOP`s wherever there is any kind of hazard, to avoid these. For a start, just insert NOPs such that each pair of instructions having a data hazard is spaced by at least 2 instructions (for example, insert 2 NOPs if the two instructions are consecutive). After each branch, insert 4 NOPs.
+    7. Your processor should now be pipelined, your old program may not work as it did. You will need to add `nop`s wherever there is any kind of hazard, to avoid these. For a start, just insert nops such that each pair of instructions having a data hazard is spaced by at least 2 instructions, for example, insert 2 nops if the two instructions are consecutive (or 3 if using the same clock edge). After each branch, insert 2 nops (or more if necessary, depending on which stage the branch is taken).
 
-    8. Verify that your design works as it used to (it will just be slower because of all the NOPs).
+    8. Verify that your design works as it used to (it will just be slower because of all the nops).
 
     For hazard resolution hardware (not a basic requirement), follow the design in Chapter 5. Do it systematically and incrementally, one hazard at a time, and testing at each step.
 
@@ -78,7 +79,7 @@ As long as your code works after inserting sufficient `NOP`s, this task requirem
     Now that you have pipelined your processor, you might be able to run it without any clock division, at the full 100 MHz, especially if your program memory and data memory are small. Change `CLK_DIV_BITS` to test if this is the case.
 
     However, note that even with the standard 5-stage pipeline, 100 MHz may not always be achievable, especially if your memory size is large.
-    Up to ~430 MHz is possible, though unlikely with a 5-stage pipeline. To increase the clock beyond 100 MHz, you will need to make use of the FPGA's built-in clocking resource called MMCM (which uses phase-locked loops). This can be configured using a clocking wizard.
+    Up to ~430 MHz is possible, though unlikely with a 5-stage pipeline. To increase the clock beyond 100 MHz, you will need to make use of the FPGA's built-in clocking resource called MMCM (which uses phase-locked loops). This can be configured using a clocking wizard (Google for more info).
 
     Tips for faster clock speeds:
     
@@ -88,8 +89,8 @@ As long as your code works after inserting sufficient `NOP`s, this task requirem
     * Use a hierarchy of memories.
     * If the bottleneck is the execute stage, try to make it shorter by moving the PC logic to the M stage.
 
-The real benefit of pipelining is higher clock speeds. For example, it's highly unlikely that your design runs at 100 MHz without pipelining. You'll most likely get a critical warning that some timing constraints are not met. The design may or may not run on the board, but if you got a timing warning, the functionality is not reliable. It's pointless to have a pipelined design that runs at 1 Hz. So it is a good idea to think of an application program that benefits from the higher clock speeds.
-Frequencies of up to 100 MHz can be achieved by changing `CLK_DIV_BITS` in `TOP.vhd`.
+    Now, how do we know what frequency it can run at? You do synthesis and then implementation, and see the warnings. You'll get a critical warning that some timing constraints are not met if the frequency you set cannot be obtained. If you get this warning, the functionality is not reliable even if it runs on the board.
+
 
 ## Task 3: Open-ended Enhancement [10 points]
 
@@ -97,7 +98,7 @@ This is the fun part - you get 10 points for Assignment 4 for implementing perfo
 
 ??? tip "Idea: Hazard hardware"
 
-    This is somewhat low-hanging fruit. After implementing simple pipelining, you'll probably get very annoyed, very quickly, by having to put `NOP`s in the correct places. And this is before you make a mistake and spend hours debugging a bug caused by too few NOPs!
+    This is somewhat low-hanging fruit. After implementing simple pipelining, you'll probably get very annoyed, very quickly, by having to put `nop`s in the correct places. And this is before you make a mistake and spend hours debugging a bug caused by too few nops!
 
     You may choose to implement something simple that just stalls the processor, or perhaps something more interesting that forwards data when necessary. The complexity of your implementation will decide how well you score. 
 
@@ -177,7 +178,7 @@ This is the fun part - you get 10 points for Assignment 4 for implementing perfo
     Some other tips:
 
     * You can have a hardcoded exception handler address input to the multiplexer controlling the PC input. The interrupt input itself can be used as (part of the) multiplexer select input.
-    *   You can write your interrupt service routine in your assembly code, figure out the starting address, and use this value as a hardcoded input to the mux. An alternative is to decide on a fixed handler address, and fill up spaces/NOPs in your code until the handler starts address. For example, if you fix the handler starting address to be 0x100 and your 'main' program contains 30 instructions, you will need to add 34 NOPs before the first instruction in the handler code so that handler code will indeed be at 0x100.
+    *   You can write your interrupt service routine in your assembly code, figure out the starting address, and use this value as a hardcoded input to the mux. An alternative is to decide on a fixed handler address, and fill up spaces/nops in your code until the handler starts address. For example, if you fix the handler starting address to be 0x100 and your 'main' program contains 30 instructions, you will need to add 34 nops before the first instruction in the handler code so that handler code will indeed be at 0x100.
     *   ARM: You should also have some mechanism to save `PC+4` into a register (say, `LR` in ARM) and to restore it when the handler has finished (use `MOV PC, LR` to return from the handler).
     *  RISC-V: The address of the instruction that caused the exception/ that was about to be executed when an interrupt came in is saved into *epc*^ (exception program counter, and not `ra`). Since we aren't aiming for compliance, saving automatically to another general-purpose register that isn't used in your program is an option too. Saving to `ra` can be problematic when you have function calls as `ra` gets overwritten. You can then use `jalr` aka `jr` to return from an interrupt. 
     ^ Note that *epc* is not a register that cannot be used like a general-purpose register. You need `csrr` to move its content to a general-purpose register.
