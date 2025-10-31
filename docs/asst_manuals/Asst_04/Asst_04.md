@@ -62,7 +62,7 @@ As long as your code works after inserting sufficient `nop`s, this task requirem
 
     5. Initialize all your signals and registers to zero. Add a condition that sets all these signals and registers to zero when RESET is asserted, and otherwise, assigns the RHS to the LHS at the clock edge.
 
-    6. Modify the Register file slightly, to read the clock at negative edges as follows. updated since 2024.
+    6. Modify the Register file slightly, to read the clock at negative edges as follows.
     <span style="color: brown;">Alternatively, you can leave it as posedge clk, and insert 3 `nop`s later instead of 2.</span>
 
         * **VHDL**: `CLK'event and CLK='1'` becomes `CLK'event and CLK='0'`.
@@ -76,20 +76,20 @@ As long as your code works after inserting sufficient `nop`s, this task requirem
 
 ??? tip "Increasing the clock speed"
 
-    Now that you have pipelined your processor, you might be able to run it without any clock division, at the full 100 MHz, especially if your program memory and data memory are small. Change `CLK_DIV_BITS` to test if this is the case.
+    Now that you have pipelined your processor, you might be able to run it without any clock division, at the full 100 MHz, especially if your program memory and data memory are small. Change `CLK_DIV_BITS` to 0 to test if this is the case.
 
     However, note that even with the standard 5-stage pipeline, 100 MHz may not always be achievable, especially if your memory size is large.
-    Up to ~430 MHz is possible, though unlikely with a 5-stage pipeline. To increase the clock beyond 100 MHz, you will need to make use of the FPGA's built-in clocking resource called MMCM (which uses phase-locked loops). This can be configured using a clocking wizard (Google for more info).
+    Up to ~430 MHz is possible, though very unlikely with a 5-stage pipeline. To increase the clock beyond 100 MHz, you will need to make use of the FPGA's built-in clocking resource called MMCM (which uses phase-locked loops). This can be configured using a clocking wizard (Google for more info).
 
     Tips for faster clock speeds:
     
-    * Identify the bottleneck by looking at that timing report.
+    * Identify the bottleneck by looking at the timing report.
     * Use smaller memories.
     * For larger memories, use block ram templates, and allow at least 2 clock edges, and maybe even 3 for a read. This, of course, is a major design change as the pipeline is no longer 5-stage.
     * Use a hierarchy of memories.
     * If the bottleneck is the execute stage, try to make it shorter by moving the PC logic to the M stage.
 
-    Now, how do we know what frequency it can run at? You do synthesis and then implementation, and see the warnings. You'll get a critical warning that some timing constraints are not met if the frequency you set cannot be obtained. If you get this warning, the functionality is not reliable even if it runs on the board.
+    Now, how do we know what frequency it can run at? You do synthesis and then implementation, and see the warnings. You'll get a critical warning that some timing constraints are not met if the frequency you set cannot be obtained. If you get this warning, the functionality is not reliable even if it runs on the board, and you must either change your design to make it run faster, or change your clock frequency via `CLK_DIV_BITS` and/or introducing a Clocking Wizard.
 
 ## Task 3: Open-ended Enhancement [10 points]
 
@@ -179,8 +179,9 @@ This is the fun part - you get 10 points for Assignment 4 for implementing perfo
     * You can have a hardcoded exception handler address input to the multiplexer controlling the PC input. The interrupt input itself can be used as (part of the) multiplexer select input.
     *   You can write your interrupt service routine in your assembly code, figure out the starting address, and use this value as a hardcoded input to the mux. An alternative is to decide on a fixed handler address, and fill up spaces/nops in your code until the handler starts address. For example, if you fix the handler starting address to be 0x100 and your 'main' program contains 30 instructions, you will need to add 34 nops before the first instruction in the handler code so that handler code will indeed be at 0x100.
     *   ARM: You should also have some mechanism to save `PC+4` into a register (say, `LR` in ARM) and to restore it when the handler has finished (use `MOV PC, LR` to return from the handler).
-    *  RISC-V: The address of the instruction that caused the exception/ that was about to be executed when an interrupt came in is saved into *epc*^ (exception program counter, and not `ra`). Since we aren't aiming for compliance, saving automatically to another general-purpose register that isn't used in your program is an option too. Saving to `ra` can be problematic when you have function calls as `ra` gets overwritten. You can then use `jalr` aka `jr` to return from an interrupt. 
-    ^ Note that *epc* is not a register that cannot be used like a general-purpose register. You need `csrr` to move its content to a general-purpose register.
+    *  RISC-V: The address of the instruction that caused the exception/ that was about to be executed when an interrupt came in is saved into *epc*^ (exception program counter, and not `ra`). Since we aren't aiming for compliance, saving automatically to another general-purpose register that isn't used in your program is an option too. Saving to `ra` can be problematic when you have function calls as `ra` gets overwritten. You can then use `jalr` aka `jr` to return from an interrupt.
+
+    ^ Note that *epc* is not a register that can be used like a general-purpose register. You need `csrr` to move its content to a general-purpose register.
     *   If you wish to have vectored interrupts, you need to associate a number with each interrupt. You need a table/ROM with the starting addresses, which will be indexed by the interrupt number. The output of this ROM is to be fed into the PC multiplexer. The PC multiplexer control signal can be the logical OR of all the interrupt lines.
 
 ??? tip "Idea: Branch prediction"
