@@ -74,7 +74,7 @@ As long as your code works after inserting sufficient `nop`s, this task requirem
 
     For hazard resolution hardware (not a basic requirement), follow the design in Chapter 5. Do it systematically and incrementally, one hazard at a time, and testing at each step.
 
-    #### Increasing the clock speed
+??? tip "Increasing the clock speed"
 
     Now that you have pipelined your processor, you might be able to run it without any clock division, at the full 100 MHz, especially if your program memory and data memory are small. Change `CLK_DIV_BITS` to test if this is the case.
 
