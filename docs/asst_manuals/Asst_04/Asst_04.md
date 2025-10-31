@@ -63,7 +63,7 @@ As long as your code works after inserting sufficient `nop`s, this task requirem
     5. Initialize all your signals and registers to zero. Add a condition that sets all these signals and registers to zero when RESET is asserted, and otherwise, assigns the RHS to the LHS at the clock edge.
 
     6. Modify the Register file slightly, to read the clock at negative edges as follows. updated since 2024.
-<span style="color: brown;">Alternatively, you can leave it as posedge clk, and insert 3 `nop`s later instead of 2.</span>
+    <span style="color: brown;">Alternatively, you can leave it as posedge clk, and insert 3 `nop`s later instead of 2.</span>
 
         * **VHDL**: `CLK'event and CLK='1'` becomes `CLK'event and CLK='0'`.
         * **Verilog**: `always @(posedge clk)` becomes `always @(negedge clk)`.
@@ -90,7 +90,6 @@ As long as your code works after inserting sufficient `nop`s, this task requirem
     * If the bottleneck is the execute stage, try to make it shorter by moving the PC logic to the M stage.
 
     Now, how do we know what frequency it can run at? You do synthesis and then implementation, and see the warnings. You'll get a critical warning that some timing constraints are not met if the frequency you set cannot be obtained. If you get this warning, the functionality is not reliable even if it runs on the board.
-
 
 ## Task 3: Open-ended Enhancement [10 points]
 
