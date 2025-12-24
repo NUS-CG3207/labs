@@ -194,9 +194,8 @@ The provided assembly language programs are neither meant to be comprehensive pr
 
 The `test_Wrapper.v` you use is specific to the assembly language program being run. It simulates the scenario of giving inputs externally manually/from sensors, and getting the output on various displays/UART. Depending on the inputs your .asm program expects, the stimuli of your testbench will have to change too.
 
-You could use the program that you simulated in RARS in Lab 1 as a starting point if you have implemented `lui` and `auipc`. However, you will need to make appropriate modifications to include instructions such as R type, `bne`, and shifts in a meaningful manner. The `test_Wrapper` should be modified to give appropriate stimuli, as mentioned in the previous point. You can use it even before incorporating `lui` and `auipc`, but you will need to change it such that s1 and s2 are loaded from memory.
 
-There is no requirement that you should use all the peripherals supported by the Wrapper. As long as your demo is convincing, it is fine to use only a limited set of peripherals (say, LEDs and DIP switches \- at least one input and one output). [RISC-V Memory Map](../../rv_resources/rv_memmap.md) page has more details about the address and usage of the supported peripherals.
+There is no requirement that you should use all the peripherals supported by the Wrapper. As long as your demo is convincing, it is fine to use only a limited set of peripherals (say, LEDs and DIP switches - at least one input and one output). [RISC-V Memory Map](../../rv_resources/rv_memmap.md) page has more details about the address and usage of the supported peripherals.
 
 To use a C compiler to generate code, please follow the instructions at [Using Compiled Code](../../rv_resources/using_compiled_code.md). However, note that this works only if the compiler does not generate any instruction that your processor doesn't support at this point.
 
