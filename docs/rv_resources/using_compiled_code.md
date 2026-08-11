@@ -29,3 +29,15 @@ Please note some other points below.
 * Export the instruction and data memory as hexadecimal text, overwriting the `AA_IROM.mem` and `AA_DMEM.mem` that are added to the Vivado project.
 * Simulate in HDL behavioral sim, after changing the `test_Wrapper` to give stimuli according to the inputs expected by your C/assembly program. Synthesize and do a post-synthesis simulation as well.
 * Finally, run immplementation and generate bitstream. Fingers crossed :)
+
+## Using GNU Assembler
+
+You can use the GNU Assembler and Clang toolchain to make assembling and compiling code easier and faster. It might also be easier to script using these tools to speed up your workflow. 
+
+To set it up, you would need to install the GNU toolchain and Clang for compilation. You can do so on Linux or Windows Subsystem for Linux. 
+
+```
+sudo apt install binutils-riscv64-unknown-elf clang
+```
+
+The relevant files can be found in the [Assignment 2 Optional Stuff](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates/Asst_02/Optional_Stuff) folder as a sample.
