@@ -52,17 +52,20 @@ Here's the updated table:
 
 | Week   | Monday Lab Date (18:00-21:00) | Friday Lab Date (09:00-12:00) | Activity                             |
 |--------|-------------------------------|-------------------------------|--------------------------------------|
-| 3      | 24 Aug 2026                   | 28 Aug 2026                   | Assignment 1 Intro                   |
-| 4      | 31 Aug 2026                   | 4 Sep 2026                    | Assignment 1 Demo, Assignment 2 Intro|
-| 5      | 7 Sep 2026                    | 11 Sep 2026                   | Assignment 2 Consultation            |
+| 3      | 24 Aug 2026                   | 28 Aug 2026                   | Assignment 1 Intro + Consultation    |
+| 4      | 31 Aug 2026                   | 4 Sep 2026                    | Assignment 1 Demo                    |
+| 5      | 7 Sep 2026                    | 11 Sep 2026                   | Assignment 2 Intro + Consultation    |
 | 6      | 14 Sep 2026                   | 18 Sep 2026                   | Assignment 2 Consultation            |
 | Recess | 21 Sep 2026                   | 25 Sep 2026                   | No Lab Session                       |
-| 7      | 28 Sep 2026                   | 2 Oct 2026                    | Assignment 2 Demo, Assignment 3 Intro|
-| 8      | 5 Oct 2026                    | 9 Oct 2026                    | Assignment 3 Consultation            |
-| 9      | 12 Oct 2026                   | 16 Oct 2026                   | Assignment 3 Demo, Assignment 4 Intro|
-| 10     | 19 Oct 2026                   | 23 Oct 2026                   | Assignment 4 Consultation            |
+| 7      | 28 Sep 2026                   | 2 Oct 2026                    | Assignment 2 Demo                    |
+| 8      | 5 Oct 2026                    | 9 Oct 2026                    | Assignment 3 Intro + Consultation    |
+| 9      | 12 Oct 2026                   | 16 Oct 2026                   | Assignment 3 Demo                    |
+| 10     | 19 Oct 2026                   | 23 Oct 2026                   | Assignment 4 Intro + Consultation    |
 | 11     | 26 Oct 2026                   | 30 Oct 2026                   | Assignment 4 Consultation            |
 | 12     | 2 Nov 2026                    | 6 Nov 2026                    | Assignment 4 Demo                    |
+
+!!! note
+    You may start working on the subsequent assignment as soon as you are finished with the current one. The assignment requirements for assignment N will be frozen on the first day of assignment N-1 demos.
 
 ## License
 
