@@ -1,5 +1,8 @@
 # Assignment 2: Implementation of a RISC-V 32-bit (RV32I) Processor
 
+!!! danger
+    This page is a work in progress; major updates may be made for AY26/27. Feel free to read for a general idea, but do not start working on the assignment until it is specified as ready.
+
 !!! info
 
     Assignment 2 consists of 1 task, with 2 subtasks, for a total of **30 points**. 

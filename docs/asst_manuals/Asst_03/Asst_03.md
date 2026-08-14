@@ -1,7 +1,7 @@
 # Assignment 3: Multiplication / Division units
 
-!!! success "Final"
-    This page is now final. Updates will be minimal, and will be <span style="color: brown;">highlighted</span>. 
+!!! danger
+    This page is a work in progress; major updates may be made for AY26/27. Feel free to read for a general idea, but do not start working on the assignment until it is specified as ready.
 
 !!! info 
 
