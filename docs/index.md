@@ -46,10 +46,6 @@ To make the most of the labs, we recommend doing some reading before you come fo
 
 ## Lab Schedule
 
-The official NUS AY2026/27 calendar confirms your recollection: Week 3 is Mon 24 Aug ~ Fri 28 Aug 2026, with instruction starting 10 Aug 2026 and recess running Sat 19 Sep to Sun 27 Sep.
-
-Here's the updated table:
-
 | Week   | Monday Lab Date (18:00-21:00) | Friday Lab Date (09:00-12:00) | Activity                             |
 |--------|-------------------------------|-------------------------------|--------------------------------------|
 | 3      | 24 Aug 2026                   | 28 Aug 2026                   | Assignment 1 Intro + Consultation    |
