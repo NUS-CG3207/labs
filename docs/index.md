@@ -8,7 +8,7 @@ Welcome to CG3207! In this repository, you will find the manuals for each of the
 
 Labs for this course are generally free and easy. Physical attendance is recommended, but not necessary **EXCEPT FOR ASSESSMENTS**. There are 4 lab assignments in total, each of which will first be introduced in a briefing, and then assessed in a subsequent (not necessarily the next) week. At least one member of the teaching team will always be present in the lab during lab sessions to assist with any doubts you have.
 
-Check [NUSMods](https://nusmods.com/courses/CG3207/computer-architecture) for the lab venue corresponding to your lab slot. 
+Check [NUSMods](https://nusmods.com/courses/CG3207/computer-architecture) for the lab venue corresponding to your lab slot.
 
 ## Intended learning outcomes (labs)
 
@@ -40,24 +40,29 @@ To make the most of the labs, we recommend doing some reading before you come fo
 | 2   | [Basic CPU design](asst_manuals/Asst_02/Asst_02.md).   <br> All your base are belong to us.                            | 30     | Teams of 2 or 3 students  |
 | 3   | [ALU Design](asst_manuals/Asst_03/Asst_03.md).  <br> Billions of blue blistering barnacles.                            | 20+5$  | Teams of 2 or 3 students  |
 | 4   | [Advanced CPU design](asst_manuals/Asst_04/Asst_04.md).  <br>   It was the best of times, it was the worst of times.   | 15+10$ | Teams of 2 or 3 students  |
-|     |**Total**                                                                                                		       | 90     | = 45% of the module grade     |
+|     |**Total**                                                                                                         | 90     | = 45% of the module grade     |
 
 [The lab assignment repository](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates) contains all the files you need to download. Some other useful resources can also be found using the menu on the left of this page.
 
 ## Lab Schedule
 
-| Week   | Monday Lab Date (18:00-21:00) | Friday Lab Date (09:00-12:00) | Activity                    	|
-|--------|-------------------------------|-------------------------------|------------------------------|
-| 4      | 1 Sep 2025                    | 5 Sep 2025                    | Lab 1 Intro                 	|
-| 5      | 8 Sep 2025                    | 12 Sep 2025                   | Lab 1 Demo, Lab 2 Intro     	|
-| 6      | 15 Sep 2025                   | 19 Sep 2025                   | Lab 2 Consultation          	|
-| Recess | 22 Sep 2025                   | 26 Sep 2025                   | No Lab Session              	|
-| 7      | 29 Sep 2025                   | 3 Oct 2025                    | Lab 2 Demo, Lab 3 Intro     	|
-| 8      | 6 Oct 2025                    | 10 Oct 2025                   | Lab 3 Consultation          	|
-| 9      | 13 Oct 2025                   | 17 Oct 2025                   | Lab 3 Demo, Lab 4 Intro     	|
-| 10     | 20 Oct 2025                   | 24 Oct 2025                   | No Lab - Deepavali			|
-| 11     | 27 Oct 2025                   | 31 Oct 2025                   | Lab 4 Consultation			|
-| 12     | 3 Nov 2025                    | 7 Nov 2025                    | Lab 4 Demo                  	|
+The official NUS AY2026/27 calendar confirms your recollection: Week 3 is Mon 24 Aug ~ Fri 28 Aug 2026, with instruction starting 10 Aug 2026 and recess running Sat 19 Sep to Sun 27 Sep.
+
+Here's the updated table:
+
+| Week   | Monday Lab Date (18:00-21:00) | Friday Lab Date (09:00-12:00) | Activity                             |
+|--------|-------------------------------|-------------------------------|--------------------------------------|
+| 3      | 24 Aug 2026                   | 28 Aug 2026                   | Assignment 1 Intro                   |
+| 4      | 31 Aug 2026                   | 4 Sep 2026                    | Assignment 1 Demo, Assignment 2 Intro|
+| 5      | 7 Sep 2026                    | 11 Sep 2026                   | Assignment 2 Consultation            |
+| 6      | 14 Sep 2026                   | 18 Sep 2026                   | Assignment 2 Consultation            |
+| Recess | 21 Sep 2026                   | 25 Sep 2026                   | No Lab Session                       |
+| 7      | 28 Sep 2026                   | 2 Oct 2026                    | Assignment 2 Demo, Assignment 3 Intro|
+| 8      | 5 Oct 2026                    | 9 Oct 2026                    | Assignment 3 Consultation            |
+| 9      | 12 Oct 2026                   | 16 Oct 2026                   | Assignment 3 Demo, Assignment 4 Intro|
+| 10     | 19 Oct 2026                   | 23 Oct 2026                   | Assignment 4 Consultation            |
+| 11     | 26 Oct 2026                   | 30 Oct 2026                   | Assignment 4 Consultation            |
+| 12     | 2 Nov 2026                    | 6 Nov 2026                    | Assignment 4 Demo                    |
 
 ## License
 
