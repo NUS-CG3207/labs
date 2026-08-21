@@ -49,9 +49,9 @@ To make the most of the labs, we recommend doing some reading before you come fo
 | Week   | Monday Lab Date (18:00-21:00) | Friday Lab Date (09:00-12:00) | Activity                             |
 |--------|-------------------------------|-------------------------------|--------------------------------------|
 | 3      | 24 Aug 2026                   | 28 Aug 2026                   | Assignment 1 Intro + Consultation    |
-| 4      | 31 Aug 2026                   | 4 Sep 2026                    | Assignment 1 Demo                    |
-| 5      | 7 Sep 2026                    | 11 Sep 2026                   | Assignment 2 Intro + Consultation    |
-| 6      | 14 Sep 2026                   | 18 Sep 2026                   | Assignment 2 Consultation            |
+| 4      | 31 Aug 2026                   | 4 Sep 2026                    | Assignment 1 Demo (optional) + Consultation     |
+| 5      | 7 Sep 2026                    | 11 Sep 2026                   | Assignment 1 Demo                    |
+| 6      | 14 Sep 2026                   | 18 Sep 2026                   | Assignment 2 Intro + Consultation    |
 | Recess | 21 Sep 2026                   | 25 Sep 2026                   | No Lab Session                       |
 | 7      | 28 Sep 2026                   | 2 Oct 2026                    | Assignment 2 Demo                    |
 | 8      | 5 Oct 2026                    | 9 Oct 2026                    | Assignment 3 Intro + Consultation    |
