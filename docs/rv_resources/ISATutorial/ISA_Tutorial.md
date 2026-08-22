@@ -1,13 +1,7 @@
-# Chapter 3A — RISC-V ISA
-
-**Rajesh Panicker** · ECE, NUS · CG3207
-
----
+# RISC-V ISA
 
 !!! note "How to use these notes"
 
-    - Not all slides will be covered in the lecture. The rest are left as a
-      self-learning exercise.
     - Those in CAPS are ARM instructions / mnemonics, given for comparison.
     - Please ensure that you know the ARM instruction set first (covered in
       EE2028 / CG2028), as a lot of references and comparisons are made.
