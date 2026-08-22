@@ -52,6 +52,6 @@ nav:
     - Programming Guide: rv_resources/rv_programming.md
     - Peripheral Guides: rv_resources/peripherals.md
     - Using Compiled Code: rv_resources/using_compiled_code.md
-  - Resources for ARM [Deprecated]:
-    - ARM Memory Map: ARM/arm_memmap.md
-    - ARM Programming Guide: ARM/arm_programming.md
+    - RISC-V ISA Tutorial: rv_resources/ISATutorial/ISA_Tutorial.md
+  - Miscellaneous:
+    - Prefetching: Misc/Prefetching.md

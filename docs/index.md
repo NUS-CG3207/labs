@@ -63,6 +63,18 @@ To make the most of the labs, we recommend doing some reading before you come fo
 !!! note
     You may start working on the subsequent assignment as soon as you are finished with the current one. The assignment requirements for assignment N will be frozen on the first day of assignment N-1 demos.
 
+## Fair Use of LLMs and Open Source Code
+
+Use of AI/LLMs, agents, or other online code is permitted. However, you should
+
+* Understand the code in detail and be able to explain it. Do not do cognitive offloading.
+* Not infringe anyone's copyright, i.e., it should be code released under an open-source/permissive license. 
+* Demarcate such code clearly, and give proper attribution to the source/LLM, along with the prompts used. Using AI-generated code without attribution is considered plagiarism. You should also respond to a survey on Canvas which will open closer to the end of the course.
+
+Discussions are encouraged, but 'we had discussed' is not a valid excuse if your codes turn out to be uncomfortably similar to that of another group (except when you use online code with attribution as mentioned above).
+
+Though there will be intra-team differentiation in marks according to the contribution levels, a team will be collectively responsible for plagiarized code. Your teammates might be better off with no contribution at all from you than to receive plagiarized code.
+
 ## License
 
- [NUS CG3207 Lab Assignments](https://github.com/nus-cg3207/labs) © 2025 by [NUS CG3207 Team](https://github.com/nus-cg3207) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)  
+ [NUS CG3207 Lab Assignments](https://github.com/nus-cg3207/labs) © 2026 by [NUS CG3207 Team](https://github.com/nus-cg3207) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)  
