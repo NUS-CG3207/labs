@@ -57,7 +57,7 @@ ExtImm <= {{20{Instr[31]}}, Instr[7],  Instr[30:25], Instr[11:8],  1'b0} ;      
 <div class="wide-figure" markdown="1">
 ![Grid showing, for each of the 32 extended immediate bits, which instruction bit supplies it for the U, J, I, S and B formats, plus the resulting mux count per bit](assets/immediate-extension.svg)
 </div>
-<figcaption><code>Instr</code> bit drives each <code>ExtImm</code> bit, and the resulting number of muxes.</figcaption>
+<figcaption>Which <code>Instr</code> bit drives each <code>ExtImm</code> bit, and the number of muxes that results.</figcaption>
 </figure>
 
 !!! note

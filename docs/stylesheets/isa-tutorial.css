@@ -1,4 +1,6 @@
-/* Figures: keep vector diagrams crisp, scrollable on narrow screens. */
+/* =========================================================================
+   RISC-V ISA Tutorial — figures and typography
+   ========================================================================= */
 .md-typeset figure {
   margin: 1.2em 0;
 }
