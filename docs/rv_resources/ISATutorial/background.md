@@ -10,12 +10,12 @@
 - Assembly language → machine language conversion is done by the **assembler**.
     - One-to-one correspondence (except for pseudo-instructions).
 
+**Microarchitecture: how to implement an architecture in hardware.**
+
 <figure markdown="1">
 ![Levels of abstraction from application software down to physics, with Architecture highlighted](assets/abstraction-layers.svg){ width="300" }
 <figcaption>Levels of abstraction. After Harris and Harris.</figcaption>
 </figure>
-
-**Microarchitecture: how to implement an architecture in hardware.**
 
 ## RISC-V history
 

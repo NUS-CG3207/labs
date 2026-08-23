@@ -50,8 +50,8 @@ nav:
     - Assignment 4 [Weeks 9-12]: asst_manuals/Asst_04/Asst_04.md
   - Resources for RISC-V:
     - Memory Map: rv_resources/rv_memmap.md
-    - Peripheral Guides: rv_resources/peripherals.md
     - Programming Guide: rv_resources/rv_programming.md
+    - Peripheral Guides: rv_resources/peripherals.md
     - Using Compiled Code: rv_resources/using_compiled_code.md
     - RISC-V Simulator: rv_resources/riscv_simulator_redirect.md
     - RISC-V ISA Tutorial:
@@ -62,7 +62,8 @@ nav:
       - Data Processing Instructions: rv_resources/ISATutorial/dp-instructions.md
       - Memory Instructions: rv_resources/ISATutorial/memory-instructions.md
       - Control Instructions: rv_resources/ISATutorial/control-instructions.md
-      - RISC-V Assembly Examples: rv_resources/ISATutorial/assembly.md
+      - RISC-V Assembly: rv_resources/ISATutorial/assembly.md
       - ISA Designer's Dilemma: rv_resources/ISATutorial/isa-design.md
+      - Quick Reference: rv_resources/ISATutorial/quick-reference.md
   - Miscellaneous:
     - Prefetching: misc/Prefetching.md
