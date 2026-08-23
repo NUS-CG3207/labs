@@ -1,4 +1,4 @@
-<script>
-  // Redirects the viewport entirely to your raw HTML file
-  window.location.href = "../riscv_simulator.html";
+<script> 
+  // Opens the RISC-V simulator in a new window or tab
+  window.open('../riscv_simulator.html', '_blank'); 
 </script>
