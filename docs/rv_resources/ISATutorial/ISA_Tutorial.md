@@ -205,7 +205,7 @@ Full worked examples, including a stack-based function call:
     # d = the PC-relative delta to the label: LABEL - pc (where pc is the address of the auipc)
     ```
 
-The full data-processing, memory, and M-extension instruction tables[^instr]
+The full data-processing, memory, M-extension, and contorl instruction tables[^instr]
 are below for reference.
 
 ---
@@ -241,6 +241,17 @@ are below for reference.
     | `mul` | `rd = (rs1*rs2)[31:0]` | `div` / `divu` | `rd = rs1 / rs2` |
     | `mulh` / `mulhu` / `mulhsu` | `rd = (rs1*rs2)[63:32]` | `rem` / `remu` | `rd = rs1 % rs2` |
 
+    **Branch/Jump**
+    | Inst   | Name              | Description (C)             | Syntax                |
+    | ------ | ----------------- | --------------------------- | --------------------- |
+    | `beq`  | Branch ==         | `if(rs1 == rs2) PC += imm`  | `op rs1, rs2, LABEL`* |
+    | `bne`  | Branch !=         | `if(rs1 != rs2) PC += imm`  | `op rs1, rs2, LABEL`* |
+    | `blt`  | Branch <          | `if(rs1 < rs2) PC += imm`   | `op rs1, rs2, LABEL`* |
+    | `bge`  | Branch ≥          | `if(rs1 >= rs2) PC += imm`  | `op rs1, rs2, LABEL`* |
+    | `bltu` | Branch < (U)      | `if(rs1 < rs2) PC += imm`   | `op rs1, rs2, LABEL`* |
+    | `bgeu` | Branch ≥ (U)      | `if(rs1 >= rs2) PC += imm`  | `op rs1, rs2, LABEL`* |
+    | `jal`  | Jump And Link     | `rd = PC+4; PC += imm`      | `jal rd, LABEL`*      |
+    | `jalr` | Jump And Link Reg | `rd = PC+4; PC = rs1 + imm` | `jalr rd, imm(rs1)`   |
 
 ---
 
