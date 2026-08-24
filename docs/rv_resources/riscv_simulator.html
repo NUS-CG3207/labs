@@ -2279,7 +2279,7 @@
               <input type="text" id="godboltArchFlags" value="-march=rv32im -mabi=ilp32" style="width:100%;padding:5px 8px;background:#313244;color:#cdd6f4;border:1px solid #45475a;border-radius:4px;box-sizing:border-box;font-family:monospace;">
             </div>
             <div style="font-size:11px;color:#9399b2;line-height:1.4;background:#11111b;padding:8px;border-radius:4px;border:1px solid #313244;">
-              💡 <strong>Note:</strong> C source code is compiled via Compiler Explorer (Godbolt) REST API into native RV32 instructions with exact source-to-assembly line correspondence. Breakpoints and stepping execute in real time on the simulated RV32 core.
+              💡 <strong>Note:</strong> C source code is compiled online via Compiler Explorer (Godbolt) REST API
             </div>
           </div>
         </div>
@@ -2287,19 +2287,20 @@
         <div class="settings-tab-content" id="settingsContent-linker">
           <div class="cycle-hint" style="margin-bottom:10px;">Base addresses and segment sizes (hex). Stack top (sp) defaults to Data Base + Data Size, but can be customized. Applying reloads the program with the new layout.</div>
           <div style="font-size:11.5px;color:#fab387;background:rgba(250, 179, 135, 0.10);border:1px solid rgba(250, 179, 135, 0.35);padding:8px 10px;border-radius:5px;margin-bottom:12px;line-height:1.45;">
-            ⚠️ <strong>FPGA Hardware Notice:</strong> On target FPGA development boards (e.g., Basys 3 / Nexys 4), physical RAM size is fixed in hardware. Defining data arrays that exceed the configured data segment size or elevating the stack pointer outside physical RAM will cause execution failure or memory wrap-around on real FPGA hardware!
+            ⚠️ <strong>FPGA Hardware Notice:</strong> The segment sizes should not exceed the memory size provisioned in hardware.
           </div>
           <div id="memSegmentsConfigBody">
-            <div class="cycle-field"><label for="ms-code">Code (.text) base</label><input id="ms-code" type="text" value="0x10000" oninput="updateLinkerStackPreview()"></div>
+            <div class="cycle-field"><label for="ms-code">Code (.text) base</label><input id="ms-code" type="text" value="0x400000" oninput="updateLinkerStackPreview()"></div>
             <div class="cycle-field"><label for="ms-codesize">Code (.text) size</label><input id="ms-codesize" type="text" value="0x200" oninput="updateLinkerStackPreview()"></div>
-            <div class="cycle-field"><label for="ms-data">Data (.data) base</label><input id="ms-data" type="text" value="0x20000" oninput="updateLinkerStackPreview()"></div>
+            <div class="cycle-field"><label for="ms-data">Data (.data) base</label><input id="ms-data" type="text" value="0x10010000" oninput="updateLinkerStackPreview()"></div>
             <div class="cycle-field"><label for="ms-datasize">Data (.data) size</label><input id="ms-datasize" type="text" value="0x200" oninput="updateLinkerStackPreview()"></div>
-            <div class="cycle-field"><label for="ms-stack">Stack top (sp)</label><input id="ms-stack" type="text" value="0x20200" title="Initial stack pointer address (defaults to Data Base + Data Size; user overridable)"></div>
+            <div class="cycle-field"><label for="ms-stack">Stack top (sp)</label><input id="ms-stack" type="text" value="0x10010200" title="Initial stack pointer address (defaults to Data Base + Data Size; user overridable)"></div>
             <div class="cycle-field"><label for="ms-mmio">MMIO base</label><input id="ms-mmio" type="text" value="0xFFFF0000"></div>
           </div>
         </div>
         <!-- Tab 3: Simulator -->
         <div class="settings-tab-content" id="settingsContent-simulator">
+          <div class="cycle-hint" style="margin-bottom:12px;">Applied live — changes take effect on the next instruction executed.</div>
           <div style="background:#11111b;border:1px solid #313244;border-radius:6px;padding:10px 12px;margin-bottom:12px;display:flex;flex-direction:column;gap:5px;">
             <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:#cba6f7;cursor:pointer;font-size:13px;">
               <input type="checkbox" id="simStatementStep" style="accent-color:#cba6f7;width:16px;height:16px;cursor:pointer;">
@@ -2314,11 +2315,11 @@
               <label for="simMaxInstrPerRun" style="font-weight:600;color:#cba6f7;font-size:13px;">
                 Max Instructions Per Run
               </label>
-              <input id="simMaxInstrPerRun" type="number" min="1" max="10000000" step="10000" value="100000"
+              <input id="simMaxInstrPerRun" type="number" min="1" max="2000000000" step="1000000" value="100000000"
                 style="width:110px;padding:4px 8px;background:#313244;color:#cdd6f4;border:1px solid #45475a;border-radius:4px;font-family:inherit;font-size:12px;text-align:right;">
             </div>
             <span style="font-size:11.5px;color:#a6adc8;line-height:1.4;">
-              Maximum number of instructions executed per simulation run before pausing. Default: <strong>100,000</strong>.
+              Maximum number of instructions executed per simulation run before pausing. Default: <strong>100,000,000</strong>.
             </span>
           </div>
           <div class="cycle-hint" style="margin-bottom:12px;">Cycles consumed per instruction category for CPI and runtime estimation.</div>
@@ -2466,7 +2467,7 @@
         <div class="tab-content" id="tab-memory">
           <div class="mem-toolbar">
             <span style="color:#6c7086;font-size:13px;">Addr</span>
-            <input type="text" id="memAddr" value="0x10000" onchange="updateMemoryView()"
+            <input type="text" id="memAddr" value="0x400000" onchange="updateMemoryView()"
               onkeydown="if(event.key==='Enter')updateMemoryView()">
             <span style="color:#6c7086;font-size:13px;">Rows</span>
             <input type="number" id="memRows" value="64" min="1" max="128" style="width:50px;"
@@ -2553,7 +2554,7 @@
               </div>
               <div class="uart-terminal" id="uartTerminal" title="Terminal Output (0xFFFF000C WO)"></div>
               <div class="uart-controls">
-                <select id="uartInputMode" title="Input mode: ASCII Text or Comma-separated Hex Bytes">
+                <select id="uartInputMode" title="Input mode: ASCII Text or Comma-separated Hex Bytes" onchange="renderUartTerminal()">
                   <option value="ascii">ASCII Text</option>
                   <option value="hex">Hex (e.g. 0x48, 0x65, 0x0A)</option>
                 </select>
@@ -2937,16 +2938,16 @@
     const PAGE_MASK = PAGE_SIZE - 1; // 0xFFFF
     let memoryPages = new Map();
     let memory = new Uint8Array(4 * 1024 * 1024); // 4 MB memory compatibility buffer
-    // Configurable memory segment addresses. Defaults match the documented layout:
-    //   code .text = 0x10000, data = 0x20000, stack = 0x7ffffc, MMIO = 0xFFFF0000
-    const DEFAULT_BASE = 0x00010000;
-    const DEFAULT_DATA_OFFSET = 0x00010000;
-    let baseAddress = DEFAULT_BASE;                    // .text base
-    let codeSize = 0x00000200;                         // .text size (default 0x200 / 512 bytes)
-    let dataBase = DEFAULT_BASE + DEFAULT_DATA_OFFSET; // .data base = 0x20000
-    let dataSize = 0x00000200;                         // .data size (default 0x200 / 512 bytes)
-    let stackBase = 0x00020200;                        // stack top = dataBase + dataSize
-    let mmioBase = 0xFFFF0000;                         // MMIO base
+    // Configurable memory segment addresses. Defaults match MIPS/RISC-V SPIM-style layout:
+    //   code .text = 0x00400000, data = 0x10010000, stack top = dataBase + dataSize, MMIO = 0xFFFF0000
+    const DEFAULT_BASE = 0x00400000;
+    const DEFAULT_DATA_BASE = 0x10010000;
+    let baseAddress = DEFAULT_BASE;      // .text base
+    let codeSize = 0x00000200;           // .text size (default 0x200 / 512 bytes)
+    let dataBase = DEFAULT_DATA_BASE;    // .data base
+    let dataSize = 0x00000200;           // .data size (default 0x200 / 512 bytes)
+    let stackBase = 0x10010200;          // stack top = dataBase + dataSize
+    let mmioBase = 0xFFFF0000;           // MMIO base
     let currentMemSegment = 'code';
     let currentSettingsTab = 'compiler';
     let pc = baseAddress;
@@ -2976,7 +2977,7 @@
     let statementStepping = false;
 
     // Maximum number of instructions executed per simulation chunk / batch before yielding to UI
-    let maxInstructionsPerRun = 100000;
+    let maxInstructionsPerRun = 100000000;
 
     // Step history for "back step". Each entry stores CPU state + memory writes for one executed instruction.
     let execHistory = [];       // stack of {pc, regs, fregs, dregs, writes, line}
@@ -3030,6 +3031,7 @@
     // UART & Console State
     let uartRxQueue = [];            // Queue of byte values (numbers 0..255) waiting to be read
     let uartTxBuffer = '';           // Display terminal output string for UART_TX
+    let uartTxBytes = [];            // Raw byte values received via UART_TX (for hex re-render)
     let ioInputBuffer = '';
     let ioOutputBuffer = '';
 
@@ -3665,12 +3667,12 @@
 
       const totalCodeBytes = Math.max(0, textAddr - base);
       if (totalCodeBytes > codeSize) {
-        log(`⚠️ WARNING: Program code section (0x${totalCodeBytes.toString(16)} / ${totalCodeBytes} bytes) exceeds configured Linker Code Segment size (0x${codeSize.toString(16)} / ${codeSize} bytes)! On physical FPGA hardware with fixed instruction memory (IROM), memory overflow or wrap-around will occur.`, 'warn');
+        log(`⚠️ WARNING: Program code section (0x${totalCodeBytes.toString(16)} / ${totalCodeBytes} bytes) exceeds configured Linker Code Segment size (0x${codeSize.toString(16)} / ${codeSize} bytes)! This may cause mismatch with the memory size provisioned in hardware.`, 'warn');
       }
 
       const totalDataBytes = Math.max(0, dataAddr - dataBase);
       if (totalDataBytes > dataSize && editorLanguageMode !== 'c') {
-        log(`⚠️ WARNING: Program data section (0x${totalDataBytes.toString(16)} / ${totalDataBytes} bytes) exceeds configured Linker Data Segment size (0x${dataSize.toString(16)} / ${dataSize} bytes)! On physical FPGA hardware with fixed block RAM, memory overflow or wrap-around will occur.`, 'warn');
+        log(`⚠️ WARNING: Program data section (0x${totalDataBytes.toString(16)} / ${totalDataBytes} bytes) exceeds configured Linker Data Segment size (0x${dataSize.toString(16)} / ${dataSize} bytes)! This may cause mismatch with the memory size provisioned in hardware.`, 'warn');
       }
 
       return output;
@@ -4210,12 +4212,9 @@
       const txBase = UART_TX >>> 0;
       if (u >= txBase && u < txBase + 4) {
         const ch = val & 0xFF;
+        uartTxBytes.push(ch);
         uartTxBuffer += String.fromCharCode(ch);
-        const termEl = document.getElementById('uartTerminal');
-        if (termEl) {
-          termEl.innerText = uartTxBuffer || '(Terminal output will appear here...)';
-          termEl.scrollTop = termEl.scrollHeight;
-        }
+        renderUartTerminal();
         return;
       }
 
@@ -7067,8 +7066,26 @@ function updateRegisters() {
       updateMemoryView();
     }
 
+    function renderUartTerminal() {
+      const termEl = document.getElementById('uartTerminal');
+      if (!termEl) return;
+      const modeEl = document.getElementById('uartInputMode');
+      const isHex = modeEl && modeEl.value === 'hex';
+      if (uartTxBytes.length === 0) {
+        termEl.innerText = '(Terminal output will appear here...)';
+        return;
+      }
+      if (isHex) {
+        termEl.innerText = uartTxBytes.map(b => '0x' + b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+      } else {
+        termEl.innerText = uartTxBuffer;
+      }
+      termEl.scrollTop = termEl.scrollHeight;
+    }
+
     function clearUartTx() {
       uartTxBuffer = '';
+      uartTxBytes = [];
       uartRxQueue = [];
       autoSeqPending = false;
       autoSeqQueue = [];
@@ -7079,6 +7096,7 @@ function updateRegisters() {
       }
       const statusEl = document.getElementById('uartAutoSendStatus');
       if (statusEl) statusEl.innerText = '';
+      renderUartTerminal();
       updatePeripherals();
       updateMemoryView();
     }
@@ -8491,13 +8509,23 @@ STACK_INIT:
 
     function buildCyclesPanel() {
       const stmtEl = document.getElementById('simStatementStep');
-      if (stmtEl) stmtEl.checked = !!statementStepping;
+      if (stmtEl) {
+        stmtEl.checked = !!statementStepping;
+        stmtEl.onchange = () => { statementStepping = stmtEl.checked; };
+      }
 
       const maxInstrEl = document.getElementById('simMaxInstrPerRun');
-      if (maxInstrEl) maxInstrEl.value = (typeof maxInstructionsPerRun === 'number' && maxInstructionsPerRun > 0) ? maxInstructionsPerRun : 100000;
+      if (maxInstrEl) {
+        maxInstrEl.value = (typeof maxInstructionsPerRun === 'number' && maxInstructionsPerRun > 0) ? maxInstructionsPerRun : 100000000;
+        maxInstrEl.onchange = () => {
+          const v = parseInt(maxInstrEl.value, 10);
+          maxInstructionsPerRun = (v > 0) ? v : 100000000;
+          maxInstrEl.value = maxInstructionsPerRun;
+        };
+      }
 
       const body = document.getElementById('cyclesConfigBody');
-      let html = '<div class="cycle-hint">Applied live — changes take effect on the next instruction executed.</div>';
+      let html = '';
       for (const [key, label] of CYCLE_FIELD_DEFS) {
         html += '<div class="cycle-field"><label for="cf-' + key + '">' + label + '</label>' +
           '<input id="cf-' + key + '" type="number" min="1" max="1000" value="' + cycleConfig[key] + '"></div>';
@@ -8539,7 +8567,7 @@ STACK_INIT:
       cycleConfig.fp = 4;
       cycleConfig.system = 1;
       statementStepping = false;
-      maxInstructionsPerRun = 100000;
+      maxInstructionsPerRun = 100000000;
       buildCyclesPanel();
       setStatus('Simulator settings reset to defaults', 'success');
     }
@@ -8650,7 +8678,7 @@ STACK_INIT:
       const maxInstrEl = document.getElementById('simMaxInstrPerRun');
       if (maxInstrEl) {
         const v = parseInt(maxInstrEl.value, 10);
-        maxInstructionsPerRun = (v > 0) ? v : 100000;
+        maxInstructionsPerRun = (v > 0) ? v : 100000000;
         maxInstrEl.value = maxInstructionsPerRun;
       }
 
@@ -8671,13 +8699,13 @@ STACK_INIT:
       } else if (currentSettingsTab === 'linker') {
         baseAddress = DEFAULT_BASE;
         codeSize = 0x200;
-        dataBase = DEFAULT_BASE + DEFAULT_DATA_OFFSET;
+        dataBase = DEFAULT_DATA_BASE;
         dataSize = 0x200;
         stackBase = (dataBase + dataSize) >>> 0;
         mmioBase = 0xFFFF0000;
         MMIO_BASE = mmioBase; MMIO_GETC = mmioBase; MMIO_PUTC = mmioBase + 4; MMIO_STATUS = mmioBase + 8;
         buildMemSegmentsPanel();
-        setStatus('Linker segment defaults restored (0x200 sizes)', 'info');
+        setStatus('Linker segment defaults restored', 'info');
       } else if (currentSettingsTab === 'simulator') {
         resetCyclesConfig();
       }
@@ -9200,7 +9228,7 @@ STACK_INIT:
       const dataEnd = (dataBase + estimatedDataBytes) >>> 0;
       if (dataEnd > effectiveStack || estimatedDataBytes > dataSize) {
         effectiveStack = Math.max(effectiveStack, ((dataEnd + 0x2000 + 0xFFF) & ~0xFFF) >>> 0);
-        log(`⚠️ WARNING: Large C data section (0x${estimatedDataBytes.toString(16)} / ${estimatedDataBytes} bytes) exceeds configured Linker Data Segment size (0x${dataSize.toString(16)} / ${dataSize} bytes). Dynamically adjusting startup stack pointer to 0x${effectiveStack.toString(16)}. ⚠️ CAUTION: On physical FPGA hardware with fixed data RAM, this size may exceed physical RAM boundaries!`, 'warn');
+        log(`⚠️ WARNING: Large C data section (0x${estimatedDataBytes.toString(16)} / ${estimatedDataBytes} bytes) exceeds configured Linker Data Segment size (0x${dataSize.toString(16)} / ${dataSize} bytes). Dynamically adjusting startup stack pointer to 0x${effectiveStack.toString(16)}. ⚠️ CAUTION: This may cause mismatch with the memory size provisioned in hardware.`, 'warn');
         setStatus(`⚠️ Warning: Large data section (${estimatedDataBytes} B) adjusted stack to 0x${effectiveStack.toString(16)} (Check FPGA RAM limits)`, 'warn');
       }
 
@@ -9612,8 +9640,9 @@ STACK_INIT:
       running = true;
       updateToolbarButtonStates();
       let count = 0;
-      const maxCycles = 100000000;
-      const CHUNK_SIZE = (typeof maxInstructionsPerRun === 'number' && maxInstructionsPerRun > 0) ? maxInstructionsPerRun : 100000;
+      const INFINITE_LOOP_CAP = 100000000;
+      const maxRunLimit = (typeof maxInstructionsPerRun === 'number' && maxInstructionsPerRun > 0) ? maxInstructionsPerRun : 100000000;
+      const BATCH_SIZE = Math.min(10000, maxRunLimit); // per-tick chunk for UI responsiveness
       const initialLine = sourceLineForPc(pc);
       let resumeLine = (initialLine >= 1 && breakpoints.has(initialLine)) ? initialLine : -1;
 
@@ -9622,10 +9651,14 @@ STACK_INIT:
         if (runTimerId) { clearTimeout(runTimerId); runTimerId = null; }
         assembled = true;
 
-        if (cycleCount >= maxCycles) {
+        if (cycleCount >= INFINITE_LOOP_CAP) {
           log('Max cycles reached (possible infinite loop).', 'warn');
           setStatus('Stopped (max cycles)', 'warn');
           programFinished = false;
+        } else if (cycleCount >= maxRunLimit) {
+          programFinished = false;
+          log(`Paused after ${maxRunLimit.toLocaleString()} instructions. Click Run to continue.`, 'info');
+          setStatus(`Paused after ${maxRunLimit.toLocaleString()} instructions`, 'info');
         } else if (stopReason === 'exit' || stopReason === 'bounds') {
           currentExecLine = -1;
           programFinished = true;
@@ -9659,7 +9692,7 @@ STACK_INIT:
         let stopReason = null;
         const hasBreakpoints = breakpoints.size > 0;
 
-        while (running && count < maxCycles && batchCount < CHUNK_SIZE) {
+        while (running && count < INFINITE_LOOP_CAP && count < maxRunLimit && batchCount < BATCH_SIZE) {
           const execAddr = pc;
 
           if (hasBreakpoints) {
@@ -9694,17 +9727,17 @@ STACK_INIT:
           batchCount++;
 
           if (!running) { stopReason = 'exit'; break; }
-          if (pc < baseAddress || pc >= memory.length) { stopReason = 'bounds'; break; }
+          if ((pc >>> 0) < (baseAddress >>> 0) || (pc >>> 0) >= (mmioBase >>> 0)) { stopReason = 'bounds'; break; }
           if (sourceLineForPc(pc) === -1 && fetchInstruction(pc) === 0) { stopReason = 'exit'; break; }
         }
 
         updatePeripherals();
 
-        if (running && count < maxCycles && !stopReason) {
+        if (running && count < INFINITE_LOOP_CAP && count < maxRunLimit && !stopReason) {
           runTimerId = setTimeout(runBatch, 0);
         } else {
           currentExecLine = sourceLineForPc(pc);
-          finishRun(stopReason, count);
+          finishRun(stopReason || (count >= maxRunLimit ? 'paused' : null), count);
         }
       }
 
