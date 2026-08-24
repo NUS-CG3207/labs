@@ -6,15 +6,15 @@ know ARMv7M. Full reference pages following CG3207 slides can be found on the le
 ## The RISC-V mental model
 
 - **Load/store architecture** — Only `lw` and `sw` touch memory. Every other
-  instruction operates purely register-to-register; there's no mixing of
+  instruction operates purely register-to-register/ immediate; there's no mixing of
   memory access with computation or branching.
 - **No flags register** — Compare and branch are fused into one instruction:
   `beq`, `bne`, `blt`, `bge`, … There is no separate `CMP` — the comparison
   happens inside the branch itself.
 - **≤ 2 source registers, ≤ 1 destination** — Every instruction reads at
   most two registers and writes at most one. This is why there's no
-  `LDM`/`STM`, no `PUSH`/`POP`, and no multiply-accumulate — and why the ISA
-  stays small and regular.
+  `LDM`/`STM`, no `PUSH`/`POP`, no pre/post-index, single-instruction long multiplies, and no multiply-accumulate — and why the ISA
+  stays simple and regular.
 
 ---
 
@@ -61,8 +61,8 @@ Full ABI table and details: [Registers](registers.md).
 
 !!! tip "Rule of thumb"
 
-    Branches ask a question and fall through either way; `jal`/`jalr`
-    always go, and can remember where they came from.
+    Branches ask a question and can go either way - taken or not taken; `jal`/`jalr`
+    is always taken, and can remember where they came from (link).
 
 Full instruction tables: [Data Processing](dp-instructions.md) ·
 [Memory](memory-instructions.md) · [Control](control-instructions.md).
@@ -95,11 +95,11 @@ Full instruction tables: [Data Processing](dp-instructions.md) ·
 
 !!! info "No ARM equivalent"
 
-    ARM builds large constants via `MOVW`/`MOVT` or a PC-relative literal
-    pool (`LDR Rd, =const`). RISC-V has no literal pool: every 32-bit
-    constant or address is built from `lui`/`auipc` + `addi`.
+    ARM builds large constants via a PC-relative load
+    (`LDR Rd, =const`), where the `const` can be a number or an address (label). In RISC-V, every 32-bit
+    number or address is built from `lui`/`auipc` + `addi`.
 
-=== "li expansion"
+=== "li (for numbers) expansion"
 
     ```asm
     li rd, imm   →   lui  rd, imm[31:12]
@@ -108,7 +108,7 @@ Full instruction tables: [Data Processing](dp-instructions.md) ·
 
     *(li emits just addi if the constant fits in 12 bits)*
 
-=== "la expansion"
+=== "la (for PC-relative addresses) expansion"
 
     ```asm
     la rd, LBL   →   auipc rd, Δ[31:12]
@@ -132,25 +132,28 @@ Full instruction tables: [Data Processing](dp-instructions.md) ·
     endif:
     ```
 
-=== "Iteration (loop)"
+=== "Iteration (for loop)"
 
     ```asm
         li   t0, 10       # count = 10
     loop:
-        beqz t0, done
+        beqz t0, done     # continue if count > 0; exit if count == 0
         addi t0, t0, -1   # count--
         j    loop
     done:
     ```
 
-=== "Function call"
+=== "Function call (add2();)"
 
     ```asm
+    # caller
         li   a0, 4         # arg0
         li   a1, 7         # arg1
         jal  ra, add2       # call
         # result in a0
-    add2:
+        # rest of the caller statements, with a jump at the end
+        
+    add2:  # callee
         add  a0, a0, a1
         ret
     ```
