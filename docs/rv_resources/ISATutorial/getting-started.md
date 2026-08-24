@@ -132,9 +132,10 @@ Full instruction tables: [Data Processing](dp-instructions.md) ·
 === "Selection (if / else)"
 
     ```asm
-        blez t0, else    # if x > 0 (x <= 0 will go to else)
+        # if (x > 0)
+        blez t0, else    # branch to else if x <= 0
         addi t1, t1, 1   # y++
-        j    endif
+        j    endif       # skip else block
     else:
         addi t1, t1, -1  # y--
     endif:
