@@ -20,20 +20,20 @@ know ARMv7M. Full reference pages following CG3207 slides can be found on the le
 
 ## Registers
 
-    | Register | ABI Name | Description | Saver |
-    |---|---|---|---|
-    | `x0` | `zero` | Zero constant | — |
-    | `x1` | `ra` | Return address | Caller |
-    | `x2` | `sp` | Stack pointer | Callee |
-    | `x3` | `gp` | Global pointer | — |
-    | `x4` | `tp` | Thread pointer | — |
-    | `x5`–`x7` | `t0`–`t2` | Temporaries | Caller |
-    | `x8` | `s0` / `fp` | Saved / frame pointer | Callee |
-    | `x9` | `s1` | Saved register | Callee |
-    | `x10`–`x11` | `a0`–`a1` | Fn args / return values | Caller |
-    | `x12`–`x17` | `a2`–`a7` | Fn args | Caller |
-    | `x18`–`x27` | `s2`–`s11` | Saved registers | Callee |
-    | `x28`–`x31` | `t3`–`t6` | Temporaries | Caller |
+| Register | ABI Name | Description | Saver |
+|---|---|---|---|
+| `x0` | `zero` | Zero constant | — |
+| `x1` | `ra` | Return address | Caller |
+| `x2` | `sp` | Stack pointer | Callee |
+| `x3` | `gp` | Global pointer | — |
+| `x4` | `tp` | Thread pointer | — |
+| `x5`–`x7` | `t0`–`t2` | Temporaries | Caller |
+| `x8` | `s0` / `fp` | Saved / frame pointer | Callee |
+| `x9` | `s1` | Saved register | Callee |
+| `x10`–`x11` | `a0`–`a1` | Fn args / return values | Caller |
+| `x12`–`x17` | `a2`–`a7` | Fn args | Caller |
+| `x18`–`x27` | `s2`–`s11` | Saved registers | Callee |
+| `x28`–`x31` | `t3`–`t6` | Temporaries | Caller |
 
 - **`x0` is hardwired to 0** — reads always return 0; writes are ignored.
   It's how `mv` and other conveniences are synthesized from `add`.
@@ -45,7 +45,7 @@ Full ABI table and details: [Registers](registers.md).
 
 ---
 
-## uction syntax
+## Instruction syntax
 
 === "Data processing & memory"
 
@@ -56,7 +56,7 @@ Full ABI table and details: [Registers](registers.md).
     sw   t0, 4(s0)    # Mem[s0+4] = t0 (memory write)
     ```
 
-    `addi`/`lw`/`sw` take a plain immediate — *no* leading `#`, unlike ARM.
+    `addi`/`lw`/`sw` take a plain 12-bit immediate; *no* leading `#`, unlike ARM.
 
 === "Branch vs. jump vs. jump-register"
 
@@ -181,29 +181,30 @@ Full worked examples, including a stack-based function call:
 === "Syntax patterns"
 
     ```asm
-    op   rd, rs1, rs2    # DP, register
-    op   rd, rs1, imm    # DP, immediate
-    op   rd, imm(rs1)    # load
-    op   rs2, imm(rs1)   # store
-    op   rs1, rs2, LABEL # branch
-    jal  rd, LABEL        # jump + link
-    jalr rd, imm(rs1)     # jump + link, register target
+    op   rd, rs1, rs2       # DP, register
+    op   rd, rs1, imm       # DP, immediate
+    op   rd, imm(rs1)       # load
+    op   rs2, imm(rs1)      # store
+    op   rs1, rs2, LABEL    # branch
+    jal  rd, LABEL          # jump + link
+    jalr rd, imm(rs1)       # jump + link, register target
     ```
 
 === "Pseudo-ops"
 
     ```asm
-    li   rd, imm     # lui rd, imm[31:12]  ; addi rd, rd, imm[11:0]
-    la   rd, LABEL   # auipc rd, d[31:12]  ; addi rd, rd, d[11:0]
-    lw   rd, LABEL     # auipc rd, d[31:12]   ; lw rd, d[11:0](rd)
-    sw   rs, LABEL, rt # auipc rt, d[31:12]   ; sw rs, d[11:0](rt)
-    mv   rd, rs      # addi rd, rs, 0 - can be assembler-dependent
-    j    LABEL       # jal  x0, LABEL
-    ret              # jalr x0, 0(x1)
-    call LABEL       # auipc x1, d[31:12]  ; jalr x1, d[11:0](x1)
-    nop              # addi x0, x0, 0 - can be assembler-dependent
-    beqz rs, LABEL   # beq  rs, x0, LABEL
-    # d = the PC-relative delta to the label: LABEL - pc (where pc is the address of the auipc)
+    li   rd, imm        # lui rd, imm[31:12]  ; addi rd, rd, imm[11:0]
+    la   rd, LABEL      # auipc rd, Δ[31:12]  ; addi rd, rd, Δ[11:0]
+    lw   rd, LABEL      # auipc rd, Δ[31:12]   ; lw rd, Δ[11:0](rd)
+    sw   rs, LABEL, rt  # auipc rt, Δ[31:12]   ; sw rs, Δ[11:0](rt)
+    mv   rd, rs         # addi rd, rs, 0 - can be assembler-dependent
+    j    LABEL          # jal  x0, LABEL
+    ret                 # jalr x0, 0(x1)
+    call LABEL          # auipc x1, Δ[31:12]  ; jalr x1, Δ[11:0](x1)
+    nop                 # addi x0, x0, 0 - can be assembler-dependent
+    beqz rs, LABEL      # beq  rs, x0, LABEL
+    # Δ = the PC-relative delta (offset) to the label: LABEL - pc 
+    # (where pc is the address of the auipc)
     ```
 
 ---

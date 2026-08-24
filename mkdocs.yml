@@ -55,7 +55,7 @@ nav:
     - Using Compiled Code: rv_resources/using_compiled_code.md
     - RISC-V Simulator: rv_resources/riscv_simulator_redirect.md
     - RISC-V ISA Tutorial:
-      - Overview: rv_resources/ISATutorial/ISA_Tutorial.md
+      - Getting Started: rv_resources/ISATutorial/getting-started.md
       - Background: rv_resources/ISATutorial/background.md
       - Registers: rv_resources/ISATutorial/registers.md
       - Instruction Formats: rv_resources/ISATutorial/formats.md
