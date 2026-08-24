@@ -20,12 +20,20 @@ know ARMv7M. Full reference pages following CG3207 slides can be found on the le
 
 ## Registers
 
-| Group | Range | Use |
-|---|---|---|
-| **Special** | `x0, x1–x4` | `zero · ra · sp · gp · tp` — fixed roles, not general-purpose scratch |
-| **Temporaries** | `t0–t6` | Caller-saved scratch registers. Free to clobber; a called function may overwrite them |
-| **Saved** | `s0–s11` | Callee-saved. A function that uses these must restore them before returning |
-| **Arguments** | `a0–a7` | Function arguments and return values. Caller-saved |
+    | Register | ABI Name | Description | Saver |
+    |---|---|---|---|
+    | `x0` | `zero` | Zero constant | — |
+    | `x1` | `ra` | Return address | Caller |
+    | `x2` | `sp` | Stack pointer | Callee |
+    | `x3` | `gp` | Global pointer | — |
+    | `x4` | `tp` | Thread pointer | — |
+    | `x5`–`x7` | `t0`–`t2` | Temporaries | Caller |
+    | `x8` | `s0` / `fp` | Saved / frame pointer | Callee |
+    | `x9` | `s1` | Saved register | Callee |
+    | `x10`–`x11` | `a0`–`a1` | Fn args / return values | Caller |
+    | `x12`–`x17` | `a2`–`a7` | Fn args | Caller |
+    | `x18`–`x27` | `s2`–`s11` | Saved registers | Callee |
+    | `x28`–`x31` | `t3`–`t6` | Temporaries | Caller |
 
 - **`x0` is hardwired to 0** — reads always return 0; writes are ignored.
   It's how `mv` and other conveniences are synthesized from `add`.
@@ -197,40 +205,10 @@ Full worked examples, including a stack-based function call:
     # d = the PC-relative delta to the label: LABEL - pc (where pc is the address of the auipc)
     ```
 
-The full register ABI table[^regs], the branch/jump comparison[^branchjump],
-and the data-processing, memory, and M-extension instruction tables[^instr]
-are collected below for reference.
+The full data-processing, memory, and M-extension instruction tables[^instr]
+are below for reference.
 
 ---
-
-[^regs]:
-    **Register ABI names**
-
-    | Register | ABI Name | Description | Saver |
-    |---|---|---|---|
-    | `x0` | `zero` | Zero constant | — |
-    | `x1` | `ra` | Return address | Caller |
-    | `x2` | `sp` | Stack pointer | Callee |
-    | `x3` | `gp` | Global pointer | — |
-    | `x4` | `tp` | Thread pointer | — |
-    | `x5`–`x7` | `t0`–`t2` | Temporaries | Caller |
-    | `x8` | `s0` / `fp` | Saved / frame pointer | Callee |
-    | `x9` | `s1` | Saved register | Callee |
-    | `x10`–`x11` | `a0`–`a1` | Fn args / return values | Caller |
-    | `x12`–`x17` | `a2`–`a7` | Fn args | Caller |
-    | `x18`–`x27` | `s2`–`s11` | Saved registers | Callee |
-    | `x28`–`x31` | `t3`–`t6` | Temporaries | Caller |
-
-[^branchjump]:
-    **Branch vs. jump vs. jump-register**
-
-    | Instr. | Example | Conditional? | Links (rd = return addr)? | Target |
-    |---|---|:---:|:---:|---|
-    | **Branch** (B-type) | `blt t0, t1, LBL` | Yes | No | Label |
-    | **Jump** — `jal` | `jal ra, LBL` | No (always) | Yes (rd) | Label |
-    | **Jump-reg** — `jalr` | `jalr ra, 0(t0)` | No (always) | Yes (rd) | Register + offset |
-
-    `ret` is a pseudo-instruction for `jalr x0, 0(ra)`.
 
 [^instr]:
     **Data processing**
