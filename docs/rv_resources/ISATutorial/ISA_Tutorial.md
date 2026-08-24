@@ -41,10 +41,10 @@ Full ABI table and details: [Registers](registers.md).
 === "Data processing & memory"
 
     ```asm
-    add  t0, t1, t2   # t0 = t1 + t2   (register)
-    addi t0, t0, 1    # t0 = t0 + 1    (no # !)
-    lw   t0, 0(s0)    # t0 = Mem[s0+0]
-    sw   t0, 4(s0)    # Mem[s0+4] = t0
+    add  t0, t1, t2   # t0 = t1 + t2   (data processing register type)
+    addi t0, t0, 1    # t0 = t0 + 1    (data processing register immediate type)
+    lw   t0, 0(s0)    # t0 = Mem[s0+0] (memory read)
+    sw   t0, 4(s0)    # Mem[s0+4] = t0 (memory write)
     ```
 
     `addi`/`lw`/`sw` take a plain immediate — *no* leading `#`, unlike ARM.
@@ -57,7 +57,6 @@ Full ABI table and details: [Registers](registers.md).
     | **Jump** — `jal` | `jal ra, LBL` | No | Yes (rd) | Label |
     | **Jump-reg** — `jalr` | `jalr ra,0(t0)` | No | Yes (rd) | Reg + offset |
 
-    `ret` is a pseudo-instruction for `jalr x0, 0(ra)`.
 
 !!! tip "Rule of thumb"
 
