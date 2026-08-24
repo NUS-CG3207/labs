@@ -149,7 +149,7 @@ Full instruction tables: [Data Processing](dp-instructions.md) ·
     # caller
         li   a0, 4         # arg0
         li   a1, 7         # arg1
-        jal  ra, add2       # call
+        call add2          # var_a0 = add2()
         # result in a0
         # rest of the caller statements, with a jump at the end
         
@@ -185,13 +185,17 @@ Full worked examples, including a stack-based function call:
 === "Pseudo-ops"
 
     ```asm
-    li   rd, imm
-    la   rd, LABEL
-    mv   rd, rs
-    j    LABEL
-    ret
-    call LABEL
-    nop
+    li   rd, imm     # lui rd, imm[31:12]  ; addi rd, rd, imm[11:0]
+    la   rd, LABEL   # auipc rd, d[31:12]  ; addi rd, rd, d[11:0]
+    lw   rd, LABEL     # auipc rd, d[31:12]   ; lw rd, d[11:0](rd)
+    sw   rs, LABEL, rt # auipc rt, d[31:12]   ; sw rs, d[11:0](rt)
+    mv   rd, rs      # addi rd, rs, 0 - can be assembler-dependent
+    j    LABEL       # jal  x0, LABEL
+    ret              # jalr x0, 0(x1)
+    call LABEL       # auipc x1, d[31:12]  ; jalr x1, d[11:0](x1)
+    nop              # addi x0, x0, 0 - can be assembler-dependent
+    beqz rs, LABEL   # beq  rs, x0, LABEL
+    # d = the PC-relative delta to the label: LABEL - pc (where pc is the address of the auipc)
     ```
 
 The full register ABI table[^regs], the branch/jump comparison[^branchjump],
