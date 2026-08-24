@@ -39,12 +39,13 @@ know ARMv7M. Full reference pages following CG3207 slides can be found on the le
   It's how `mv` and other conveniences are synthesized from `add`.
 - **There is no visible PC** — unlike ARM's `R15`, the PC can't be read or
   written directly; only touched via `auipc`, `jal`, `jalr`, and branches.
+- `x1`-`x31` are general-purpose at ISA / hardware level. They acquire special purposes only at ABI level.
 
 Full ABI table and details: [Registers](registers.md).
 
 ---
 
-## Instruction syntax
+## uction syntax
 
 === "Data processing & memory"
 
@@ -59,7 +60,7 @@ Full ABI table and details: [Registers](registers.md).
 
 === "Branch vs. jump vs. jump-register"
 
-    | Instr. | Example | Cond.? | Links? | Target |
+    | . | Example | Cond.? | Links? | Target |
     |---|---|:---:|:---:|---|
     | **Branch** | `blt t0,t1,LBL` | Yes | No | Label |
     | **Jump** — `jal` | `jal ra, LBL` | No | Yes (rd) | Label |
@@ -204,54 +205,6 @@ Full worked examples, including a stack-based function call:
     beqz rs, LABEL   # beq  rs, x0, LABEL
     # d = the PC-relative delta to the label: LABEL - pc (where pc is the address of the auipc)
     ```
-
-The full data-processing, memory, M-extension, and contorl instruction tables[^instr]
-are below for reference.
-
----
-
-[^instr]:
-    **Data processing**
-
-    | Inst | Description (C) | Inst | Description (C) |
-    |---|---|---|---|
-    | `add` | `rd = rs1 + rs2` | `addi` | `rd = rs1 + imm` |
-    | `sub` | `rd = rs1 - rs2` | — | (no immediate form; negate and use addi) |
-    | `xor` / `xori` | `rd = rs1 ^ rs2` / `imm` | `or` / `ori` | <code>rd = rs1 &#124; rs2</code> / `imm` |
-    | `and` / `andi` | `rd = rs1 & rs2` / `imm` | `slt` / `slti` | `rd = (rs1 < rs2)?1:0` |
-    | `sll` / `slli` | `rd = rs1 << rs2` / `imm[4:0]` | `sltu` / `sltiu` | unsigned `slt`/`slti` |
-    | `srl` / `srli` | `rd = rs1 >> rs2` / `imm[4:0]` (logical) | `sra` / `srai` | arithmetic right shift |
-    | `lui` | `rd = imm << 12` | `auipc` | `rd = PC + (imm << 12)` |
-
-    **Memory**
-
-    | Inst | Description (C) | Inst | Description (C) |
-    |---|---|---|---|
-    | `lb` / `lbu` | `rd = M[rs1+imm][7:0]` (sign / zero ext.) | `sb` | `M[rs1+imm][7:0] = rs2[7:0]` |
-    | `lh` / `lhu` | `rd = M[rs1+imm][15:0]` (sign / zero ext.) | `sh` | `M[rs1+imm][15:0] = rs2[15:0]` |
-    | `lw` | `rd = M[rs1+imm][31:0]` | `sw` | `M[rs1+imm][31:0] = rs2[31:0]` |
-
-    No pre/post-increment addressing, no `LDM`/`STM` — increment the base
-    register explicitly with `addi`.
-
-    **Multiply / divide (M extension)**
-
-    | Inst | Description (C) | Inst | Description (C) |
-    |---|---|---|---|
-    | `mul` | `rd = (rs1*rs2)[31:0]` | `div` / `divu` | `rd = rs1 / rs2` |
-    | `mulh` / `mulhu` / `mulhsu` | `rd = (rs1*rs2)[63:32]` | `rem` / `remu` | `rd = rs1 % rs2` |
-
-    **Branch/Jump**
-    | Inst   | Name              | Description (C)             | Syntax                |
-    | ------ | ----------------- | --------------------------- | --------------------- |
-    | `beq`  | Branch ==         | `if(rs1 == rs2) PC += imm`  | `op rs1, rs2, LABEL`* |
-    | `bne`  | Branch !=         | `if(rs1 != rs2) PC += imm`  | `op rs1, rs2, LABEL`* |
-    | `blt`  | Branch <          | `if(rs1 < rs2) PC += imm`   | `op rs1, rs2, LABEL`* |
-    | `bge`  | Branch ≥          | `if(rs1 >= rs2) PC += imm`  | `op rs1, rs2, LABEL`* |
-    | `bltu` | Branch < (U)      | `if(rs1 < rs2) PC += imm`   | `op rs1, rs2, LABEL`* |
-    | `bgeu` | Branch ≥ (U)      | `if(rs1 >= rs2) PC += imm`  | `op rs1, rs2, LABEL`* |
-    | `jal`  | Jump And Link     | `rd = PC+4; PC += imm`      | `jal rd, LABEL`*      |
-    | `jalr` | Jump And Link Reg | `rd = PC+4; PC = rs1 + imm` | `jalr rd, imm(rs1)`   |
 
 ---
 
