@@ -149,7 +149,7 @@ Full instruction tables: [Data Processing](dp-instructions.md) ·
     # caller
         li   a0, 4         # arg0
         li   a1, 7         # arg1
-        call add2          # var_a0 = add2()
+        call add2          # result = add2(arg0, arg1);
         # result in a0
         # rest of the caller statements, with a jump at the end
         
