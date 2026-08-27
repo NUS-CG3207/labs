@@ -1807,7 +1807,7 @@
     .btn-row {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 10px;
       justify-content: center;
     }
 
@@ -2554,11 +2554,12 @@
               </div>
               <div class="uart-terminal" id="uartTerminal" title="Terminal Output (0xFFFF000C WO)"></div>
               <div class="uart-controls">
-                <select id="uartInputMode" title="Input mode: ASCII Text or Comma-separated Hex Bytes" onchange="renderUartTerminal()">
-                  <option value="ascii">ASCII Text</option>
-                  <option value="hex">Hex (e.g. 0x48, 0x65, 0x0A)</option>
+                <select id="uartInputMode" title="Input mode" style="flex:0 0 auto;" onchange="(function(){var m=document.getElementById('uartInputMode').value,el=document.getElementById('uartInputText');if(el)el.placeholder=m==='hex'?'Comma-separated hex bytes — 0x48, 0x69, 0x0D, ...':'ASCII text incl. extended — \\r, \\n, ...';renderUartTerminal();})()">
+                  <option value="ascii">ASCII</option>
+                  <option value="hex">Hex</option>
                 </select>
-                <input type="text" id="uartInputText" placeholder="Type ASCII text or comma-separated hex bytes..."
+                <input type="text" id="uartInputText" placeholder="ASCII text incl. extended — \r, \n, ..."
+                  style="flex:1;min-width:0;"
                   onkeydown="if(event.key==='Enter')sendUartInput()">
                 <button id="uartSendBtn" onclick="sendUartInput()" class="primary">Send</button>
                 <button id="uartClearBtn" onclick="clearUartTx()" title="Clear Terminal display output">Clear</button>

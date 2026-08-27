@@ -154,7 +154,7 @@ All toolbar action buttons dynamically track runtime and editor state:
   .text
   .globl _start
   _start:
-      li sp, 0x20200       # Set sp to Data Base + Data Size
+      li sp, 0x10010200    # Set sp to Data Base + Data Size (0x10010000 + 0x200)
       call main            # Call C main()
       li a7, 10            # Exit syscall
       ecall
@@ -180,8 +180,8 @@ All toolbar action buttons dynamically track runtime and editor state:
 ## 4. Execution Engine & Disassembly Architecture
 
 ### 4.1 Execution Control & Timing Model
-- **Non-Blocking Simulation Loop**: Uses `requestAnimationFrame` with chunked batch execution to maintain a responsive 60 FPS UI while executing high-throughput simulations.
-- **Configurable Batch Limit (`maxInstructionsPerCycle`)**: Configurable via the Simulator tab in Settings (default `100,000` instructions per cycle, range $1$ to $10,000,000$), allowing users to balance raw throughput against UI refresh frequency for computationally heavy loops.
+- **Non-Blocking Simulation Loop**: Uses `requestAnimationFrame` with an internal batch size (`BATCH_SIZE = 10,000` instructions per event-loop tick) to maintain a responsive 60 FPS UI while executing high-throughput simulations.
+- **Configurable Run Limit (`simMaxInstrPerRun`)**: Configurable via the Simulator tab in Settings (default `100,000,000` instructions per run, range $1$ to $2,000,000,000$), automatically pausing long-running or infinite loops after the specified limit.
 - **Statement Stepping (Fast Mode)**:
   - When enabled via `⚙ Settings…` $\rightarrow$ **Simulator** (`simStatementStep`), stepping forward (`F8`) executes all machine instructions belonging to the current C statement or multi-instruction pseudo-op in a single discrete step.
   - Step back (`Shift+F8`) cleanly undoes the multi-instruction statement step in one operation.
@@ -189,7 +189,7 @@ All toolbar action buttons dynamically track runtime and editor state:
 
 ### 4.2 Disassembly Viewer with Label Headers & Annotations
 - **Label Header Rows (`.disasm-label-row`)**: Disassembly renders distinct label headers (e.g. `main:`, `loop:`, `factorial:`) preceding the target instruction address in both Assembly and C modes.
-- **Jump / Branch Target Annotations (`.disasm-target-label`)**: Numeric and hexadecimal jump/branch offsets (e.g. `jal 0x10040`) are automatically annotated with human-readable target label badges (e.g. `<main>`, `<loop>`).
+- **Jump / Branch Target Annotations (`.disasm-target-label`)**: Numeric and hexadecimal jump/branch offsets (e.g. `jal 0x00400040`) are automatically annotated with human-readable target label badges (e.g. `<main>`, `<loop>`).
 - **C Source Line Tags (`.disasm-cline-tag`)**: Instructions compiled from C display source line number and statement text (e.g. `[Line 10: total += arr[i];]`).
 - **Disassembly Auto-Scrolling**: The active execution instruction row (`.current-native`) automatically scrolls into view during stepping, step back, and breakpoint halts.
 
@@ -214,14 +214,14 @@ The simulator consolidates Compiler options, Memory layout / Linker settings, an
 |    ⚠️ FPGA Hardware Notice: On target FPGA boards (e.g. Basys 3 / Nexys 4), physical RAM size is   |
 |       fixed in hardware. Exceeding configured sizes or elevating stack outside physical RAM will   |
 |       cause execution failure or memory wrap-around on real FPGA hardware!                        |
-|    - Code (.text) base: [ 0x10000 ]   Code (.text) size: [ 0x200 ]                                |
-|    - Data (.data) base: [ 0x20000 ]   Data (.data) size: [ 0x200 ]                                |
-|    - Stack top (sp):    [ 0x20200 ]   (Default: Data Base + Data Size; user customizable)         |
+|    - Code (.text) base: [ 0x00400000 ] Code (.text) size: [ 0x200 ]                               |
+|    - Data (.data) base: [ 0x10010000 ] Data (.data) size: [ 0x200 ]                               |
+|    - Stack top (sp):    [ 0x10010200 ] (Default: Data Base + Data Size; user customizable)        |
 |    - MMIO base:         [ 0xFFFF0000 ]                                                            |
 +---------------------------------------------------------------------------------------------------+
 | ⏱ Simulator Tab:                                                                                  |
 |    [☑] Statement Stepping (Fast Mode) — executes all instructions for a statement in 1 step       |
-|    Max Instructions (Batch Chunk): [ 100000 ]                                             |
+|    Max Instructions Per Run: [ 100000000 ]                                                        |
 |    Cycles Per Instruction (CPI): Basic ALU: 1 | Mul/Div: 2 | Load: 2 | Store: 2 | Branch/Jump: 1   |
 +---------------------------------------------------------------------------------------------------+
 | [ Reset Defaults ]                                                               [ Apply & Close ] |
@@ -235,7 +235,7 @@ The simulator consolidates Compiler options, Memory layout / Linker settings, an
 ### 6.1 Tabbed Memory View & Protection Model
 - **Tabbed Navigation**: `[ Code | Data | Stack | MMIO ]`.
 - **Read-Only Code Protection**: The **Code (.text)** segment in the Memory View is strictly read-only to prevent accidental program corruption during inspection, while **Data**, **Stack**, and **MMIO** regions retain full interactive byte- and word-level editing.
-- **Downward Decreasing Stack View**: The **Stack** tab renders addresses in **downward decreasing order** (`0x20200`, `0x201F8`, `0x201F0`...) to accurately visualize the downward growth of the RISC-V stack.
+- **Downward Decreasing Stack View**: The **Stack** tab renders addresses in **downward decreasing order** (`0x10010200`, `0x100101F8`, `0x100101F0`...) to accurately visualize the downward growth of the RISC-V stack.
 - **Hardware Boundary Checks & Warnings**:
   - **Code Segment Overflow**: Emits a warning if assembled instructions exceed configured `codeSize` (default `0x200` / 512 B / 128 instructions).
   - **Data Segment Overflow**: Emits a warning and safely adjusts the startup stack pointer if data allocations exceed configured `dataSize` (default `0x200` / 512 B).
@@ -455,3 +455,6 @@ The simulator includes an automated test harness located in [`riscv_simulator_te
 | **v17.0 (C Compilation via Godbolt, Unified Settings & Advanced Memory View)** | Integrated full C language simulation via **Compiler Explorer (Godbolt) REST API** (RV32 GCC & Clang) with bidirectional line mapping, C source-level stepping, step back, and C breakpoints. Consolidated settings into a unified 3-tab modal (**Compiler**, **Linker**, **Simulator**) with settable segment sizes and user-customizable Stack Top ($\text{Data Base} + \text{Data Size}$). Added Disassembly view auto-scroll on stepping, tabbed Memory navigation (`[ Code | Data | Stack | MMIO ]`) with **downward decreasing address ordering for the Stack tab**, read-only code memory protection, and pre-loaded C examples including `Circle_delay_accel.c`. |
 | **v18.0 (Disassembly Labels, Target Annotations, FPGA Hardware Warning & Statement Stepping)** | Added dedicated **Disassembly Label Header Rows** (`.disasm-label-row`) and **Jump/Branch Target Annotations** (`.disasm-target-label`) in both ASM and C modes. Added **FPGA Hardware Memory Notice** box in the Linker settings tab alerting users to real hardware RAM constraints and stack overflow risks. Implemented **Statement Stepping (Fast Mode)** executing all underlying machine instructions for a C statement or multi-instruction pseudo-op in a single step with 1-click step back. Relocated memory dump buttons to the simulation/config toolbar for cleaner layout balance. |
 | **v19.0 (OLED Auto-Advance Mode 5, Image Display Examples & Batch Instruction Throttling)** | Implemented **OLED Auto-Advance Mode 5 (`autoadvance_row`)** for high-throughput column-major bitmap image rendering. Added pre-loaded **Image Display & Accel** examples in both C (`ImageDisplay_autoadvance_accel.c`) and Assembly (`ImageDisplay_autoadvance_accel.asm`) rendering 96x64 8-bit color bitmap graphics with dynamic accelerometer tilt responsiveness and UART logging. Added configurable **Max Instructions (Batch Limit)** setting in the Simulator Settings tab (`simMaxInstrPerCycle`, default `100,000`), allowing fine-tuning of execution chunk size for high-speed simulation without browser freezing. Expanded automated test suite with full offline precompiled verification (`test_baked_examples_full.js`, `test_sim_max_instructions_setting.js`). |
+| **v20.0 (Run Limit Fix, SPIM-Style Memory Layout & UART Console Polish)** | Fixed **Max Instructions Per Run** to correctly pause execution after the configured total instruction count (previously only controlled per-tick batch size); now uses a fixed internal `BATCH_SIZE=10,000` per JS event-loop tick for UI responsiveness. Default raised to **100,000,000**. Updated default memory layout to **SPIM-style** addresses: `.text` base `0x00400000`, `.data` base `0x10010000`, MMIO base `0xFFFF0000`; fixed a `pc >= memory.length` bounds check that immediately stopped execution at the new `.text` base — replaced with `pc >= mmioBase`. **UART Console**: simplified input-mode dropdown to **ASCII / Hex**; text input grows to fill remaining width; placeholder updates dynamically — ASCII shows `ASCII text incl. extended — \r, \n, …`, Hex shows `Comma-separated hex bytes — 0x48, 0x69, 0x0D, …`. Increased push-button gap from 4 px to 10 px. **Assembler**: confirmed no implicit alignment padding is inserted between byte-oriented directives (`.asciz`, `.byte`) and subsequent labels — addresses advance by exactly the directive's byte count, matching GAS/RARS behaviour. |
+| **v21.0 (Clang Stable Compiler Default & Dual Segment Boundary Overflow Warnings)** | Set **RISC-V Clang 20.1.0 (Stable)** (`rv32-cclang2010`) as the default C compiler across UI selection, settings resets, and compiler fallback resolution. Fixed C data segment byte sizing to accurately categorize `.data`, `.rodata`, `.bss`, `.sdata`, `.sbss`, `.tdata`, `.tbss` while strictly ignoring debug info sections (`.debug_*`, `.comment`, `.note*`). Fixed false-positive overflow warnings and premature stack adjustments on small C programs. Added **Code Segment Overflow Warning** in `assemble()` when assembled instructions exceed configured `codeSize` (`0x200` / 512 B), triggering for `Circle & Accel` and `Image Display & Accel` at `-O0`. Eliminated duplicate data section warnings in C mode. |
+
