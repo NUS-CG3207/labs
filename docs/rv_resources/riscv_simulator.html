@@ -2481,7 +2481,7 @@
             <button onclick="updateMemoryView()">&#x21bb;</button>
           </div>
           <div class="mem-legend">
-            groups of 4 bytes = one 32-bit word &nbsp;·&nbsp; <span style="color:#cba6f7">label</span> = symbol at row
+            groups of 4 bytes = one 32-bit <span style="color:#00ffff;font-weight:bold">little endian (LSB to the left) </span> word &nbsp;·&nbsp; <span style="color:#cba6f7">label</span> = symbol at row
             &nbsp;·&nbsp;
             <span style="color:#ffe08f;font-weight:bold">highlighted bytes</span> were written at runtime &nbsp;·&nbsp; <span style="color:#89b4fa;font-weight:550;">Data/Stack/MMIO: editable</span> (Code: read-only)
           </div>
@@ -2554,7 +2554,7 @@
               </div>
               <div class="uart-terminal" id="uartTerminal" title="Terminal Output (0xFFFF000C WO)"></div>
               <div class="uart-controls">
-                <select id="uartInputMode" title="Input mode" style="flex:0 0 auto;" onchange="(function(){var m=document.getElementById('uartInputMode').value,el=document.getElementById('uartInputText');if(el)el.placeholder=m==='hex'?'Comma-separated hex bytes — 0x48, 0x69, 0x0D, ...':'ASCII text incl. extended — \\r, \\n, ...';renderUartTerminal();})()">
+                <select id="uartInputMode" title="Input and output mode" style="flex:0 0 auto;" onchange="(function(){var m=document.getElementById('uartInputMode').value,el=document.getElementById('uartInputText');if(el)el.placeholder=m==='hex'?'Comma-separated hex bytes — 0x48, 0x69, 0x0D, ...':'ASCII text incl. extended — \\r, \\n, ...';renderUartTerminal();})()">
                   <option value="ascii">ASCII</option>
                   <option value="hex">Hex</option>
                 </select>
