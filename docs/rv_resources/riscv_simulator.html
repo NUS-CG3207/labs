@@ -749,40 +749,22 @@
       table-layout: fixed;
     }
 
-    .reg-table th {
-      padding: 6px 4px;
-      color: #bac2de;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-weight: 600;
-      border-bottom: 1px solid #313244;
-      position: sticky;
-      top: 0;
-      background: #1e1e2e;
-      vertical-align: middle;
-    }
-
-    .reg-table th:nth-child(1),
-    .reg-table td:nth-child(1) {
-      width: 40px;
+    /* Every column's width comes from the <colgroup>, written by
+       applyPanelColLayout() — no CSS width here, so nothing competes with
+       the computed layout. (The previous `width: 1%` on the two Value
+       columns was the cause of them collapsing: in a fixed-layout table
+       where *every* column has a specified width, surplus space is shared
+       out in proportion to those widths, so the px columns ballooned and
+       the 1% ones were squeezed to nothing.) */
+    .reg-table .col-id,
+    .reg-table .col-name {
       text-align: left;
+      white-space: nowrap;
     }
 
-    .reg-table th:nth-child(2),
-    .reg-table td:nth-child(2) {
-      width: 65px;
+    .reg-table th.col-val,
+    .reg-table td.col-val {
       text-align: left;
-    }
-
-    .reg-table th:nth-child(3),
-    .reg-table td:nth-child(3) {
-      width: 120px;
-      text-align: right;
-    }
-
-    .reg-table th:nth-child(4),
-    .reg-table td:nth-child(4) {
-      width: 120px;
-      text-align: right;
     }
 
     .reg-table td {
@@ -804,7 +786,7 @@
 
     .reg-table .reg-val {
       color: #a6e3a1;
-      text-align: right;
+      text-align: left;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
@@ -825,6 +807,93 @@
     .reg-table .reg-editable.editing {
       color: #89dceb;
       text-decoration: underline;
+    }
+
+    /* ============================================================
+       Shared data-panel column chrome (Registers / Memory /
+       Disassembly). One header design and one boundary separator
+       across all three panels, so they read as one system. The
+       Peripherals panel has neither and is left untouched.
+       ============================================================ */
+    .reg-table th,
+    .code-list th,
+    .mem-col-h {
+      position: relative;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      color: #9399b2;
+      background: #1e1e2e;
+      border-bottom: 1px solid #313244;
+      text-align: left;
+      vertical-align: bottom;
+      /* Right padding clears the boundary separator so a header label
+         never runs into the line. */
+      padding: 5px 11px 4px 6px;
+      user-select: none;
+      /* Headers may wrap freely — that is a one-off cost paid once at the
+         top of the panel, unlike the data rows below them. */
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    /* All three headers stay pinned while their rows scroll under them.
+       The scrollport is the shared `.panel-body`, so `top: 0` parks each
+       header at the top of the panel while the toolbar/legend above it
+       scrolls away. Only the vertical axis is pinned — the header still
+       scrolls sideways in step with the data when a narrow panel scrolls
+       horizontally. Each carries an opaque background so the rows passing
+       beneath never show through. */
+    .reg-table th,
+    .code-list th,
+    .mem-col-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    /* The boundary separator between two columns. Drawn as an always-visible
+       hairline so the column edges are discoverable at a glance instead of
+       having to be hunted for, and it thickens to mauve under the pointer.
+       The hit area (11px) is deliberately much wider than the line it draws. */
+    .col-resizer {
+      position: absolute;
+      top: 0;
+      bottom: -1px;
+      right: -5px;
+      width: 11px;
+      cursor: col-resize;
+      z-index: 3;
+      touch-action: none;
+    }
+
+    .col-resizer::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      transform: translateX(-50%);
+      background: #45475a;
+      transition: background 0.12s, width 0.12s;
+    }
+
+    .col-resizer:hover::after,
+    .col-resizer.dragging::after {
+      width: 3px;
+      background: #cba6f7;
+    }
+
+    /* Column resizing is a desktop/mouse affordance — hide the handles in
+       the tabbed mobile view, where each panel is already full-width and
+       the columns auto-fit the viewport. */
+    @media (max-width: 800px) {
+      .col-resizer {
+        display: none;
+      }
     }
 
     /* Memory View */
@@ -947,21 +1016,63 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
     }
 
+    /* Column-header labels above the memory hex dump (Addr / Content (Hex) /
+       Content (ASCII)). Both this bar and .mem-view read the same
+       --mem-addr-w / --mem-hex-w / --mem-ascii-w custom properties, which
+       applyPanelColLayout() writes to each of them (a custom property is not
+       inherited past an element that declares its own value, and this bar is
+       a sibling of .mem-view, not a descendant). Neither scrolls on its own —
+       the shared .panel-body does, so the header and the rows under it always
+       scroll together. The background is on this bar rather than only on the
+       cells so the gaps between the flex children stay opaque while rows
+       scroll beneath the pinned header. */
+    .mem-col-header {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 4px;
+      background: #1e1e2e;
+    }
+
+    .mem-col-h[data-mem-col="addr"] {
+      flex: 0 0 auto;
+      width: var(--mem-addr-w);
+    }
+
+    .mem-col-h[data-mem-col="hex"] {
+      flex: 0 0 auto;
+      width: var(--mem-hex-w);
+    }
+
+    .mem-col-h[data-mem-col="ascii"] {
+      flex: 1 1 auto;
+      min-width: var(--mem-ascii-w);
+    }
+
+    @media (max-width: 800px) {
+      .mem-col-header {
+        display: none;
+      }
+    }
+
     .mem-view {
       font-family: 'Consolas', 'Roboto Mono', 'SF Mono', monospace;
       font-size: 13px;
       font-weight: 550;
       line-height: 1.6;
-      overflow-x: auto;
       word-wrap: break-word;
+      /* Per-column widths, written by applyPanelColLayout(). The defaults
+         here apply until it first runs. */
+      --mem-addr-w: 106px;
+      --mem-hex-w: 244px;
+      --mem-ascii-w: 90px;
     }
 
     .mem-view .addr {
       color: #9399b2;
       font-weight: 550;
       white-space: nowrap;
-      display: inline-block;
-      min-width: 10ch;
+      flex: 0 0 auto;
+      width: var(--mem-addr-w);
     }
 
     .mem-view span.val {
@@ -1002,6 +1113,30 @@
 
     .mem-view div {
       margin: 2px 0;
+      /* Flex row: Addr (fixed) · hex block (natural, never wraps its data) ·
+         ASCII (flexible). When the panel is wider, the extra width goes to the
+         ASCII region and the hex data stays on one line — no wrapping. */
+      display: flex;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .mem-view .mem-hex-block {
+      flex: 0 0 auto;
+      width: var(--mem-hex-w);
+      /* `max-content` is the hex data's own natural width, so the block can
+         never be squeezed narrower than the bytes it holds — the guarantee
+         that keeps the Hex|ASCII boundary honest. The drag clamp measures
+         the same natural width (see columnFloor()) so the header separator
+         stops exactly where the data does instead of sliding over it. */
+      min-width: max-content;
+      white-space: nowrap;
+    }
+
+    .mem-view .mem-ascii-block {
+      flex: 1 1 auto;
+      min-width: var(--mem-ascii-w);
+      padding-left: 6px;
     }
 
     .wordgap {
@@ -1131,15 +1266,12 @@
       font-weight: 500;
     }
 
-    .code-list th {
-      text-align: left;
-      padding: 4px 6px;
-      color: #bac2de;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-weight: 600;
-      border-bottom: 1px solid #313244;
-      background: #181825;
-    }
+    /* Every column's width comes from the <colgroup>, written by
+       applyPanelColLayout() — see the shared header/separator rules above
+       for the typography. Addr and Machine code are `grow: 0` there, so
+       they hold their content-sized width and never scale up just because
+       the panel widened; Native instruction and Original source split the
+       surplus between them. */
 
     .code-list td {
       padding: 2px 6px;
@@ -1147,12 +1279,13 @@
       border-bottom: 1px solid #181825;
     }
 
+    /* No `min-width` on any data cell: a cell minimum overrides the
+       <colgroup> width in a fixed-layout table, which would silently
+       widen the column past what the drag asked for. */
     .code-list .addr {
       color: #9399b2;
       font-weight: 550;
       white-space: nowrap;
-      min-width: 8ch;
-      width: 8ch;
     }
 
     .code-list .bytes {
@@ -1165,7 +1298,6 @@
       word-break: normal;
       overflow-wrap: anywhere;
       white-space: normal;
-      min-width: 10ch;
     }
 
     /* LSB-order hint beside the Disassembly Byte/Word toggle (cyan, matching the
@@ -1181,18 +1313,21 @@
       user-select: none;
     }
 
+    /* The two text columns are the ones that take up the slack when the
+       panel is narrow, so they wrap — but at word boundaries first
+       (`word-break: normal`), only breaking inside a token when a single
+       long operand genuinely cannot fit. `break-all` used to chop every
+       mnemonic mid-word. */
     .code-list .native {
       color: #cdd6f4;
-      word-break: break-all;
-      overflow-wrap: break-word;
-      min-width: 20ch;
+      word-break: normal;
+      overflow-wrap: anywhere;
     }
 
     .code-list .source {
       color: #a6adc8;
-      word-break: break-all;
-      overflow-wrap: break-word;
-      min-width: 20ch;
+      word-break: normal;
+      overflow-wrap: anywhere;
     }
 
     .code-list .pseudo {
@@ -2934,12 +3069,13 @@
         <div class="panel-stack" id="panelStack">
         <div class="tab-content" id="tab-registers">
           <table class="reg-table" id="regTable">
+            <colgroup><col><col><col><col></colgroup>
             <thead>
               <tr>
-                <th id="regId" class="col-left">#</th>
-                <th id="regName" class="col-left">Name</th>
-                <th id="regHex" class="col-right">Value (Hex)</th>
-                <th id="regDec" class="col-right">Value (Dec)</th>
+                <th id="regId" class="col-left col-id">#<span class="col-resizer" data-panel="registers" data-col="id" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
+                <th id="regName" class="col-left col-name">Name<span class="col-resizer" data-panel="registers" data-col="name" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
+                <th id="regHex" class="col-left col-val">Value (Hex)<span class="col-resizer" data-panel="registers" data-col="hex" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
+                <th id="regDec" class="col-left col-val">Value (Dec)</th>
               </tr>
             </thead>
             <tbody id="regBody"></tbody>
@@ -2978,6 +3114,11 @@
             <span><span class="mem-legend-changed">highlighted bytes</span> were written at runtime</span>
             <span class="mem-legend-sep">&nbsp;·&nbsp;</span>
             <span><span class="mem-legend-editable">Data/Stack/MMIO: editable</span> (Code: read-only)</span>
+          </div>
+          <div class="mem-col-header" id="memColHeader">
+            <span class="mem-col-h" data-mem-col="addr">Addr<span class="col-resizer" data-panel="memory" data-col="addr" title="Drag to resize this column · double-click to reset the panel's columns"></span></span>
+            <span class="mem-col-h" data-mem-col="hex">Content (Hex)<span class="col-resizer" data-panel="memory" data-col="hex" title="Drag to resize this column · double-click to reset the panel's columns"></span></span>
+            <span class="mem-col-h" data-mem-col="ascii">Content (ASCII)</span>
           </div>
           <div class="mem-view" id="memView"></div>
         </div>
@@ -6749,6 +6890,265 @@
       savePanelDock();
     }
 
+    /* ============================================================
+       Intra-panel column layout & resize separators
+       (Registers / Memory / Disassembly — Peripherals is untouched)
+
+       Every column has a width in px. Columns marked `grow: 0` (#, Name,
+       Addr, Machine code, Hex) hold their content-sized `fit` width and
+       never scale up just because the panel got wider; columns with a
+       `grow` weight (the Value pair, Native + Source, ASCII) share out
+       whatever surplus the panel has beyond that. So widening the dock
+       gives the space to the text columns, and the short fixed-length
+       data never gets stretched or wrapped for no reason.
+
+       When the panel is NARROWER than the sum of every column's minimum,
+       nothing is crushed: the widths stay at their minimums and the panel
+       scrolls horizontally instead. That is what keeps the wrapping off
+       any single column — the text columns take up the slack first (they
+       have the largest span between `min` and `fit`), and past that point
+       the whole row scrolls rather than one column collapsing.
+
+       Dragging a separator behaves like a spreadsheet: the first movement
+       pins every column at its current rendered width, then only the
+       dragged column's width changes — so everything to its right keeps
+       its width and simply shifts along. Double-click any separator to
+       unpin the whole panel and go back to the automatic layout.
+       Pinned widths persist per panel under `rvsim.panelColW.<panel>`.
+       ============================================================ */
+    const PANEL_COLS = {
+      registers: [
+        { key: 'id',   min: 34,  fit: 44,  grow: 0 },
+        { key: 'name', min: 46,  fit: 72,  grow: 0 },
+        { key: 'hex',  min: 92,  fit: 104, grow: 1 },
+        { key: 'dec',  min: 80,  fit: 96,  grow: 1 },
+      ],
+      memory: [
+        { key: 'addr',  min: 92,  fit: 106, grow: 0 },
+        { key: 'hex',   min: 200, fit: 244, grow: 0 },
+        // `fit` here is set by the "CONTENT (ASCII)" header rather than the
+        // 8 monospace characters under it, so the label sits on one line at
+        // the panel's natural width.
+        { key: 'ascii', min: 88,  fit: 122, grow: 1 },
+      ],
+      disassembly: [
+        { key: 'addr',   min: 84,  fit: 94,  grow: 0 },
+        { key: 'mc',     min: 96,  fit: 116, grow: 0 },
+        { key: 'native', min: 128, fit: 200, grow: 1 },
+        { key: 'source', min: 128, fit: 200, grow: 1 },
+      ],
+    };
+
+    function panelColWidthKey(panel) { return 'rvsim.panelColW.' + panel; }
+    const panelColWidthCache = {};
+    // Pinned (user-dragged) widths for a panel, keyed by column. A column
+    // absent from this map is laid out automatically.
+    function panelColWidths(panel) {
+      if (!panelColWidthCache[panel]) {
+        let out = {};
+        try {
+          const raw = localStorage.getItem(panelColWidthKey(panel));
+          const o = raw ? JSON.parse(raw) : null;
+          if (o && typeof o === 'object') out = o;
+        } catch (e) { /* corrupt storage → automatic layout */ }
+        panelColWidthCache[panel] = out;
+      }
+      return panelColWidthCache[panel];
+    }
+    function savePanelColWidths(panel) {
+      try { localStorage.setItem(panelColWidthKey(panel), JSON.stringify(panelColWidths(panel))); }
+      catch (e) { /* storage unavailable */ }
+    }
+
+    function panelBodyEl(panel) {
+      const el = panelEl(panel);
+      return el ? (el.querySelector(':scope > .panel-body') || el) : null;
+    }
+    // Usable width inside the panel: clientWidth includes padding (and
+    // already excludes any vertical scrollbar), so take the padding off.
+    function panelContentWidth(panel) {
+      const body = panelBodyEl(panel);
+      if (!body || !body.clientWidth) return 0;
+      let padL = 0, padR = 0;
+      try {
+        const cs = getComputedStyle(body);
+        padL = parseFloat(cs.paddingLeft) || 0;
+        padR = parseFloat(cs.paddingRight) || 0;
+      } catch (e) { /* no layout (headless) */ }
+      return Math.max(0, body.clientWidth - padL - padR);
+    }
+
+    // The Memory Hex column can never be narrower than the hex data itself,
+    // otherwise the header separator slides over bytes that are still being
+    // drawn. `.mem-hex-block` carries `min-width: max-content`, so measure
+    // that natural width and clamp the drag to it. Measured once per render
+    // (it only changes with the Byte/Word mode) to avoid reflow per move.
+    let memHexNaturalW = 0;
+    function measureMemHexNatural() {
+      const blk = document.querySelector('#memView .mem-hex-block');
+      if (!blk) return memHexNaturalW;
+      const prev = blk.style.width;
+      blk.style.width = 'max-content';
+      const w = Math.ceil(blk.getBoundingClientRect().width);
+      blk.style.width = prev;
+      if (w > 0) memHexNaturalW = w;
+      return memHexNaturalW;
+    }
+
+    function columnFloor(panel, key) {
+      const c = PANEL_COLS[panel].find(x => x.key === key);
+      let floor = c ? c.min : 40;
+      if (panel === 'memory' && key === 'hex' && memHexNaturalW > 0) {
+        floor = Math.max(floor, memHexNaturalW);
+      }
+      return floor;
+    }
+
+    // Resolve every column to a px width for the panel's current size.
+    function computedColWidths(panel) {
+      const cols = PANEL_COLS[panel];
+      const pinned = panelColWidths(panel);
+      const isPinned = (c) => Number.isFinite(Number(pinned[c.key]));
+      const w = cols.map(c => isPinned(c)
+        ? Math.max(columnFloor(panel, c.key), Number(pinned[c.key]))
+        : c.fit);
+      const total = w.reduce((a, b) => a + b, 0);
+      const avail = panelContentWidth(panel);
+      // Surplus goes only to the unpinned grow columns; a pinned column
+      // keeps exactly the width it was dragged to.
+      const growTotal = cols.reduce((s, c) => s + (isPinned(c) ? 0 : c.grow), 0);
+      if (avail > total && growTotal > 0) {
+        const extra = avail - total;
+        cols.forEach((c, i) => { if (!isPinned(c) && c.grow) w[i] += extra * c.grow / growTotal; });
+      }
+      return w.map(x => Math.round(x));
+    }
+
+    // Push the computed widths into the DOM. The tables carry a <colgroup>
+    // (one <col> per column) and the Memory panel a set of custom
+    // properties; both also get a min-width equal to the column total, so a
+    // panel too narrow to hold them scrolls instead of crushing a column.
+    function applyPanelColLayout(panel) {
+      const w = computedColWidths(panel);
+      const total = w.reduce((a, b) => a + b, 0);
+      if (panel === 'memory') {
+        [document.getElementById('memView'), document.getElementById('memColHeader')].forEach(el => {
+          if (!el) return;
+          el.style.setProperty('--mem-addr-w', w[0] + 'px');
+          el.style.setProperty('--mem-hex-w', w[1] + 'px');
+          el.style.setProperty('--mem-ascii-w', w[2] + 'px');
+          el.style.minWidth = total + 'px';
+        });
+        return;
+      }
+      const tbl = (panel === 'registers')
+        ? document.getElementById('regTable')
+        : (disassemblyDisplay && disassemblyDisplay.querySelector('.code-list'));
+      if (!tbl) return;
+      const colEls = tbl.querySelectorAll('colgroup > col');
+      if (colEls.length !== w.length) return;
+      colEls.forEach((c, i) => { c.style.width = w[i] + 'px'; });
+      tbl.style.minWidth = total + 'px';
+    }
+
+    function resetPanelColWidths(panel) {
+      panelColWidthCache[panel] = {};
+      savePanelColWidths(panel);
+      applyPanelColLayout(panel);
+    }
+
+    // One delegated pointer-drag handler for every `.col-resizer` across all
+    // three panels. The Registers and Memory handles are static markup; the
+    // Disassembly ones are rebuilt on every render — delegating on `document`
+    // means nothing needs re-wiring after a rebuild. initPanelDock() can run
+    // more than once (crossing the mobile/desktop breakpoint), so the
+    // listeners are attached only the first time.
+    let panelColResizersAttached = false;
+    function initPanelColResizers() {
+      if (!panelColResizersAttached) {
+        panelColResizersAttached = true;
+        let drag = null;
+        document.addEventListener('pointerdown', (e) => {
+          const handle = e.target.closest && e.target.closest('.col-resizer');
+          if (!handle) return;
+          const panel = handle.dataset.panel, key = handle.dataset.col;
+          if (!panel || !PANEL_COLS[panel] || !key) return;
+          e.preventDefault();
+          const idx = PANEL_COLS[panel].findIndex(c => c.key === key);
+          drag = {
+            handle, panel, key, idx,
+            startX: e.clientX,
+            startW: computedColWidths(panel)[idx],
+            pinnedAll: false,
+          };
+          handle.classList.add('dragging');
+          document.body.style.cursor = 'col-resize';
+          document.body.style.userSelect = 'none';
+          try { handle.setPointerCapture(e.pointerId); } catch (err) { /* unsupported */ }
+        });
+        document.addEventListener('pointermove', (e) => {
+          if (!drag) return;
+          if (!drag.pinnedAll) {
+            // First movement of this drag: freeze every column at the width
+            // it is rendered at right now. From here on only the dragged
+            // column changes, so the ones to its right hold their width and
+            // shift along with it rather than being re-flowed underneath.
+            // (Done on first move, not on pointerdown, so a plain click —
+            // or a double-click to reset — never pins anything.)
+            drag.pinnedAll = true;
+            const widths = computedColWidths(drag.panel);
+            const pinned = panelColWidths(drag.panel);
+            PANEL_COLS[drag.panel].forEach((c, i) => { pinned[c.key] = widths[i]; });
+          }
+          const pinned = panelColWidths(drag.panel);
+          pinned[drag.key] = Math.max(columnFloor(drag.panel, drag.key), Math.round(drag.startW + (e.clientX - drag.startX)));
+          applyPanelColLayout(drag.panel);
+        });
+        const stopDrag = () => {
+          if (!drag) return;
+          drag.handle.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          if (drag.pinnedAll) savePanelColWidths(drag.panel);
+          drag = null;
+        };
+        document.addEventListener('pointerup', stopDrag);
+        document.addEventListener('pointercancel', stopDrag);
+        document.addEventListener('dblclick', (e) => {
+          const handle = e.target.closest && e.target.closest('.col-resizer');
+          if (!handle) return;
+          const panel = handle.dataset.panel;
+          if (panel && PANEL_COLS[panel]) resetPanelColWidths(panel);
+        });
+
+        // Re-flow the columns whenever a panel is resized (dock splitter,
+        // window resize, floating-panel resize), so the grow columns keep
+        // absorbing the surplus. Guarded on the measured width so the
+        // observer cannot retrigger itself off its own writes.
+        if (typeof ResizeObserver !== 'undefined') {
+          const lastW = {};
+          const ro = new ResizeObserver((entries) => {
+            entries.forEach(entry => {
+              const panel = entry.target.dataset.colPanel;
+              if (!panel) return;
+              const w = panelContentWidth(panel);
+              if (lastW[panel] === w) return;
+              lastW[panel] = w;
+              applyPanelColLayout(panel);
+            });
+          });
+          Object.keys(PANEL_COLS).forEach(panel => {
+            const body = panelBodyEl(panel);
+            if (!body || body._colRoAttached) return;
+            body._colRoAttached = true;
+            body.dataset.colPanel = panel;
+            ro.observe(body);
+          });
+        }
+      }
+      Object.keys(PANEL_COLS).forEach(applyPanelColLayout);
+    }
+
     function panelEl(name) { return document.getElementById('tab-' + name); }
 
     function isPanelVisible(name) {
@@ -6761,6 +7161,9 @@
         else if (name === 'memory') { if (typeof updateMemSubTabs === 'function') updateMemSubTabs(); updateMemoryView(); }
         else if (name === 'peripherals') initPeripherals();
         else if (name === 'disassembly') updateDisassembly();
+        // A panel that was just shown may have gone from zero width to a
+        // real one, so re-run its column layout against the new size.
+        if (PANEL_COLS[name]) applyPanelColLayout(name);
       } catch (e) { /* dependent state not ready yet */ }
     }
 
@@ -7229,6 +7632,9 @@
       });
       applyPanelDock();
       panelDock.order.forEach(name => { if (isPanelVisible(name)) refreshPanel(name); });
+      // Wire up the intra-panel column-resize separators (Registers /
+      // Memory / Disassembly) and apply any persisted per-panel widths.
+      initPanelColResizers();
       window.addEventListener('resize', () => {
         // While a form field is focused (UART console, memory address box,
         // find/replace, …), a mobile on-screen keyboard open/close fires a
@@ -7892,11 +8298,13 @@ function updateRegisters() {
         const uval = val >>> 0;
         const isChanged = i === lastChangedReg;
         const valClass = 'reg-val' + (isChanged ? ' reg-changed' : '');
-        html += `<tr><td class="reg-name">x${i}</td><td class="reg-name">${name}</td>
-      <td class="${valClass} reg-editable" data-idx="${i}" data-val="${uval.toString(16).padStart(8, '0')}" data-type="hex" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">0x${uval.toString(16).padStart(8, '0')}</td>
-      <td class="${valClass} reg-editable" data-idx="${i}" data-val="${val.toString().padStart(11, ' ')}" data-type="dec" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" style="width:120px" title="Single-click: edit inline | Double-click: open edit window">${val}</td></tr>`;
+        html += `<tr><td class="reg-name col-id">x${i}</td><td class="reg-name col-name">${name}</td>
+      <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${uval.toString(16).padStart(8, '0')}" data-type="hex" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">0x${uval.toString(16).padStart(8, '0')}</td>
+      <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${val.toString().padStart(11, ' ')}" data-type="dec" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">${val}</td></tr>`;
       }
       regBody.innerHTML = html;
+      // The <thead> (and its column widths) survives this rebuild untouched
+      // since only the <tbody> is replaced — nothing to reapply here.
       // Also update peripherals (PC LEDs, etc.) when registers are refreshed
       updatePeripherals();
     }
@@ -8549,7 +8957,7 @@ function updateRegisters() {
               else if (wordStart === (CYCLECOUNT >>> 0)) descriptors.push('CYCLECOUNT RO 0xFFFF00A0');
             }
             let desc = descriptors.length ? `[${descriptors.join(' · ')}]` : '[MMIO]';
-            html += `<div><span class="addr">0x${base.toString(16).padStart(8, '0')}</span> ${hexVals} <span class="mmio-desc" style="font-size:10px;color:#cba6f7;">${desc}</span></div>`;
+            html += `<div><span class="addr" data-col="addr">0x${base.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mmio-desc" style="font-size:10px;color:#cba6f7;">${desc}</span></div>`;
             continue;
           }
 
@@ -8592,7 +9000,7 @@ function updateRegisters() {
           }
           let desc = descriptors.length ? `[${descriptors.join(' · ')}]` : '[MMIO]';
 
-          html += `<div><span class="addr">0x${base.toString(16).padStart(8, '0')}</span> ${hexVals}  ${asciiVals} <span class="mmio-desc" style="font-size:10px;color:#cba6f7;">${desc}</span></div>`;
+          html += `<div><span class="addr" data-col="addr">0x${base.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${asciiVals}</span><span class="mmio-desc" style="font-size:10px;color:#cba6f7;">${desc}</span></div>`;
         } else {
           let hexVals = '';
           let asciiVals = '';
@@ -8660,10 +9068,15 @@ function updateRegisters() {
             }
           }
 
-          html += `<div><span class="addr">0x${base.toString(16).padStart(8, '0')}</span> ${hexVals}  ${asciiVals}</div>`;
+          html += `<div><span class="addr" data-col="addr">0x${base.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${asciiVals}</span></div>`;
         }
       }
       memView.innerHTML = html;
+      // Re-measure the hex data's natural width (it changes with the
+      // Byte/Word mode) so the Hex column's drag floor stays honest, then
+      // re-run the layout against it.
+      measureMemHexNatural();
+      applyPanelColLayout('memory');
     }
 
     function setMemViewMode(mode) {
@@ -9192,8 +9605,19 @@ function updateRegisters() {
         });
       }
 
+      // The <colgroup> is what sizes the columns; applyPanelColLayout()
+      // fills in each <col>'s width after this table is inserted.
+      const colTitle = 'Drag to resize this column · double-click to reset the panel\'s columns';
       let html = '<table class="code-list">';
-      html += '<tr><th>Addr</th><th>Machine code</th><th>Native instruction</th><th>Original source</th></tr>';
+      html += '<colgroup><col><col><col><col></colgroup>';
+      // A real <thead> (rather than a bare <tr>) so the sticky header row
+      // is unambiguous to the browser's table layout.
+      html += '<thead><tr>' +
+        `<th>Addr<span class="col-resizer" data-panel="disassembly" data-col="addr" title="${colTitle}"></span></th>` +
+        `<th>Machine code<span class="col-resizer" data-panel="disassembly" data-col="mc" title="${colTitle}"></span></th>` +
+        `<th>Native instruction<span class="col-resizer" data-panel="disassembly" data-col="native" title="${colTitle}"></span></th>` +
+        '<th>Original source</th>' +
+        '</tr></thead>';
       for (const item of machineCode) {
         if (!item.bytes || item.error) continue;
 
@@ -9284,14 +9708,16 @@ function updateRegisters() {
         const sourceRendered = annotateLabels(escapeHtml(source));
 
         html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>
-      <td class="addr">0x${item.address.toString(16).padStart(8, '0')}</td>
-      <td class="bytes">${bytesStr}</td>
-      <td class="native ${expanded ? 'native-expanded' : ''}">${nativeRendered}</td>
-      <td class="source ${expanded ? 'pseudo' : ''}">${sourceRendered}${cSrcTag}</td>
+      <td class="addr" data-col="addr">0x${item.address.toString(16).padStart(8, '0')}</td>
+      <td class="bytes" data-col="bytes">${bytesStr}</td>
+      <td class="native ${expanded ? 'native-expanded' : ''}" data-col="native">${nativeRendered}</td>
+      <td class="source ${expanded ? 'pseudo' : ''}" data-col="source">${sourceRendered}${cSrcTag}</td>
     </tr>`;
       }
       html += '</table>';
       disassemblyDisplay.innerHTML = html;
+      // The table (and its <colgroup>) is brand new, so size its columns.
+      applyPanelColLayout('disassembly');
 
       // Autoscroll active execution instruction into view while the Disassembly panel is shown
       const tabDisasm = document.getElementById('tab-disassembly');
