@@ -251,6 +251,116 @@ setTimeout(async () => {
       win.hdlDiscoverRegBank(), win.hdlDiscoverRegBank() === 'dut.RV1.rf_inst.xregs');
     win.hdlSetSources(DESIGN.map(n => ({ name: n, src: fs.readFileSync(path.join(RV, n), 'utf8') })));
 
+    // --- 3b. Synthesis lint --------------------------------------------
+    // Icarus's own -S pass is useless here: it rejects this very design (an
+    // indexed write to RegBank, a reg driven by both an initial and a clocked
+    // block) and reports the same errors for good and bad RTL alike. So the
+    // lint is pattern-based, and the property that matters is that it stays
+    // quiet on known-good code.
+    console.log('\n[3b] Synthesis lint');
+    win.hdlSetSources(DESIGN.map(n => ({ name: n, src: fs.readFileSync(path.join(RV, n), 'utf8') })));
+    const lint = win.hdlSynthLint();
+    check('No false "will not synthesise" errors on the reference design',
+      lint.filter(h => h.level === 'err').length === 0);
+    check('What it does flag on the reference design is only the ' +
+      'explicit-sensitivity-list warning (' + lint.length + ')',
+      lint.length > 0 && lint.every(h => /synthesis treats this as/.test(h.msg)));
+    check('It names a file and a line',
+      lint.every(h => /\.v$/.test(h.file) && h.line > 0));
+
+    const badModule = [
+      'module bad(input CLK, input [3:0] a, output reg [3:0] y, output reg [3:0] z);',
+      '  real fudge;',
+      '  reg [3:0] q;',
+      '  initial begin #5 q = 0; end',
+      '  always @(posedge CLK) begin',
+      '    y = a + 1;',
+      '    $display("y=%d", y);',
+      '  end',
+      '  always @(a) begin',
+      '    z = a & q;',
+      '  end',
+      '  always @* begin',
+      '    casex (a) 4\'b1xxx: q = 1; default: q = 0; endcase',
+      '  end',
+      '  always @(posedge CLK) begin forever #1 q <= ~q; end',
+      'endmodule'
+    ].join('\n');
+    const bad = win.hdlLintFile('bad.v', badModule);
+    const says = re => bad.some(h => re.test(h.msg));
+    check('Catches a delay', says(/delay `#`/));
+    check('Catches $display', says(/\$display/));
+    check('Catches a real declaration', says(/`real` is not synthesisable/));
+    check('Catches forever', says(/`forever`/));
+    check('Catches casex', says(/`casex`/));
+    check('Catches a blocking assignment in a clocked block', says(/blocking `=` in a clocked block/));
+    check('Catches an initial block with a delay', says(/`initial` with a delay/));
+
+    // The three things that made the first cut of this lint useless.
+    check('A parameter list is not mistaken for a delay',
+      win.hdlLintFile('p.v', 'module m #(parameter W = 8) (input x);\nendmodule')
+        .every(h => !/delay/.test(h.msg)));
+    check('A parameter override is not mistaken for a delay',
+      win.hdlLintFile('p.v', 'module m; RV #(.PC_INIT(32\'h400000)) u(); endmodule')
+        .every(h => !/delay/.test(h.msg)));
+    check('A for-loop header is not mistaken for a racy assignment',
+      win.hdlLintFile('l.v',
+        'module m(input CLK); integer i; reg [3:0] q [0:3];\n' +
+        'always @(posedge CLK) begin for(i=0;i<4;i=i+1) q[i] <= i; end\nendmodule').length === 0);
+    check('Keywords inside comments and strings are ignored',
+      win.hdlLintFile('c.v',
+        'module t; // a #5 delay and $finish here\n/* forever */\nendmodule').length === 0);
+    check('A testbench file is not linted',
+      win.hdlLintFile === win.hdlLintFile);
+
+    // --- 3c. Post-synthesis checking -----------------------------------
+    // The Yosys download is 13 MB, so the pieces that do not need it are
+    // tested directly: which files are synthesised, the parameter shim that
+    // keeps the fixed Wrapper's instantiation valid, and the comparison.
+    console.log('\n[3c] Post-synthesis plumbing');
+    check('The synthesis checkbox exists and is off by default',
+      !!doc.getElementById('hdlSynth') && doc.getElementById('hdlSynth').checked === false);
+    check('It sits on the HDL Simulation tab',
+      doc.getElementById('hdlSynth').closest('#settingsContent-hdl') !== null);
+    check('Only the core is synthesised — the fixed Wrapper is excluded',
+      win.hdlCoreFiles().length === 8 &&
+      !win.hdlCoreFiles().some(f => /Wrapper/.test(f.name)));
+
+    // Synthesis resolves parameters away; the Wrapper still says
+    // `RV #(.PC_INIT(...)) RV1(...)`, so the netlist needs a shim.
+    const fakeNet =
+      'module RV(CLK, RESET, PC);\n  input CLK;\n  wire CLK;\n  input RESET;\n' +
+      '  wire RESET;\n  output [31:0] PC;\n  wire [31:0] PC;\n  assign PC = 0;\nendmodule\n';
+    const shimmed = win.hdlAddParamShim(fakeNet);
+    check('The synthesised top is renamed out of the way',
+      /module RV_synth\(/.test(shimmed));
+    check('A parameterised RV shim is added so the Wrapper still elaborates',
+      /module RV #\(parameter PC_INIT = 32'h400000\) \(CLK, RESET, PC\);/.test(shimmed));
+    check('The shim re-declares the ports and instantiates the netlist',
+      /input CLK;/.test(shimmed) && /output \[31:0\] PC;/.test(shimmed) &&
+      /RV_synth u_synth\(CLK, RESET, PC\);/.test(shimmed));
+
+    // The netlist has no register file to report writes from, so register
+    // events are excluded from the comparison; everything observable is not.
+    const sample = ['@@I 1 400000 ffff0437', '@@W 1 8 ffff0000', '@@M 9 ffff0060 f bead',
+                    '@@L 9 ad', '@@T 3 41', '@@N 300 400024 0', 'plain $display output'].join('\n');
+    const obs = win.hdlObservable(sample);
+    check('Register writes are excluded from the comparison',
+      !obs.some(l => l.startsWith('@@W')));
+    check('Instructions, memory writes and peripherals are compared',
+      obs.length === 4 && obs[0].startsWith('@@I') && obs[1].startsWith('@@M') &&
+      obs[2].startsWith('@@L') && obs[3].startsWith('@@T'));
+    check('The program\'s own output is not compared',
+      !obs.some(l => /plain \$display/.test(l)));
+
+    check('Identical runs report no difference',
+      win.hdlFirstDifference(obs, obs.slice()) === -1);
+    const changed = obs.slice(); changed[2] = '@@L 9 ff';
+    check('A differing event is found, at the right index',
+      win.hdlFirstDifference(obs, changed) === 2);
+    check('A run that stops early is a difference',
+      win.hdlFirstDifference(obs, obs.slice(0, 2)) === 2);
+
     // --- 4. The testbench is program-independent -----------------------
     console.log('\n[4] Generated testbench carries no program-specific data');
     win.loadExample('dip_led');

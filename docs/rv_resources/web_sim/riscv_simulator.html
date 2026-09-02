@@ -1584,8 +1584,7 @@
       flex-direction: column;
       gap: 5px;
     }
-    /* Dimmed, never hidden: a setting that does nothing right now should still
-       be findable, and should say why it is doing nothing. */
+    /* Dimmed, never hidden, so a setting that does nothing is still findable. */
     .sim-group.sim-group-off { opacity: 0.45; }
     .sim-group.sim-group-off .sim-group-title { color: #6c7086; }
 
@@ -3121,6 +3120,18 @@
               <span style="font-size:11.5px;color:#a6adc8;line-height:1.4;">
                 After each run, replays the same program on the functional model and reports the
                 first instruction where the two disagree. Costs a second execution.
+              </span>
+              <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:#cba6f7;cursor:pointer;font-size:13px;margin-top:8px;">
+                <input type="checkbox" id="hdlSynth" onchange="setHdlSynth(this.checked)"
+                  style="accent-color:#cba6f7;width:16px;height:16px;cursor:pointer;">
+                Synthesise and simulate the netlist
+              </label>
+              <span style="font-size:11.5px;color:#a6adc8;line-height:1.4;">
+                Runs your core through <b>Yosys</b>, then simulates the resulting gate-level
+                netlist alongside your RTL and reports the first point where the two differ —
+                which is what a construct that simulates one way and synthesises another looks
+                like. Ticking this downloads the synthesiser once (about 13 MB); your browser
+                caches it for a year, so later sessions start immediately.
               </span>
             </div>
           </div>
@@ -6864,9 +6875,8 @@
       statusBar.style.color = type === 'error' ? '#f38ba8' : type === 'success' ? '#a6e3a1' : '#a6adc8';
     }
 
-    // Intentional no-op. The pre-CodeMirror editor kept a highlight overlay in
-    // sync with the textarea's scroll position; CM6 renders its own. Retained
-    // because the pre-v15 API surface is still called by the test suite.
+    // Intentional no-op: CM6 manages its own scrolling. Retained because the
+    // pre-CodeMirror API surface is still called by the test suite.
     function syncScroll() {}
 
     function resetExecutionForSourceChange() {
@@ -10807,12 +10817,10 @@ STACK_INIT:
         const el = document.getElementById(id);
         return el ? el.value : '';
       };
-      // Only a changed memory layout needs the program reassembled. Reloading
-      // unconditionally would throw away an HDL recording (and the JS run's
-      // position) just for ticking a checkbox on this dialog.
-      // Compared unsigned: parseHexAddr's word-align mask turns an address at
-      // or above 0x80000000 (the MMIO base) into a negative number, which
-      // would otherwise read as a change on every single Apply.
+      // Only a changed memory layout needs the program reassembled;
+      // reloading otherwise would discard an HDL recording for nothing.
+      // Compared unsigned: the word-align mask turns an address at or above
+      // 0x80000000 (the MMIO base) negative.
       const layoutKey = () => [baseAddress, codeSize, dataBase, dataSize, stackBase, mmioBase]
         .map(v => v >>> 0).join(',');
       const layoutBefore = layoutKey();
@@ -12861,6 +12869,7 @@ result: .word 0
     let hdlDumpVcd = false;
     let hdlTraceEnabled = true;   // record the architectural trace (needed to step)
     let hdlCompareEnabled = false;// cross-check against the JS functional model
+    let hdlSynthEnabled = false;  // synthesise with Yosys and check the netlist// cross-check against the JS functional model
     let hdlVvpCache = null;       // { key, vvp, regBank } - compiled once per source set
     let hdlTrace = null;          // the recorded run: { steps, pre, final, next, ... }
     let hdlIdx = 0;               // position in the recording (instructions completed)
@@ -13042,6 +13051,7 @@ result: .word 0
       hdlDiscardTrace();
       hdlRefreshRegPathHint();
       updateHdlReadiness();
+      hdlReportLint(true);
     }
 
     function updateHdlReadiness() {
@@ -13079,6 +13089,183 @@ result: .word 0
       // have to be refreshed here too - loading the sources is exactly the
       // moment they become usable.
       if (typeof updateToolbarButtonStates === 'function') updateToolbarButtonStates();
+    }
+
+    // ================================================================
+    // Synthesis lint
+    // ================================================================
+    // Flags constructs that behave one way in simulation and another - or not
+    // at all - after synthesis. Everything reported carries a file and a line,
+    // and nothing here blocks a run.
+
+    // Blank out comments and string literals so a keyword inside either is
+    // never mistaken for code, while keeping every byte offset intact so
+    // line numbers stay true.
+    function hdlStripNoise(src) {
+      let out = src.split('');
+      let i = 0, n = src.length;
+      const blank = (a, b) => { for (let k = a; k < b && k < n; k++) if (out[k] !== '\n') out[k] = ' '; };
+      while (i < n) {
+        const two = src.substr(i, 2);
+        if (two === '//') { const e = src.indexOf('\n', i); blank(i, e < 0 ? n : e); i = e < 0 ? n : e; }
+        else if (two === '/*') { const e = src.indexOf('*/', i + 2); blank(i, e < 0 ? n : e + 2); i = e < 0 ? n : e + 2; }
+        else if (src[i] === '"') {
+          let j = i + 1;
+          while (j < n && src[j] !== '"' && src[j] !== '\n') j += (src[j] === '\\' ? 2 : 1);
+          blank(i, j + 1); i = j + 1;
+        } else i++;
+      }
+      return out.join('');
+    }
+
+    const HDL_LINT_OK_TASKS = /^\$(readmemh|readmemb|signed|unsigned|clog2|bits|size|left|right|high|low|increment|dimensions|fatal|error|warning|info)\b/;
+
+    // Split a module body into its `always` blocks, with the line each starts
+    // on. Brace/`begin`-`end` matching is enough - these are flat RTL blocks.
+    function hdlAlwaysBlocks(src) {
+      const blocks = [];
+      const re = /\balways\b\s*(@\s*\(([^)]*)\)|@\s*\*|@\*)?/g;
+      let m;
+      while ((m = re.exec(src)) !== null) {
+        const start = m.index;
+        let i = re.lastIndex, depth = 0, seen = false;
+        // Walk begin/end pairs; a block with no `begin` is a single statement.
+        const tok = /\b(begin|end|case|casex|casez|endcase|fork|join)\b|;/g;
+        tok.lastIndex = i;
+        let t, endIdx = src.length;
+        while ((t = tok.exec(src)) !== null) {
+          const w = t[1];
+          if (w === 'begin' || w === 'fork') { depth++; seen = true; }
+          else if (w === 'end' || w === 'join') { depth--; if (seen && depth <= 0) { endIdx = t.index + w.length; break; } }
+          else if (w === 'case' || w === 'casex' || w === 'casez') depth++;
+          else if (w === 'endcase') depth--;
+          else if (!w && !seen) { endIdx = t.index + 1; break; }   // bare `;`
+        }
+        blocks.push({
+          start: start,
+          line: src.slice(0, start).split('\n').length,
+          sens: (m[2] || (m[0].includes('*') ? '*' : '')).trim(),
+          body: src.slice(re.lastIndex, endIdx),
+        });
+        re.lastIndex = endIdx;
+      }
+      return blocks;
+    }
+
+    // One uploaded file -> a list of {line, level, msg}.
+    function hdlLintFile(name, rawSrc) {
+      const src = hdlStripNoise(rawSrc);
+      const found = [];
+      const lineOf = idx => src.slice(0, idx).split('\n').length;
+      const add = (line, level, msg) => found.push({ file: name, line: line, level: level, msg: msg });
+
+      // Delays are discarded by synthesis. A `#` is only a delay when a
+      // number follows it: `#(` is a parameter list or override.
+      let m, re = /(^|[^\w$])#\s*\d/g;
+      while ((m = re.exec(src)) !== null) {
+        add(lineOf(m.index), 'err', 'delay `#` — ignored by synthesis, so the hardware will not match this simulation');
+      }
+
+      // Simulation-only system tasks. $readmemh is not one: Vivado uses it
+      // for memory initialisation.
+      re = /\$[a-zA-Z_]\w*/g;
+      while ((m = re.exec(src)) !== null) {
+        if (HDL_LINT_OK_TASKS.test(m[0])) continue;
+        add(lineOf(m.index), 'warn', m[0] + ' — simulation-only, ignored by synthesis');
+      }
+
+      // Types with no hardware equivalent.
+      re = /\b(real|realtime|time|event)\s+[A-Za-z_]\w*\s*[;,=]/g;
+      while ((m = re.exec(src)) !== null) {
+        add(lineOf(m.index), 'err', '`' + m[1] + '` is not synthesisable');
+      }
+
+      // Loops synthesis cannot unroll.
+      re = /\b(forever|while)\b/g;
+      while ((m = re.exec(src)) !== null) {
+        add(lineOf(m.index), 'err', '`' + m[1] + '` — synthesis needs a statically bounded loop');
+      }
+
+      // casex lets an X match anything, which cannot happen in hardware.
+      re = /\bcasex\b/g;
+      while ((m = re.exec(src)) !== null) {
+        add(lineOf(m.index), 'warn', '`casex` — X-matching does not exist in hardware; prefer `casez`');
+      }
+
+      // Per-always-block checks.
+      for (const b of hdlAlwaysBlocks(src)) {
+        const clocked = /\b(posedge|negedge)\b/.test(b.sens);
+        const body = b.body;
+        if (clocked) {
+          // A blocking assignment in a clocked block races every other block
+          // reading that signal on the same edge. Loop headers are exempt:
+          // `for (i = 0; i < N; i = i + 1)` has to be blocking.
+          const noLoops = body.replace(/\bfor\s*\([^)]*\)/g, m0 => m0.replace(/[^\n]/g, ' '));
+          const bm = /(^|\n)[^\n;]*?[A-Za-z_]\w*(\s*\[[^\]]*\])?\s*=(?!=)/.exec(noLoops);
+          if (bm && !/<=/.test(bm[0])) {
+            add(b.line + noLoops.slice(0, bm.index).split('\n').length - 1, 'warn',
+                'blocking `=` in a clocked block — use `<=` for sequential logic');
+          }
+        } else if (b.sens && b.sens !== '*') {
+          // An explicit sensitivity list on combinational logic is the classic
+          // simulation/synthesis mismatch: synthesis reads it as `@*` anyway.
+          if (/\bor\b|,/.test(b.sens)) {
+            add(b.line, 'warn',
+                'combinational `always @(' + b.sens.replace(/\s+/g, ' ').slice(0, 40) +
+                ')` — synthesis treats this as `@*`; write `@*` so simulation agrees');
+          }
+        }
+      }
+
+      // An `initial` is fine for a power-up value or a $readmemh, but not
+      // for anything that needs time to pass.
+      re = /\binitial\b/g;
+      while ((m = re.exec(src)) !== null) {
+        const chunk = src.slice(m.index, m.index + 600);
+        if (/#\s*[\d(]/.test(chunk.split(/\bend\b/)[0] || '')) {
+          add(lineOf(m.index), 'err', '`initial` with a delay — simulation-only');
+        }
+      }
+
+      return found;
+    }
+
+    // Lint every uploaded source except anything that looks like a testbench.
+    function hdlSynthLint() {
+      const out = [];
+      for (const f of hdlFiles) {
+        if (/(^|[_\-])tb\.v$|_tb\.|testbench/i.test(f.name)) continue;
+        out.push.apply(out, hdlLintFile(f.name, f.src));
+      }
+      // One report per line.
+      const seen = new Set();
+      return out.filter(x => {
+        const k = x.file + ':' + x.line + ':' + x.msg;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      }).sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+    }
+
+    // Report to the console. Called when sources are loaded, so the feedback
+    // arrives before the first run rather than after it.
+    function hdlReportLint(quietWhenClean) {
+      if (!hdlFiles.length) return 0;
+      const hits = hdlSynthLint();
+      if (!hits.length) {
+        if (!quietWhenClean) {
+          hdlLog('Synthesis lint: nothing to flag in ' + hdlFiles.length + ' file(s).', 'sys');
+        }
+        return 0;
+      }
+      const errs = hits.filter(h => h.level === 'err').length;
+      hdlLog('Synthesis lint: ' + hits.length + ' note(s)' +
+        (errs ? ', ' + errs + ' that will not synthesise' : '') + '.', errs ? 'warn' : 'sys');
+      for (const h of hits.slice(0, 40)) {
+        hdlLog('  ' + h.file + ':' + h.line + '  ' + h.msg, h.level === 'err' ? 'err' : 'warn');
+      }
+      if (hits.length > 40) hdlLog('  … and ' + (hits.length - 40) + ' more.', 'warn');
+      return hits.length;
     }
 
     // ================================================================
@@ -13339,11 +13526,9 @@ module cg3207_hdl_tb;
   // same execution, which is what lets the UI step backwards and lets an
   // input be changed part-way through without losing your place.
   //
-  // The comparison is against cyc+1 because these are nonblocking
-  // assignments: driven at the edge that ENDS cycle C-1, the new value is
-  // settled throughout cycle C and the instruction executing in cycle C
-  // reads it. Driving at the edge that ends cycle C would be one
-  // instruction too late.
+  // Compared against cyc+1: these are nonblocking assignments, so driving
+  // at the edge that ENDS cycle C-1 is what makes the value settled
+  // throughout cycle C, where the instruction of cycle C reads it.
   //------------------------------------------------------------------
   integer stim_i = 0;
   always @(posedge CLK) begin
@@ -13405,13 +13590,11 @@ ${arch}
   //------------------------------------------------------------------
   // Peripheral monitors, sampled on the FALLING edge.
   //
-  // Every one of these is declared "output reg" in the Wrapper, so the
-  // write performed by the instruction of cycle C lands at the edge that
-  // ends cycle C and is only readable during cycle C+1. Sampling at the
-  // falling edge of cycle C+1 reads that value while the trace still sits
-  // inside step C, which is what attributes the effect to the instruction
-  // that actually caused it instead of to the one after it - the same
-  // reasoning as the register-file shadow above.
+  // Every one of these is declared "output reg" in the Wrapper: the write
+  // made by the instruction of cycle C lands at the edge that ends C and is
+  // only readable during C+1. Sampling on the falling edge of C+1 reads it
+  // while the trace still sits inside step C, so the effect is attributed to
+  // the instruction that caused it.
   //
   // MemWrite_out is different - it is combinational and is therefore still
   // sampled on the rising edge, above, alongside the instruction record.
@@ -13554,6 +13737,202 @@ endmodule
     }
 
     // ================================================================
+    // Post-synthesis simulation (Yosys)
+    // ================================================================
+    // With "Synthesise and check" ticked, every run is simulated twice: once
+    // as written, and once as a gate-level netlist produced by Yosys. The two
+    // traces are compared, so a construct that simulates one way and
+    // synthesises another shows up as a divergence at a named instruction.
+    //
+    // Only the core is synthesised. The Wrapper stays behavioural, which keeps
+    // its $readmemh working and so keeps the netlist independent of the
+    // program - one synthesis serves every run.
+    //
+    // Yosys is ~13 MB over the wire and is fetched from a pinned, immutable
+    // CDN URL the first time this option is used, then served from the
+    // browser's HTTP cache.
+    const HDL_YOSYS_VERSION = '0.68.1207';
+    const HDL_YOSYS_URL =
+      'https://cdn.jsdelivr.net/npm/@yowasp/yosys@' + HDL_YOSYS_VERSION + '/gen/bundle.js';
+
+    let hdlYosys = null;          // the runYosys entry point, once loaded
+    let hdlYosysLoading = null;
+    let hdlNetlist = null;        // { key, src } - one synthesis per source set
+    let hdlNetlistVvp = null;     // { key, vvp } - one compile per netlist
+
+    async function loadYosysEngine() {
+      if (hdlYosys) return hdlYosys;
+      if (hdlYosysLoading) return hdlYosysLoading;
+      hdlYosysLoading = (async () => {
+        hdlStatus('loading the synthesiser (~13 MB, first use only) …', 'busy');
+        hdlLog('Loading Yosys ' + HDL_YOSYS_VERSION + ' from ' + HDL_YOSYS_URL, 'sys');
+        const mod = await import(/* webpackIgnore: true */ HDL_YOSYS_URL);
+        if (typeof mod.runYosys !== 'function')
+          throw new Error('The Yosys bundle did not export runYosys.');
+        hdlYosys = mod.runYosys;
+        hdlLog('Synthesiser ready.', 'sys');
+        return hdlYosys;
+      })();
+      try {
+        return await hdlYosysLoading;
+      } catch (e) {
+        hdlYosysLoading = null;
+        throw e;
+      }
+    }
+
+    // Everything except the file that declares the Wrapper: the Wrapper is
+    // fixed and is not the thing being checked.
+    function hdlCoreFiles() {
+      const wrapper = hdlFindWrapper();
+      return hdlFiles.filter(f => !wrapper || f.name !== wrapper.name);
+    }
+
+    // Synthesis resolves parameters away, but the fixed Wrapper instantiates
+    // the core as `RV #(.PC_INIT(...)) RV1(...)`. Rename the synthesised top
+    // and wrap it in a module that still accepts the parameter.
+    function hdlAddParamShim(netlist) {
+      const hdr = /^module RV\(([^)]*)\);/m.exec(netlist);
+      if (!hdr) return netlist;
+      const ports = hdr[1].split(',').map(p => p.trim()).filter(Boolean);
+      const decls = [];
+      for (const line of netlist.slice(hdr.index + hdr[0].length).split('\n')) {
+        const m = /^\s*(input|output|inout)\s+(.*);\s*$/.exec(line);
+        if (m) { decls.push('  ' + m[1] + ' ' + m[2] + ';'); continue; }
+        if (/^\s*(wire|reg)\b/.test(line) || !line.trim()) continue;
+        break;
+      }
+      return netlist.replace(/^module RV\(/m, 'module RV_synth(') +
+        '\nmodule RV #(parameter PC_INIT = 32\'h' + (baseAddress >>> 0).toString(16) + ') (' +
+        ports.join(', ') + ');\n' + decls.join('\n') +
+        '\n  RV_synth u_synth(' + ports.join(', ') + ');\nendmodule\n';
+    }
+
+    // Synthesise the core to a generic netlist. Cached against the sources.
+    async function hdlSynthesise() {
+      const core = hdlCoreFiles();
+      if (!core.length) throw new Error('No processor sources to synthesise.');
+      const key = hdlHash(core.map(f => f.name + ' ' + f.src).join('') +
+                          '|' + (baseAddress >>> 0));
+      if (hdlNetlist && hdlNetlist.key === key) return hdlNetlist.src;
+
+      const runYosys = await loadYosysEngine();
+      const filesIn = {};
+      for (const f of core) filesIn[f.name] = f.src;
+      const script = [
+        'read_verilog ' + core.map(f => f.name).join(' '),
+        'chparam -set PC_INIT 32\'h' + (baseAddress >>> 0).toString(16) + ' RV',
+        'synth -top RV',
+        'write_verilog -noattr netlist.v',
+        'stat',
+      ].join('; ');
+
+      const log = [];
+      const sink = b => log.push(new TextDecoder().decode(b || new Uint8Array()));
+      hdlStatus('synthesising …', 'busy');
+      const t0 = performance.now();
+      let filesOut;
+      try {
+        filesOut = await runYosys(['-p', script], filesIn, { stdout: sink, stderr: sink });
+      } catch (e) {
+        filesOut = (e && e.files) || {};
+        const text = log.join('');
+        const err = text.split('\n').filter(l => /^ERROR/.test(l));
+        hdlLog(err.length ? err.join('\n') : text.split('\n').slice(-12).join('\n'), 'err');
+        throw new Error('Synthesis failed' + (err.length ? ': ' + err[0] : '.'));
+      }
+      const text = log.join('');
+      const netlist = filesOut['netlist.v'];
+      if (!netlist) throw new Error('Synthesis produced no netlist.');
+
+      for (const l of text.split('\n')) {
+        if (/^Warning:/.test(l)) hdlLog(l, 'warn');
+      }
+      // `stat` reports the top module's own cell count, submodules excluded.
+      const cells = /^\s*(\d+)\s+cells\s*$/m.exec(text.slice(text.lastIndexOf('=== RV ===')));
+      hdlLog('Synthesised the core in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s' +
+        (cells ? ', ' + Number(cells[1]).toLocaleString() + ' gates in the top module' : '') + '.', 'sys');
+
+      hdlNetlist = { key: key, src: hdlAddParamShim(netlist) };
+      hdlNetlistVvp = null;
+      return hdlNetlist.src;
+    }
+
+    // Compile the netlist against the real Wrapper and the generated
+    // testbench. The register view is dropped: synthesis turns the register
+    // file into logic, so there is no array left to reach into.
+    async function hdlNetlistBinary() {
+      const netlist = await hdlSynthesise();
+      const wrapper = hdlFindWrapper();
+      const tb = hdlBuildTestbench({ regBankPath: null });
+      const gen = (document.getElementById('hdlGeneration') || {}).value || '2005';
+      const key = hdlHash(gen + '|' + netlist + '|' + wrapper.src + '|' + tb);
+      if (hdlNetlistVvp && hdlNetlistVvp.key === key) return hdlNetlistVvp.vvp;
+
+      hdlStatus('compiling the netlist …', 'busy');
+      const pp = await hdlPreprocess([
+        { name: 'netlist.v', src: netlist },
+        { name: wrapper.name, src: wrapper.src },
+        { name: 'cg3207_hdl_tb.v', src: tb },
+      ]);
+      const c = await hdlCompile(pp.src, gen);
+      if (!c.vvp) {
+        hdlLog(c.err || 'The synthesised netlist did not compile.', 'err');
+        throw new Error('The synthesised netlist did not compile.');
+      }
+      hdlNetlistVvp = { key: key, vvp: c.vvp };
+      return c.vvp;
+    }
+
+    // The observable behaviour of a run: the instruction stream, memory
+    // writes and peripheral activity. Register writes are excluded - the
+    // netlist has no register file to report them from.
+    function hdlObservable(stdout) {
+      return String(stdout || '').split('\n')
+        .filter(l => /^@@[IMLSTO] /.test(l))
+        .map(l => l.trim());
+    }
+
+    // Index of the first event where two runs disagree, or -1 if identical.
+    function hdlFirstDifference(a, b) {
+      for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        if (a[i] !== b[i]) return i;
+      }
+      return -1;
+    }
+
+    // Run the netlist with the same environment as the RTL run and compare.
+    async function hdlPostSynthCheck(rtlOut, budget, traceLvl, memFiles) {
+      const vvp = await hdlNetlistBinary();
+      hdlStatus('simulating the netlist …', 'busy');
+      const t0 = performance.now();
+      const plus = hdlPlusargs(budget, traceLvl);
+      const files = Object.assign({}, memFiles, {
+        'stim.mem': hdlStimFile(), 'uart_rx.mem': hdlRxFile(),
+      });
+      const s = await hdlSimulate(vvp, files, plus);
+      const ms = performance.now() - t0;
+
+      const a = hdlObservable(rtlOut), b = hdlObservable(s.out);
+      const at = hdlFirstDifference(a, b);
+      if (at < 0) {
+        hdlLog('Post-synthesis check: the netlist matches your RTL over ' +
+          a.length + ' recorded events (' + ms.toFixed(0) + ' ms).', 'sys');
+        setStatus('Synthesised netlist matches the RTL', 'success');
+        return { ok: true, events: a.length };
+      }
+      hdlLog('Post-synthesis check: the netlist DIVERGES from your RTL.', 'err');
+      hdlLog('  first difference at event ' + at + ' of ' + Math.max(a.length, b.length), 'err');
+      hdlLog('  RTL     : ' + (a[at] === undefined ? '(nothing further)' : a[at]), 'err');
+      hdlLog('  netlist : ' + (b[at] === undefined ? '(nothing further)' : b[at]), 'err');
+      hdlLog('This is where the design behaves differently once synthesised - ' +
+        'usually an inferred latch, an incomplete sensitivity list, or a race ' +
+        'between blocking assignments. Check the synthesis lint above.', 'warn');
+      setStatus('Synthesised netlist diverges from the RTL', 'error');
+      return { ok: false, at: at, rtl: a[at], netlist: b[at] };
+    }
+
+    // ================================================================
     // Trace capture
     // ================================================================
     function hdlParseTrace(stdout) {
@@ -13596,7 +13975,8 @@ endmodule
 
     // Run the cached binary with the current environment. Only vvp runs -
     // preprocessing and compilation are already done.
-    async function hdlRunVvp(budget, traceLvl, memFiles) {
+    // The run environment, shared by the RTL run and the post-synthesis run.
+    function hdlPlusargs(budget, traceLvl) {
       const plus = [
         '+CYCLES=' + budget,
         '+TRACE=' + traceLvl,
@@ -13608,6 +13988,11 @@ endmodule
         '+NRX=' + hdlRx.length
       ];
       if (hdlDumpVcd) plus.push('+VCD');
+      return plus;
+    }
+
+    async function hdlRunVvp(budget, traceLvl, memFiles) {
+      const plus = hdlPlusargs(budget, traceLvl);
       const files = Object.assign({}, memFiles, {
         'stim.mem': hdlStimFile(),
         'uart_rx.mem': hdlRxFile()
@@ -13658,6 +14043,15 @@ endmodule
       hdlLastVcd = s.vcd || null;
       const dl = document.getElementById('hdlVcdBtn');
       if (dl) dl.style.display = hdlLastVcd ? '' : 'none';
+
+      if (hdlSynthEnabled && !opts.quiet) {
+        try {
+          await hdlPostSynthCheck(s.out, budget, lvl, mem.files);
+        } catch (e) {
+          hdlLog(String(e && e.message ? e.message : e), 'err');
+          setStatus('Post-synthesis check failed - see the console', 'error');
+        }
+      }
 
       if (!opts.quiet) {
         const noise = /\$readmemh\(AA_(IROM|DMEM)\.mem\): Not enough words/;
@@ -14149,6 +14543,14 @@ endmodule
       updateToolbarButtonStates();
     }
     function setHdlCompare(on) { hdlCompareEnabled = !!on; }
+    // Ticking this is what triggers the one-off Yosys download.
+    function setHdlSynth(on) {
+      hdlSynthEnabled = !!on;
+      if (hdlSynthEnabled && !hdlYosys) loadYosysEngine().catch(e => {
+        hdlLog(String(e && e.message ? e.message : e), 'err');
+        hdlStatus('the synthesiser failed to load', 'err');
+      });
+    }
     // The register path is compiled into the testbench as a hierarchical
     // reference, so changing it invalidates the cached binary.
     function setHdlRegPath() { hdlVvpCache = null; hdlDiscardTrace(); }
@@ -14181,11 +14583,9 @@ endmodule
         setStatus('Wait for the HDL simulation to finish before switching engines', 'warn');
         return;
       }
-      // The functional engine runs on a timer chain, which would otherwise
-      // keep executing - and keep advancing the cycle and instruction
-      // counters - underneath the HDL view, until it hit the JS "Max
-      // Instructions Per Run" limit. Stop it here; its state is kept, so
-      // switching back and pressing Resume carries on from this point.
+      // The functional engine runs on a timer chain; stop it so it cannot
+      // keep executing underneath the HDL view. Its state is kept, so
+      // switching back and pressing Resume carries on from here.
       if (running) {
         running = false;
         if (runTimerId) { clearTimeout(runTimerId); runTimerId = null; }
@@ -14535,6 +14935,12 @@ endmodule
     window.setHdlDumpVcd = setHdlDumpVcd;
     window.setHdlTrace = setHdlTrace;
     window.setHdlCompare = setHdlCompare;
+    window.setHdlSynth = setHdlSynth;
+    window.hdlSynthesise = hdlSynthesise;
+    window.hdlAddParamShim = hdlAddParamShim;
+    window.hdlObservable = hdlObservable;
+    window.hdlFirstDifference = hdlFirstDifference;
+    window.hdlCoreFiles = hdlCoreFiles;
     window.setHdlRegPath = setHdlRegPath;
     window.setSimEngineMode = setSimEngineMode;
     window.getHdlFiles = () => hdlFiles;
@@ -14555,6 +14961,8 @@ endmodule
     window.getHdlTrace = () => hdlTrace;
     window.getHdlIndex = () => hdlIdx;
     window.hdlSeek = hdlSeek;
+    window.hdlSynthLint = hdlSynthLint;
+    window.hdlLintFile = hdlLintFile;
     window.hdlBreakAt = hdlBreakAt;
     window.hdlResumeRun = hdlResumeRun;
     window.hdlStatementTarget = hdlStatementTarget;

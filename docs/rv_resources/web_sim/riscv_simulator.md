@@ -483,10 +483,7 @@ visible but the trace still sits inside step *C* — so the effect is attributed
 instruction that caused it rather than to the one after it. `MemWrite_out` is
 combinational and stays on the rising edge, alongside the instruction record.
 
-Get either of these wrong and everything looks one instruction late: change a DIP
-switch while paused on the load that reads it and the old value comes back; write the
-LED register and the display updates one Step behind. Section 11 of the test suite pins
-both directions down.
+Section 11 of the test suite pins both directions down.
 
 ### 5.6 Reading the register file
 
@@ -601,7 +598,65 @@ on different schedules and will diverge there legitimately.
 ---
 
 
-### 5.13 Where the engine comes from
+### 5.13 Synthesis lint
+
+Every time you load sources, they are checked for constructs that behave one way in
+simulation and another way — or not at all — after synthesis. Results go to the console
+with a file and a line.
+
+| Flagged | Why |
+|---|---|
+| `#` delay | discarded by synthesis; the hardware will not match the simulation |
+| `$display`, `$finish`, `$time`, … | simulation-only. `$readmemh`/`$readmemb` are *not* flagged — Vivado uses them for memory init |
+| `real`, `time`, `event` | not synthesisable |
+| `forever`, `while` | synthesis needs a statically bounded loop |
+| `casex` | X-matching does not exist in hardware; `casez` is the safe form |
+| blocking `=` in a clocked block | races other blocks reading the same signal on that edge (loop headers exempt) |
+| `always @(a, b)` on combinational logic | synthesis reads it as `@*` regardless, so an incomplete list is a real mismatch |
+| `initial` with a delay | simulation-only (a plain `initial` power-up value is fine) |
+
+It is a **lint, not a synthesis run**, and it never blocks a simulation. To confirm the
+design really synthesises — and that the synthesised version behaves the same — use the
+post-synthesis check below.
+
+### 5.14 Synthesising and checking the netlist
+
+Tick **Synthesise and simulate the netlist** (⚙ Settings → 🔌 HDL Simulation) and every
+run is simulated twice: once as you wrote it, and once as a gate-level netlist produced
+by **Yosys**. The two are compared, and the first point where they differ is reported.
+
+| Stage | What happens |
+|---|---|
+| Synthesise | Yosys runs `synth -top RV` over your core and writes a generic netlist. Cell count and any warnings go to the console. |
+| Shim | Synthesis resolves parameters away, so a small wrapper module is generated to keep the fixed Wrapper's `RV #(.PC_INIT(…)) RV1(…)` valid. |
+| Simulate | The netlist is compiled against the real `Wrapper.v` and the same generated testbench, and run with the same switches, cycle budget and inputs as the RTL. |
+| Compare | The instruction stream, memory writes and peripheral activity of the two runs are diffed. |
+
+Only **your core** is synthesised. The Wrapper stays behavioural, which keeps its
+`$readmemh` working — so the netlist is independent of the program and one synthesis
+serves every run.
+
+Two things follow from how synthesis works:
+
+- **The panels keep showing the RTL run.** The netlist runs alongside it purely as a
+  check, so stepping, Back and the register view are unaffected.
+- **Register writes are not compared.** Synthesis turns the register file into logic,
+  so there is no array left to read. The PC, memory and peripherals all come from the
+  Wrapper and are compared in full.
+
+A divergence is what a construct that simulates one way and synthesises another looks
+like — most often an inferred latch, an incomplete sensitivity list, or a race between
+blocking assignments.
+
+#### The download
+
+Ticking the box for the first time fetches Yosys — about **13 MB** over the wire, from a
+pinned, immutable CDN URL. Nothing is downloaded until you tick it, and your browser
+caches it (`max-age` one year, `immutable`), so later sessions start immediately. It is
+never fetched if you leave the box unticked. Synthesis itself takes roughly 20–35
+seconds and is cached until your sources change.
+
+### 5.15 Where the engine comes from
 
 Three Emscripten modules, tried in order:
 
@@ -626,7 +681,7 @@ your disk.
 
 ---
 
-### 5.14 Limitations
+### 5.16 Limitations
 
 - **A step is a recording, not a live simulation.** Editing a register value by hand,
   or setting a breakpoint the hardware does not know about, has no effect on the RTL —
@@ -987,13 +1042,6 @@ six engine files to run the full pipeline offline. **Node 20+** is required — 
 Emscripten modules are ES modules using `import.meta`.
 
 All 15 suites above pass against `riscv_simulator.html`.
-
-`test_comprehensive_suite.js` §9 checks the memory-view protection model in **both**
-display modes, because the mechanism differs between them: in **word** mode (the default
-since v23.5) a cell is edited through the word overlay — an `onclick` calling
-`startMemWordCellEdit` — while in **byte** mode it is `contenteditable="true"`. The rule
-being verified is the same either way: the code segment is read-only, and
-data/stack/MMIO are editable.
 
 ---
 
