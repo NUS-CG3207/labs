@@ -2,6 +2,9 @@
 
 **Reference manual, architecture guide and changelog.**
 
+> **New here?** Start with the [**User Guide**](riscv_simulator_user_guide.md) — a short,
+> task-oriented walkthrough. This document is the full reference behind it.
+
 | File | What it is |
 |---|---|
 | [`riscv_simulator.html`](riscv_simulator.html) | The simulator. Single file, no build step, works offline. Runs programs on either of **two execution engines** — the built-in JavaScript functional model, or **your own Verilog processor** compiled and simulated in the browser. |

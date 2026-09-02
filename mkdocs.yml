@@ -53,16 +53,16 @@ nav:
     - Peripheral Guides: rv_resources/peripherals.md
     - Programming Guide: rv_resources/rv_programming.md
     - Using Compiled Code: rv_resources/using_compiled_code.md
-    - RISC-V Simulator: rv_resources/riscv_simulator_redirect.md
+    - RISC-V Simulator: rv_resources/web_sim_riscv_simulator_user_guide.md
     - RISC-V ISA Tutorial:
-      - Getting Started: rv_resources/ISATutorial/getting-started.md
-      - Background: rv_resources/ISATutorial/background.md
-      - Registers: rv_resources/ISATutorial/registers.md
-      - Instruction Formats: rv_resources/ISATutorial/formats.md
-      - Data Processing Instructions: rv_resources/ISATutorial/dp-instructions.md
-      - Memory Instructions: rv_resources/ISATutorial/memory-instructions.md
-      - Control Instructions: rv_resources/ISATutorial/control-instructions.md
-      - RISC-V Assembly Examples: rv_resources/ISATutorial/assembly.md
-      - ISA Designer's Dilemma: rv_resources/ISATutorial/isa-design.md
+      - Getting Started: rv_resources/isa_tutorial/getting-started.md
+      - Background: rv_resources/isa_tutorial/background.md
+      - Registers: rv_resources/isa_tutorial/registers.md
+      - Instruction Formats: rv_resources/isa_tutorial/formats.md
+      - Data Processing Instructions: rv_resources/isa_tutorial/dp-instructions.md
+      - Memory Instructions: rv_resources/isa_tutorial/memory-instructions.md
+      - Control Instructions: rv_resources/isa_tutorial/control-instructions.md
+      - RISC-V Assembly Examples: rv_resources/isa_tutorial/assembly.md
+      - ISA Designer's Dilemma: rv_resources/isa_tutorial/isa-design.md
   - Miscellaneous:
     - Prefetching: misc/Prefetching.md

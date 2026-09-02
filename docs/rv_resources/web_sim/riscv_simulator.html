@@ -118,62 +118,7 @@
       min-width: 0;
       flex-shrink: 0;
     }
-    /* Simulation Output */
-    .editor-container {
-      position: relative;
-      flex: 1;
-      overflow: hidden;
-      min-height: 0;
-    }
-
     .editor-container textarea,
-    .editor-container .highlight-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      padding: 12px 12px 12px 8px !important;
-      font-family: 'Consolas', 'Roboto Mono', 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace !important;
-      font-size: 13px !important;
-      line-height: 20px !important;
-      tab-size: 4;
-      white-space: pre !important;
-      word-wrap: normal !important;
-      overflow-wrap: normal !important;
-      word-break: normal !important;
-      letter-spacing: 0px !important;
-      overflow: auto;
-      border: none;
-      outline: none;
-      resize: none;
-      box-sizing: border-box !important;
-      -webkit-text-size-adjust: 100% !important;
-      text-size-adjust: 100% !important;
-      font-variant-ligatures: none !important;
-    }
-
-    .editor-container textarea {
-      color: transparent;
-      -webkit-text-fill-color: transparent;
-      background: #1e1e2e;
-      caret-color: #cdd6f4;
-      text-shadow: none;
-      z-index: 2;
-    }
-
-    .editor-container textarea::selection {
-      background: rgba(203, 166, 247, 0.45);
-    }
-
-    .editor-container .highlight-layer {
-      display: block;
-      overflow: hidden;
-      pointer-events: none;
-      z-index: 3;
-      color: #cdd6f4;
-    }
-
     /* Toolbar */
     .toolbar {
       display: flex;
@@ -1344,10 +1289,6 @@
       background: rgba(137, 180, 250, 0.20);
     }
 
-    .code-list tr.error-row td {
-      color: #f38ba8;
-    }
-
     .code-list tr.disasm-label-row td {
       padding: 6px 6px 3px 6px;
       border-bottom: 1px dashed rgba(137, 180, 250, 0.20);
@@ -1547,8 +1488,6 @@
       line-height: 1.5;
     }
 
-    /* A register the hardware has not written yet really is undefined; the
-       functional model shows 0, the RTL cannot honestly claim that. */
     /* Shown in place of register values when HDL mode cannot reach the
        register file inside the uploaded design. */
     .hdl-reg-notice {
@@ -1569,6 +1508,8 @@
       color: #cdd6f4;
     }
 
+    /* A register the hardware has not written yet really is undefined; the
+       functional model shows 0, the RTL cannot honestly claim that. */
     .reg-unknown {
       color: #6c7086 !important;
       font-style: italic;
@@ -1580,7 +1521,6 @@
       line-height: 1.55;
     }
 
-    /* Simulation settings, grouped by the engine each group reaches. */
     /* Standing indicator of the loaded Verilog, in place of the panel's file list. */
     .hdl-chip {
       background: #313244;
@@ -1609,6 +1549,7 @@
       vertical-align: 1px;
     }
 
+    /* Simulation settings, grouped by the engine each group reaches. */
     .sim-group {
       margin-bottom: 16px;
       transition: opacity 0.15s ease;
@@ -1765,40 +1706,6 @@
       min-height: 0;
     }
 
-    .line-numbers {
-      background: #181825;
-      color: #6c7086;
-      padding: 12px 4px 12px 6px !important;
-      text-align: right;
-      font-size: 13px !important;
-      line-height: 20px !important;
-      width: 40px;
-      flex: 0 0 auto;
-      overflow: hidden;
-      user-select: none;
-      font-family: 'Consolas', 'Roboto Mono', 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace !important;
-      white-space: pre !important;
-      box-sizing: border-box !important;
-      letter-spacing: 0px !important;
-      -webkit-text-size-adjust: 100% !important;
-      text-size-adjust: 100% !important;
-      font-variant-ligatures: none !important;
-    }
-
-    .line-numbers div {
-      height: 20px !important;
-      line-height: 20px !important;
-      font-size: 13px !important;
-      font-family: 'Consolas', 'Roboto Mono', 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace !important;
-      box-sizing: border-box !important;
-      display: block;
-      text-align: right;
-      padding: 0 4px 0 0;
-      margin: 0;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-
     .code-area {
       position: relative;
       flex: 1;
@@ -1806,100 +1713,6 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
-    }
-
-    /* Syntax highlighting colors */
-    .hl-comment {
-      color: #6c7086;
-      font-style: italic;
-    }
-
-    .hl-directive {
-      color: #f5c2e7;
-    }
-
-    .hl-label {
-      color: #fab387;
-    }
-
-    .hl-instruction {
-      color: #89b4fa;
-    }
-
-    .hl-register {
-      color: #a6e3a1;
-    }
-
-    .hl-number {
-      color: #f9e2af;
-    }
-
-    .hl-string {
-      color: #a6e3a1;
-    }
-
-    .hl-punctuation {
-      color: #cdd6f4;
-    }
-
-    .hl-keyword {
-      color: #cba6f7;
-    }
-
-    /* Find & Replace Match Highlighting */
-    .hl-find-match {
-      background: rgba(249, 226, 175, 0.35) !important;
-      color: #cdd6f4 !important;
-      border-radius: 2px;
-      box-shadow: 0 0 0 1px rgba(249, 226, 175, 0.6);
-      padding: 0 1px;
-    }
-
-    .hl-find-active {
-      background: #cba6f7 !important;
-      color: #11111b !important;
-      font-weight: 700;
-      border-radius: 2px;
-      box-shadow: 0 0 8px rgba(203, 166, 247, 0.8), 0 0 0 1px #b4befe !important;
-      padding: 0 1px;
-    }
-
-    /* Execution line marker + breakpoints + settings */
-    .exec-marker {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 20px;
-      pointer-events: none;
-      background: rgba(137, 180, 250, 0.14);
-      border-left: 3px solid #89b4fa;
-      z-index: 1;
-      box-sizing: border-box;
-      line-height: 20px;
-    }
-
-    .bp-line {
-      color: #f38ba8;
-      font-weight: 700;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .bp-line::after {
-      content: '';
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #f38ba8;
-      margin-left: 3px;
-      vertical-align: middle;
-      position: relative;
-      top: -1px;
-    }
-
-    .line-numbers {
-      cursor: default;
     }
 
     /* In-Editor Find & Replace Floating Widget */
@@ -2049,36 +1862,6 @@
       line-height: 1.2;
     }
 
-    .ac-badge-inst {
-      background: rgba(137, 180, 250, 0.2);
-      color: #89b4fa;
-    }
-
-    .ac-badge-pseudo {
-      background: rgba(203, 166, 247, 0.2);
-      color: #cba6f7;
-    }
-
-    .ac-badge-label {
-      background: rgba(250, 179, 135, 0.2);
-      color: #fab387;
-    }
-
-    .ac-badge-equ {
-      background: rgba(249, 226, 175, 0.2);
-      color: #f9e2af;
-    }
-
-    .ac-badge-directive {
-      background: rgba(245, 194, 231, 0.2);
-      color: #f5c2e7;
-    }
-
-    .ac-badge-register {
-      background: rgba(166, 227, 161, 0.2);
-      color: #a6e3a1;
-    }
-
     .ac-name {
       font-weight: 600;
       color: #cdd6f4;
@@ -2090,12 +1873,6 @@
     .ac-match {
       color: #fab387;
       text-decoration: underline;
-    }
-
-    .ac-type-hint {
-      font-size: 10px;
-      color: #6c7086;
-      margin-left: auto;
     }
 
     .ac-doc {
@@ -2708,21 +2485,6 @@
       filter: drop-shadow(0 0 2px rgba(166, 227, 161, 0.6));
     }
 
-    /* Peripherals Legend */
-    .periph-legend {
-      margin-top: 8px;
-      padding: 6px 8px;
-      background: #181825;
-      border-radius: 4px;
-      font-size: 10.5px;
-      color: #585b70;
-      line-height: 1.5;
-    }
-
-    .periph-legend strong {
-      color: #6c7086;
-    }
-
     /* ============================================================
    Responsive Design & Mobile Optimization
    ============================================================ */
@@ -2934,34 +2696,7 @@
         box-sizing: border-box;
       }
 
-      .line-numbers {
-        width: 34px;
-        font-size: 13px !important;
-        line-height: 20px !important;
-        padding: 12px 2px 12px 4px !important;
-        box-sizing: border-box !important;
-      }
-
-      .line-numbers div {
-        height: 20px !important;
-        line-height: 20px !important;
-        font-size: 13px !important;
-        box-sizing: border-box !important;
-      }
-
       .editor-container textarea,
-      .editor-container .highlight-layer {
-        font-size: 13px !important;
-        line-height: 20px !important;
-        padding: 12px 12px 12px 8px !important;
-        box-sizing: border-box !important;
-      }
-
-      .exec-marker {
-        height: 20px !important;
-        line-height: 20px !important;
-      }
-
       .console {
         max-height: 110px;
         font-size: 11px;
@@ -7129,6 +6864,9 @@
       statusBar.style.color = type === 'error' ? '#f38ba8' : type === 'success' ? '#a6e3a1' : '#a6adc8';
     }
 
+    // Intentional no-op. The pre-CodeMirror editor kept a highlight overlay in
+    // sync with the textarea's scroll position; CM6 renders its own. Retained
+    // because the pre-v15 API surface is still called by the test suite.
     function syncScroll() {}
 
     function resetExecutionForSourceChange() {
@@ -9849,10 +9587,6 @@ function updateRegisters() {
       sel.addRange(range);
     }
 
-    function selectRegText(el) {
-      selectElementText(el);
-    }
-
     function startRegEdit(el) {
       if (!el) return;
       el.contentEditable = "true";
@@ -10427,10 +10161,6 @@ int main() {
 
       updateExampleSelectorOptions();
 
-      const btnCompilerConfig = document.getElementById('btnCompilerConfig');
-      if (btnCompilerConfig) {
-        btnCompilerConfig.style.display = (mode === 'c') ? 'inline-flex' : 'none';
-      }
 
       if (mode === 'c') {
         loadExample('basic_c');
@@ -10441,17 +10171,6 @@ int main() {
       }
 
       if (typeof updateToolbarButtonStates === 'function') updateToolbarButtonStates();
-    }
-
-    function toggleCompilerConfigPanel() {
-      const overlay = document.getElementById('compilerConfigOverlay');
-      if (!overlay) return;
-      overlay.classList.toggle('open');
-    }
-
-    function closeCompilerConfigPanel() {
-      const overlay = document.getElementById('compilerConfigOverlay');
-      if (overlay) overlay.classList.remove('open');
     }
 
     function syncGodboltArchFlags() {
@@ -10975,23 +10694,6 @@ STACK_INIT:
       }
     }
 
-    function toggleCyclesPanel() {
-      const ov = document.getElementById('cyclesOverlay');
-      if (!ov.classList.contains('open')) {
-        buildCyclesPanel();
-        ov.classList.add('open');
-        ov.style.display = '';
-      } else {
-        closeCyclesPanel();
-      }
-    }
-
-    function closeCyclesPanel() {
-      const ov = document.getElementById('cyclesOverlay');
-      ov.classList.remove('open');
-      ov.style.display = '';
-    }
-
     function resetCyclesConfig() {
       cycleConfig.basic = 1;
       cycleConfig.muldiv = 2;
@@ -11196,7 +10898,10 @@ STACK_INIT:
       }
     }
 
-    // Legacy Aliases for Backward Compatibility
+    // Compatibility shims. Each of these used to open its own overlay before
+    // v17 folded them into the one Settings modal; they are kept so older
+    // links, bookmarklets and tests keep working. `applyMemSegments` and
+    // `resetMemSegments` are exercised by riscv_simulator_tests.
     function toggleCompilerConfigPanel() { openSettingsModal('compiler'); }
     function closeCompilerConfigPanel() { closeSettingsModal(); }
     function toggleMemSegmentsPanel() { openSettingsModal('linker'); }
@@ -11216,13 +10921,6 @@ STACK_INIT:
     }
 
     // Build a Verilog $readmemh-format dump of code and data memories.
-    function buildMemFile() {
-      const items = machineCode.filter(i => !i.error && i.bytes).sort((a, b) => a.address - b.address);
-      const text = items.filter(i => i.address < dataBase);
-      const data = items.filter(i => i.address >= dataBase);
-      return buildMemFileText(text) + '\n' + buildMemFileText(data);
-    }
-
     function buildMemFileText(items) {
       if (!items.length) return '';
       let result = '';
@@ -11831,10 +11529,6 @@ STACK_INIT:
       return mc;
     }
 
-    function assembleAndRun() {
-      runProgram();
-    }
-
     function stepOnce() {
       if (!assembled) {
         setStatus('Please assemble the program first (⚙ Assemble)', 'warn');
@@ -12231,10 +11925,6 @@ STACK_INIT:
       }
 
       runBatch();
-    }
-
-    function assembleAndRun() {
-      runProgram();
     }
 
     function toggleRunPause() {
@@ -14608,7 +14298,7 @@ endmodule
       });
     }
 
-    function hdlInitPanel() {
+    function hdlInitSources() {
       const drop = document.getElementById('hdlDropZone');
       const input = document.getElementById('hdlFileInput');
       if (input) input.addEventListener('change', e => {
@@ -14902,7 +14592,7 @@ endmodule
         try { assembleOnly(); } catch (e) { }
       }
       updateToolbarButtonStates();
-      hdlInitPanel();
+      hdlInitSources();
     }
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', bootSimulator);
