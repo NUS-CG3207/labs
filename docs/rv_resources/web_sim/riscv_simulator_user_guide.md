@@ -11,7 +11,8 @@ changelog — see [`riscv_simulator.md`](riscv_simulator.md).
 
 ## 1. Your first five minutes
 
-1. Pick something from **Example:** — start with *Basic* or *Fibonacci*.
+1. Pick something from **Example:** — **Basic (start here)** is the short, complete
+   program to work from. In C mode the same entry is **Basic Sum (start here)**.
 2. It assembles automatically. Press **▶ Run**.
 3. Watch the **Registers** panel fill in, and the status bar report what happened.
 
@@ -40,6 +41,12 @@ That is the whole loop. Everything below is detail.
   float it. Your layout is remembered.
 - **The console** under the editor carries assembler messages, `ecall` output and
   compiler errors. **Drag the bar above it** to make it taller; double-click to reset.
+- **The status bar** is the line above the editor: the latest message on the left, and on
+  the right the readout that is always there —
+  `Cycles: 3 EST | Instr: 3 | PC: 0x0040000c`. `EST` means the cycle count is estimated
+  from the CPI table; `HW` means it was counted by your Verilog. **PC** is the address of
+  the instruction about to execute, and it is the one number worth watching while you
+  step.
 
 ---
 
@@ -58,6 +65,20 @@ back the moment you edit. Examples and opened files assemble themselves, so **Ru
 
 **Errors** appear in the console with a line number, and the offending line is marked in
 the editor. Fix and re-assemble.
+
+### What the assembler will not let you do
+
+It refuses several things that a looser assembler accepts and quietly gets wrong — a
+missing operand (`add t0, t1` is not `add t0, t1, x0`), a surplus one, a shift by 32, a
+value too wide for its directive, a duplicated label, a label named after a register, and
+a store to a label without a named scratch register. Each message says what to write
+instead. The full list is in the [reference manual](riscv_simulator.md).
+
+`ecall` is worth knowing about: it works here, because the simulator implements the RARS
+syscall services. It will not work on the CG3207 board, which has no trap support and no
+OS behind it — use the MMIO peripherals for anything you intend to run on hardware. The
+examples that use `ecall` say so at the top, and the console repeats it after each
+assemble.
 
 ### Help while you type
 
@@ -132,6 +153,12 @@ instruction is highlighted and scrolls into view. Label headers and jump targets
 (`<loop>`) are annotated. Machine code can be shown as bytes or whole words, hex or
 binary.
 
+The **Native instruction** column names registers as the encoding does — `x0` to `x31`,
+so `add t0, t0, t1` reads `add x5, x5, x6`. ABI names stay in **Original source** beside
+it, which is what makes the two columns worth comparing. Only rows where a real
+pseudo-instruction was expanded are coloured as such; a register renamed from `t0` to
+`x5` is not an expansion.
+
 ### Peripherals
 
 A simulated Nexys 4 board. Everything here is live — click it while the program is
@@ -159,10 +186,17 @@ terminal would.
 
 | Tab | What is in it |
 |---|---|
-| **⚡ Compiler** | C compiler, `-O` level, `-march`/`-mabi`, M-extension toggle |
+| **⚡ Compiler** | C compiler, `-O` level, `-march`/`-mabi`, M-extension toggle (off by default) |
 | **🗺 Linker** | Segment bases and sizes, stack top, MMIO base |
 | **⏱ JS Simulation** | Statement Stepping · max instructions per run · cycles per instruction |
 | **🔌 HDL Simulation** | Statement Stepping · your Verilog sources · everything for the hardware engine |
+
+Changing anything on the **Compiler** tab clears the compiled program — what was loaded
+no longer matches the settings — so compile again afterwards.
+
+The **M extension is off by default**. With it off, a `*` or `%` in C compiles to a call
+to a helper like `__mulsi3` that this assembler does not provide, and you will be told to
+enable it.
 
 > **On a real FPGA** the RAM size is fixed in hardware. If you raise the segment sizes
 > beyond what your board provides or provisioned in HDL (whichever is lower), it will work here and fail there.
@@ -232,7 +266,7 @@ block, an incomplete sensitivity list on combinational logic. Anything found is 
 in the console with a file and a line. It never stops a simulation.
 
 Treat it as a first pass, not a verdict — it catches common mistakes but does not prove
-anything. To actually prove it, tick **Synthesise and simulate the netlist**
+anything. To actually prove it, tick **Post-synthesis functional simulation**
 (⚙ Settings → 🔌 HDL Simulation). Every run then happens twice: once as you wrote it, and
 once as a gate-level netlist produced by **Yosys**. If the two behave differently you are
 told the first point where they part company — which is what an inferred latch, an
@@ -274,6 +308,17 @@ both values. That is almost always where the RTL bug is.
 | **Run and Step are greyed out** | The program is not assembled. Press **⚙ Assemble**. |
 | **"Breakpoint set at line X (moved from line Y)"** | You put it on a line with no instruction; it moved to the next real one. |
 | **Program pauses on its own** | It hit the instruction limit — usually an infinite loop. Raise it in ⚙ Settings → JS Simulation, or find the loop. |
+| **A program only half runs — the circle does not close, the image is cut off** | It does not fit. The status bar after assembling says how many instructions too many. Raise **Code (.text) size** in ⚙ Settings → Linker, and `IROM_DEPTH_BITS` in your `Wrapper.v` for HDL mode. `Circle & Accel` needs both, especially at `-O0`. |
+| **`'__mulsi3' is a libgcc helper…`**, or a warning about one right after compiling | Your C multiplies or divides but the M extension is off, so the compiler called a library routine that is not part of your program. Two ways out: tick **Include M extension** in ⚙ Settings → Compiler, or raise the optimisation level — from `-O1` up the compiler often turns a multiply by a constant into shifts and adds and the call disappears. That is why a program can work at `-Os` and fail at `-O0`. |
+| **`'1' is a number, not a register`** | `add t0, t0, 1` needs three registers. For a constant use the immediate form: `addi t0, t0, 1`. |
+| **`sw t0, var1 would need a scratch register…`** | Storing to a label takes two instructions, and the address has to be built somewhere. Say where: `sw t0, var1, t1` — and pick a register you are not using. Loads do not need this; `lw s3, var1` uses `s3` itself. |
+| **`add takes 3 operands, but 2 were given`** | A missing operand used to be filled in with `x0`, so the program ran and was wrong. The message names the shape to write. |
+| **`slli shift amount 32 is out of range`** | RV32 shifts by 0–31. A shift by 32 used to be masked down to a shift by **zero**. |
+| **`256 does not fit in .byte`** | The value would be truncated to 0. Use `.half` or `.word`, or check the number. |
+| **`Label 'x' is defined more than once`** | Every reference would resolve to the last definition. Rename one. |
+| **`'t0' is a register name, so it cannot be used as a label`** | `j t0` would read `t0` as the register, not as your label. Rename it. |
+| **`… offset that is not a multiple of the access size`** | A warning, not an error. `lw t0, 1(sp)` only works if the base register makes up the difference — and the Wrapper's data memory is word-addressed, so on the board it touches a different word. |
+| **`This program uses ecall (N sites)`** | Information, not a problem. `ecall` works here because the simulator implements the RARS syscalls; the CG3207 hardware has no trap support and no OS behind it, so board programs should use the MMIO peripherals. |
 | **A store to memory seems ignored** | Check the address is in Data, not Code. The code segment is read-only. |
 | **C code will not compile** | Godbolt needs the network. The built-in C examples work offline; your own C does not. |
 | **Nothing happens in HDL mode** | Check the chip beside `JS \| HDL`. Amber means no sources, or none of them declares `module Wrapper`. |
@@ -292,3 +337,4 @@ both values. That is almost always where the RTL bug is.
 | [`riscv_simulator_nohdl.html`](riscv_simulator_nohdl.html) | The same thing without the HDL engine |
 | [`riscv_simulator.md`](riscv_simulator.md) | Full reference: MMIO map, ISA, syscalls, architecture, changelog |
 | `riscv_simulator_tests/` | The automated test suite |
+| [`vendor/`](vendor/README.md) | Local copies of CodeMirror, Icarus Verilog and Yosys, used when the CDN cannot be reached (needs the page served over `http://`) |

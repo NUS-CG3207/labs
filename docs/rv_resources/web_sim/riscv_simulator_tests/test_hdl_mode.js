@@ -361,6 +361,62 @@ setTimeout(async () => {
     check('A run that stops early is a difference',
       win.hdlFirstDifference(obs, obs.slice(0, 2)) === 2);
 
+    // --- 3d. Settings behaviour ----------------------------------------
+    console.log('\n[3d] Compiler settings and HDL tab layout');
+    check('The M extension is off by default',
+      doc.getElementById('godboltUseM').checked === false &&
+      /-march=rv32i\b/.test(doc.getElementById('godboltArchFlags').value));
+
+    // The compiled program belongs to the toolchain settings that produced
+    // it, so changing one has to invalidate it.
+    win.loadExample('fib');
+    win.assembleOnly();
+    check('A program is loaded to begin with', win.getMachineCode().length > 0);
+    win.invalidateCompiledProgram('M extension');
+    check('Changing a compiler setting clears the compiled program',
+      win.getMachineCode().length === 0);
+    check('…and says so', /compile again|assemble again/i
+      .test(doc.getElementById('statusBar').textContent));
+
+    // A libgcc helper is what a multiply becomes with the M extension off.
+    win.loadExample('fib');
+    win.editor.value = 'main:\n  call __mulsi3\n';
+    win.assembleOnly();
+    const errLines = [...doc.getElementById('console').querySelectorAll('div.error')]
+      .map(x => x.textContent);
+    check('A libgcc helper call explains itself instead of "Unknown symbol"',
+      errLines.some(l => /__mulsi3/.test(l) && /M extension/.test(l)));
+
+    // A program that does not fit its segment used to be reported only in the
+    // console, where the success message immediately followed it.
+    win.loadExample('circle_accel');
+    win.assembleOnly();
+    check('A code-segment overflow survives on the status bar',
+      /too many for the Code segment/.test(doc.getElementById('statusBar').textContent));
+    win.loadExample('fib');
+    win.assembleOnly();
+    check('A program that fits reports normally',
+      /Ready to run/.test(doc.getElementById('statusBar').textContent));
+
+    // Layout: sources first, then the three settings that matter most.
+    const hdlTab = doc.getElementById('settingsContent-hdl');
+    const groups = [...hdlTab.querySelectorAll('.sim-group-title')].map(e => e.textContent.trim());
+    check('Sources come first, then Simulation',
+      groups[0] === 'Processor sources' && groups[1] === 'Simulation');
+    check('Post-synthesis, Cycles and Fast Mode are the Simulation group',
+      ['hdlSynth', 'hdlCycles', 'hdlStatementStep']
+        .every(id => doc.getElementById(id).closest('.sim-group').id === 'hdlGroupBoth'));
+    check('Post-synthesis is named as a functional simulation',
+      /Post-synthesis functional simulation/.test(hdlTab.textContent));
+    check('Its long explanation is folded away',
+      [...hdlTab.querySelectorAll('details')].some(d => /13 MB/.test(d.textContent)));
+    check('Statement Stepping is worded identically on both tabs', (() => {
+      const strip = t => t.replace(/Shared with .*/, '').replace(/\s+/g, ' ').trim();
+      const hdl = strip(doc.getElementById('hdlStatementStep').closest('.sim-card').textContent);
+      const js = strip(doc.getElementById('simStatementStep').closest('.sim-card').textContent);
+      return hdl === js && hdl.length > 40;
+    })());
+
     // --- 4. The testbench is program-independent -----------------------
     console.log('\n[4] Generated testbench carries no program-specific data');
     win.loadExample('dip_led');

@@ -9,6 +9,7 @@
 |---|---|
 | [`riscv_simulator.html`](riscv_simulator.html) | The simulator. Single file, no build step, works offline. Runs programs on either of **two execution engines** — the built-in JavaScript functional model, or **your own Verilog processor** compiled and simulated in the browser. |
 | [`riscv_simulator_nohdl.html`](riscv_simulator_nohdl.html) | The same simulator without the HDL engine — kept for anyone who wants the smaller, functional-only build. |
+| [`vendor/`](vendor/README.md) | Local copies of the three external engines (CodeMirror, Icarus Verilog, Yosys), used only when the CDN cannot be reached. |
 
 **Live:** <https://nus-cg3207.github.io/labs> · Vibe coded by Rajesh Panicker.
 
@@ -251,15 +252,17 @@ The four right-side inspector views — **Registers**, **Memory**, **Peripherals
 ```
 +-----------------------------------------------------------------------------------------------------------------+
 | Row 1: [ ASM | C ]  Example: [ Basic Sum (C) ▼ ]  📂 Open  💾 Save   |   ↶ Undo  ↷ Redo  🔍 Find                 |
-| Row 2: ⚙ Assemble   ▶ Run   ⏭ Step   ⏮ Back   ⟲ Reset   |   💾 Dump txt  💾 Dump data  ⚙ Settings…  Cycles: 0 | Instr: 0 |
-| Row 3: Status: Ready                                                                                            |
+| Row 2: ⚙ Assemble   ▶ Run   ⏭ Step   ⏮ Back   ⟲ Reset   |   💾 Dump txt  💾 Dump data  ⚙ Settings…            |
+| Row 3: Step 3: PC = 0x40000c                            Cycles: 3 EST | Instr: 3 | PC: 0x0040000c               |
 +-----------------------------------------------------------------------------------------------------------------+
 ```
 
 #### 1. Structured Toolbar Layout
 - **Row 1 (Source & Editing)**: Language Toggle (`[ ASM | C ]`), Example selector, File operations (`📂 Open`, `💾 Save`), and Editor controls (`↶ Undo`, `↷ Redo`, `🔍 Find`).
-- **Row 2 (Simulation & Controls)**: Execution controls (`⚙ Assemble`, `▶ Run` / `⏸ Pause` / `▶ Resume`, `⏭ Step`, `⏮ Back`, `⟲ Reset`), Memory dump exports (`💾 Dump txt`, `💾 Dump data`), Settings (`⚙ Settings…`), and Live Metrics (`Cycles: X | Instr: Y`).
-- **Row 3 (Status Message Bar)**: Dedicated full-width status line providing real-time feedback with distinct color-coded alert levels (`info`, `success`, `warning`, `error`).
+- **Row 2 (Simulation & Controls)**: Execution controls (`⚙ Assemble`, `▶ Run` / `⏸ Pause` / `▶ Resume`, `⏭ Step`, `⏮ Back`, `⟲ Reset`), Memory dump exports (`💾 Dump txt`, `💾 Dump data`) and Settings (`⚙ Settings…`).
+- **Row 3 (Status & Live Metrics)**: The status message on the left — real-time feedback with distinct colour-coded alert levels (`info`, `success`, `warning`, `error`) — and the always-on metrics readout on the right: `Cycles: X <est|hw> | Instr: Y | PC: 0xNNNNNNNN`.
+  - The **`est` / `hw` tag** says where the cycle count came from: a CPI-table estimate in the functional engine, or counted clock edges in HDL mode. Same number, very different provenance.
+  - The **PC** is the address of the instruction about to execute, picked out in blue monospace. It lives here rather than only in the status message because that message is transient — any later message overwrites it, and the PC is the one number you keep looking for while stepping.
 - **Mobile Responsive 4-Row Design**: Automatically reorganizes into 4 dedicated rows on mobile screens with touch-friendly `32px` heights and wrapped layout. Relocated memory dump buttons keep execution controls uncluttered.
 
 #### 2. Intelligent UX Button State Lifecycle
@@ -363,10 +366,90 @@ model to get somewhere quickly, and come back to the hardware at the same instru
   - It applies to **both engines**: in HDL mode a Step seeks that same distance through the recording, and Back covers exactly the same distance in reverse.
 - **Cycle-Accurate CPI Timing**: Instruction execution accrues cycles according to categorized CPI settings (ALU/Basic, Multiply/Divide, Load, Store, Branch, Jump, Floating Point, System/Syscall).
 
+### 4.1b Assembler diagnostics: nothing accepted silently
+
+Things the assembler used to accept quietly, and now refuses. Each was a way for a
+program to be wrong without anything on screen saying so — the hardest kind of bug to
+find in a teaching simulator. The first three were reported from use; the rest came out
+of the audit below.
+
+**A bare number is not a register.** `add t0, t0, 1` used to assemble as
+`add t0, t0, x1`, because a bare `1` was read as register 1. The disassembly still showed
+`add t0, t0, 1`, so nothing gave it away. It is now an error that names the token and
+suggests the instruction that was almost certainly meant:
+
+```
+'1' is a number, not a register. add takes registers only — write x0–x31 or an
+ABI name such as t0. Did you mean `addi`?
+```
+
+Registers are written `x0`–`x31` or by ABI name. The same rule applies to the
+floating-point file: a bare number is not `f1` either.
+
+**A store to a symbol must name its scratch register.** `sw t0, var1` cannot be one
+instruction — the address has to be built in a register first — and a store has no
+register it is free to overwrite, since `rs2` holds the value being stored. The old
+behaviour picked `x5`, or `x6` when the value was already in `x5`, and clobbered it
+without a word. The third operand is now required, which is the rule GNU `as` applies:
+
+```
+sw t0, var1 would need a scratch register to hold the address of 'var1', and would
+silently overwrite it. Name it: `sw t0, var1, t1` assembles to `lui t1, %hi(var1)`
+then `sw t0, %lo(var1)(t1)`. Pick a register you do not need.
+```
+
+**A load from a symbol clobbers nothing.** `lw s3, delay_val` *does* have a register it
+may overwrite — `rd`, which the load is about to write anyway — so it now builds the
+address there: `lui x19, …` then `lw x19, …(x19)`. No third operand, and no other
+register touched. The exception is a float load (`flw`, `fld`), whose `rd` is in the FP
+file and cannot hold an address; those still need the scratch register named.
+
+#### The rest of the audit
+
+Those three were found by hand, which is a bad way to find bugs, so the assembler was put
+through a battery of 51 deliberately-wrong programs. **28 assembled without a single
+message.** These are the ones that mattered:
+
+| What was accepted | What it silently produced | Now |
+|---|---|---|
+| `add t0, t1` | `add t0, t1, x0` — a missing operand filled in with `x0` | error naming the count and the shape |
+| `add t0, t1, t2, t3` | the surplus operand dropped | error |
+| `nop t0`, `ret t0` | operand ignored | error |
+| `slli t0, t1, 32` | shamt masked with `0x1F` → **a shift by zero**; `99` → a shift by 3 | error: RV32 shifts by 0–31 |
+| `lui t0, 0x100000` | truncated to 20 bits → loaded `0` | error naming the 20-bit limit |
+| `a: … a: …` | the second definition wins; every reference points at it | error: defined more than once |
+| `t0: …` then `j t0` | `parseReg` wins, so the jump goes to whatever `x5` holds | error: a register name cannot be a label |
+| `.byte 256` | stored `0` | error naming the range and what it would truncate to |
+| `.half 65536`, `.word 0x1FFFFFFFF` | truncated | error |
+| `lw t0, 1(sp)` | assembled; the word-addressed Wrapper memory reads a different word | warning |
+| `sub t0`, `jal`, `li t0` | `Cannot read properties of undefined` | a proper arity message |
+
+Operand counts come from `allowedArity()` (the instruction format plus the handful of
+genuine exceptions — `jalr`, `jal`, `fence`, the single-source FP conversions) and from
+`pseudoArity()`, which reads the highest `%N` in each pseudo-instruction's own expansion
+template — so a new pseudo-instruction is checked without anything being added by hand.
+
+What is still accepted, correctly: mnemonics in any case, `addi x0, x0, 5` (RISC-V
+discards the write), a `.eqv` used before its definition (this is a two-pass assembler),
+`lui` with a negative immediate inside the signed 20-bit range, and the register writes
+that `call` (`ra`), `tail` (`t1`) and `li` / `la` (`rd`) make by definition.
+
+#### `ecall` is a simulator service
+
+`ecall` works here because the simulator implements the RARS syscall services. Nothing in
+the CG3207 hardware does — the processor has no trap support, and there is no OS or ISR
+behind it. Every built-in example that uses `ecall` says so in a header comment, and the
+assembler repeats it once per assemble, naming how many sites the program has. It is not
+raised for C, because the CRT0 shim ends every compiled program with an exit `ecall` that
+the student did not write.
+
+---
+
 ### 4.2 Disassembly viewer with label headers & annotations
 - **Label Header Rows (`.disasm-label-row`)**: Disassembly renders distinct label headers (e.g. `main:`, `loop:`, `factorial:`) preceding the target instruction address in both Assembly and C modes. Label names (`.disasm-label-name`) are rendered in **orange** (`#fab387`) — the same colour as labels in the Code window and the Memory-view row labels.
 - **Jump / Branch Target Annotations (`.disasm-target-label`)**: Numeric and hexadecimal jump/branch offsets (e.g. `jal 0x00400040`) are automatically annotated with human-readable target label badges (e.g. `<main>`, `<loop>`).
 - **Machine-code display mode (segmented `[ Byte | Word ]`)**: The Disassembly toolbar has a **segmented `[ Byte | Word ]` pill** under the Machine-code column — **Word is the default**. Word mode renders each aligned 4-byte group as one whole 8-digit little-endian 32-bit hex word (`xxxxxxxx`); Byte mode renders the classic separate bytes (`xx xx xx xx`). Both modes group in 4-byte chunks (multi-word data stays chunked). The selected mode is visually highlighted and persists across re-assembles.
+- **Register naming (`x0`–`x31`)**: The *Native instruction* column names registers the way the encoding does — `add x5, x5, x6`, never `add t0, t0, t1`. ABI names are a source-level convenience and stay in the *Original source* column beside it, which is what makes the two columns worth reading against each other. This renaming alone is **not** treated as a pseudo-instruction expansion: a row is only marked (and coloured) as one when a real pseudo-instruction was expanded.
 - **Original-source pseudoinstructions (`.code-list .pseudo`)**: The *Original source* column for a pseudoinstruction is coloured **blue** (`#89b4fa`), a simple colour swap from orange — freeing orange exclusively for labels (the code window, memory view, and disassembly labels all use `#fab387` consistently).
 - **C Source Line Tags (`.disasm-cline-tag`)**: Instructions compiled from C display source line number and statement text (e.g. `[Line 10: total += arr[i];]`).
 - **Fixed data columns / elastic text columns**: **Addr** and **Machine code** are `grow: 0` columns — sized so the hex address / machine-code word fits on one line, and never stretched when the panel widens. **Native instruction** and **Original source** carry the `grow` weight and **split any surplus between them equally**, so neither is left alone to absorb it. Both wrap at word boundaries first (`word-break: normal`) rather than chopping mnemonics mid-token; below the minimum widths the table stops shrinking and the panel scrolls. Widths come from the table's `<colgroup>`, written by `applyPanelColLayout()` — see the panel-layout section above.
@@ -619,9 +702,9 @@ It is a **lint, not a synthesis run**, and it never blocks a simulation. To conf
 design really synthesises — and that the synthesised version behaves the same — use the
 post-synthesis check below.
 
-### 5.14 Synthesising and checking the netlist
+### 5.14 Post-synthesis functional simulation
 
-Tick **Synthesise and simulate the netlist** (⚙ Settings → 🔌 HDL Simulation) and every
+Tick **Post-synthesis functional simulation** (⚙ Settings → 🔌 HDL Simulation) and every
 run is simulated twice: once as you wrote it, and once as a gate-level netlist produced
 by **Yosys**. The two are compared, and the first point where they differ is reported.
 
@@ -656,14 +739,25 @@ caches it (`max-age` one year, `immutable`), so later sessions start immediately
 never fetched if you leave the box unticked. Synthesis itself takes roughly 20–35
 seconds and is cached until your sources change.
 
+If the CDN cannot be reached the loader falls back to `vendor/yosys/` beside this file
+(see [`vendor/README.md`](vendor/README.md)). That copy needs the page to be **served over
+`http://`**: the bundle resolves its own `.wasm` and resource tar relative to its URL, and
+a `file://` fetch is blocked as cross-origin.
+
 ### 5.15 Where the engine comes from
 
 Three Emscripten modules, tried in order:
 
 1. `https://cdn.jsdelivr.net/gh/senolgulgonul/verisim@main/`
 2. `https://senolgulgonul.github.io/verisim/`
-3. `verisim/` next to this file — **drop the six files there for offline use**
+3. `vendor/verisim/` — the copy checked in beside this file (see
+   [`vendor/README.md`](vendor/README.md))
+4. `verisim/` next to this file, for a copy you drop in yourself
    (`ivlpp.js/.wasm`, `ivl.js/.wasm`, `vvp.js/.wasm`)
+
+The local copies are a fallback for when the CDN is blocked or down. They only
+work when the page is **served over `http://`** — Emscripten fetches its own
+`.wasm`, and a `file://` fetch is blocked as cross-origin.
 
 The pipeline mirrors what the `iverilog` driver does natively:
 
@@ -712,7 +806,9 @@ the engine they configure, so a setting's scope is visible from where it sits.
 +---------------------------------------------------------------------------------------------------+
 | ⚡ Compiler:  RISC-V 32-bit Compiler [ Clang 20.1.0 (default) | Clang Trunk | GCC 14.2.0 | Trunk ]  |
 |              Optimization [ -O0 (Debug) | -O1 | -O2 | -Os | -O3 ]                                 |
-|              Architecture & ABI [ -march=rv32im -mabi=ilp32 ]  [x] Include M extension            |
+|                ↳ note: code size varies several-fold; -O0 and -O3 are the largest, -Os smallest   |
+|                ↳ ▸ Making sure it still fits the hardware  (folded)                               |
+|              Architecture & ABI [ -march=rv32i -mabi=ilp32 ]  [ ] Include M extension (off)       |
 +---------------------------------------------------------------------------------------------------+
 | 🗺 Linker:   ⚠️ FPGA Hardware Notice — physical RAM size is fixed in hardware; exceeding the       |
 |              configured sizes will fail or wrap around on a real board.                           |
@@ -746,7 +842,27 @@ engine is the one running. A setting you can still find, that tells you why it i
 nothing, beats one that has quietly vanished — or worse, one that silently does nothing.
 
 **Apply & Close** reloads the program only when the **memory layout actually changed**.
-Ticking a checkbox no longer resets execution and discards an HDL recording.
+
+Changing anything on the **Compiler** tab — the compiler, the optimisation level, the
+M-extension toggle or the architecture flags — **clears the compiled program**, because
+what is loaded no longer corresponds to the settings on screen. Compile again to
+continue.
+
+The **optimisation level** carries a note, because it changes how much code the compiler
+emits — often several-fold. `-O0` keeps every C statement separate and `-O3` unrolls and
+inlines, so both are usually the largest; `-Os` is the smallest. A folded *Making sure it
+still fits the hardware* explains the limit: **Code (.text) size** on the Linker tab here,
+`IROM_DEPTH_BITS` in `Wrapper.v` on the FPGA, and the two have to agree — raising only the
+linker setting builds here and then silently truncates on hardware.
+
+The **M extension is off by default**. With it off, a `*` or `%` in C becomes a call to a
+libgcc helper such as `__mulsi3`, which is library code that is not part of the program,
+so it cannot be resolved. The simulator reports this **at compile time**, as soon as the
+helper appears in the assembly, rather than waiting for the assembler to fail on an
+unknown symbol. There are two ways out, and the message names both: tick **Include M
+extension**, or raise the optimisation level — from `-O1` upwards the compiler will often
+replace a multiply or divide by a constant with shifts and adds and the call disappears
+entirely. That is why the same program can assemble at `-Os` and fail at `-O0`.
 
 **Reset Defaults** on the HDL tab restores the settings but **keeps your loaded
 sources** — those are your work, and *Clear files* is right there.
@@ -980,12 +1096,13 @@ Models 32 32-bit integer registers (`x0`–`x31`), 32 floating-point registers (
 
 A Node/jsdom harness lives in [`riscv_simulator_tests/`](riscv_simulator_tests). Every
 suite loads the real `riscv_simulator.html`, so the tests exercise the shipped file
-rather than a copy of its logic.
+rather than a copy of its logic. `npm test` runs all **18** of them, and every script in
+the directory is one of the 18 — there is no build step and nothing else to run.
 
 | Test script | Target subsystem & scenarios |
 |-------------|------------------------------|
-| `test_comprehensive_suite.js` | Full system integration: editor proxy facade, Tab precision, breakpoints, assembler, stepping, history undo, FPGA MMIO registers, toolbar layout. |
-| `test_hdl_mode.js` | **HDL mode, end to end (120 assertions).** Drives the real Icarus/WASM pipeline over the unmodified `RV/*.v` sources — see below. |
+| `test_comprehensive_suite.js` | Full system integration: editor proxy facade, Tab precision, breakpoints, assembler, stepping, history undo, FPGA MMIO registers, toolbar layout, and (sections [11]–[12]) every finding of the assembler audit — operand arity, range checks, label rules, register naming in the disassembly, the PC readout and the `ecall` notice. |
+| `test_hdl_mode.js` | **HDL mode, end to end (159 assertions).** Drives the real Icarus/WASM pipeline over the unmodified `RV/*.v` sources — see below. |
 | `test_panel_grid.js` | Dockable-panel 2×2 grid layout, splitters, per-panel column sizing and persistence. |
 | `test_c_godbolt_simulation.js` | Godbolt REST API compilation, bidirectional line mapping, C breakpoints and C stepping. |
 | `test_new_c_simulation.js` | Offline and live verification for `Circle_delay_accel.c` and `ImageDisplay_autoadvance_accel.c`. |
@@ -997,12 +1114,50 @@ rather than a copy of its logic.
 | `test_reset_and_image_display.js` | OLED auto-advance mode 5 rendering fidelity, ASM/C pixel parity, peripheral reset. |
 | `test_tab_and_autocomplete.js` | CM6 key handling, literal Tab insertion, block indent, operand autocomplete, signature help. |
 | `test_breakpoint_highlight_and_snap.js` | Breakpoint snapping from comments/blanks/directives, gutter highlight pill. |
-| `test_all_instructions_v2.js` | RV32GC translation coverage across 90+ instructions and pseudo-ops. |
+| `test_all_instructions_v2.js` | RV32GC translation coverage across 90+ instructions and pseudo-ops — that they assemble. |
+| `test_instruction_semantics.js` | **That they are right (136 cases).** Each instruction is executed and its result checked against a value worked out from the spec, exercising encoder → machine code → decoder → execution. Mutation-tested against 12 seeded faults. |
 | `test_execution_programs.js` | Multi-step execution and register assertions for Factorial ($5! = 120$) and Fibonacci ($F_9=34$, $F_{10}=55$). |
 | `test_mobile_keyboard_focus.js` | On-screen-keyboard focus preservation across panel relayout. |
 | `test_jsdom.js` | Boot smoke test under jsdom. |
 
-### 12.1 The HDL suite
+### 12.1 Instruction semantics, and why assembling is not enough
+
+`test_all_instructions_v2.js` proves a long program containing every instruction assembles
+with no errors. That catches a mnemonic falling out of the table — it does not catch a
+wrong `funct7`, a decoder that sign-extends where it should not, or a pseudo-instruction
+whose expansion has drifted. Each of those produces a program that assembles cleanly and
+computes the wrong answer.
+
+`test_instruction_semantics.js` runs each instruction and checks the result. Because the
+encoder and the interpreter are separate code paths, that one check exercises
+**encoder → machine code → decoder → execution**, and a mistake in either end shows up as
+a wrong number. Expected values come from the RISC-V spec, not from the simulator: a check
+that agrees with the implementation by construction tests nothing.
+
+The suite is **mutation-tested** — its own coverage is measured by seeding faults into the
+simulator and confirming each is caught:
+
+| Seeded fault | Caught |
+|---|---|
+| `SRAI` made a logical shift | 2 cases |
+| `SLTI` `<` made `<=` | 1 |
+| `SLTIU` `<` made `<=` | 1 |
+| `BGE` `>=` made `>` | 5 |
+| `SUB` encoded with `ADD`'s `funct7` | 6 |
+| `XORI` encoded as `ORI` | 1 |
+| `BLTU` encoded as `BLT` | 2 |
+| `LHU` sign-extending | 1 |
+| `mv`, `neg`, `snez`, `sgtz`, `seqz` expansions corrupted | 1–2 each |
+
+Two of those initially slipped through — `SLTI` and `seqz` — both because no case sat on
+the boundary that distinguishes the correct behaviour from the faulty one. Cases were
+added until all twelve were caught, which is why the suite carries a deliberate boundary
+case for every comparison: equal as well as less and greater, zero as well as positive
+and negative.
+
+---
+
+### 12.2 The HDL suite
 
 `test_hdl_mode.js` is the one that needs real tooling: it loads the page, assembles
 through the normal assembler, asks the page for the artefacts it would hand to Icarus
@@ -1051,6 +1206,10 @@ Newest first. Versions before v15.0 are grouped.
 
 | Version | Milestone description & features implemented |
 |---------|----------------------------------------------|
+| **v24.5 (Instruction Semantics Suite & Example-menu Fix)** | Added **`test_instruction_semantics.js` (136 cases)**: every instruction is executed and its result checked against a value worked out from the RISC-V spec, which exercises encoder → machine code → decoder → execution rather than only asking whether a program assembles. The suite was **mutation-tested** against 12 seeded faults; two initially slipped through (`SLTI`'s `<` made `<=`, and `seqz`'s `sltiu rd, rs, 1` made `, 2`) because no case sat on the boundary, so boundary cases were added for every comparison — equal as well as less and greater, zero as well as positive and negative. Fixed the **Example menu reverting on a language round-trip**: the list was written out twice, once in the markup and once in `updateExampleSelectorOptions()`, so a label edited in one came back the old way after switching to C and back. There is now one `EXAMPLE_MENU` table, rendered at boot and on every switch. The starting-point entry reads **Basic (start here)**, and the C list marks **Basic Sum (start here)** the same way, which it never did. The **JS Simulation tab's hint lost its double negative** ("so nothing here silently does nothing"), and the **Statement Stepping description was cut to one sentence** on both tabs. |
+| **v24.4 (Message De-duplication & Test-suite Cleanup)** | With the PC and the instruction count now permanently on the metrics readout, the step messages stopped repeating them: `Back step: PC = 0x40000c` beside `… | Instr: 12 | PC: 0x0040000c` said the same thing twice, in two different formats. A step message now says what the step did — **`Stepped to line 16`**, `Stepped back to line 15`, `Statement step over line 7 — 3 instructions, now at line 8` — and the same for HDL mode. The three **segment-overflow warnings** were rewritten to one shape (what it is, how much over, what to change): each size is printed once instead of in both decimal and hex, and the status bar states the outcome while the console carries the fix, rather than both carrying it. **15 files were deleted from `riscv_simulator_tests/`**: the pre-CodeMirror bare-eval harnesses (`test_asm.js`, `test_all_instructions.js`, `test_run.js`, `tests_body.js`, `sim_harness.js`), the one-off exploratory scripts kept from developing the image and circle examples (`debug_circle.js`, `test_prep.js`, `test_circle_compile.js`, `test_img_compile.js`, `test_mode5_render.js`, `analyze_imagedisplay.js`, `inspect_img.js`, `render_ascii.js`), and the v2-experiment relics `generate_v2.js` and `build_v2.js` — the first of which wrote a `riscv_simulatorv2.html` that is not part of the repository, and the second of which read a bundle from a hardcoded path in another tool's scratch directory. All were broken or assertion-free. What remains is 17 real suites, every one of them wired into `npm test` — `test_hdl_mode.js` had never been in it. |
+| **v24.3 (Assembler Strictness, PC Readout & Vendored Engines)** | Operand forms that used to be accepted silently are now diagnosed. **A bare number is no longer a register**: `add t0, t0, 1` assembled as `add t0, t0, x1` and the disassembly still showed `1`, so nothing gave it away; it now reports `'1' is a number, not a register` and suggests `addi`. The same applies to the FP file. **A store to a symbol must name its scratch register** — `sw t0, var1` picked `x5` (or `x6`) and clobbered it without a word; the third operand is now required, as in GNU `as`, and the message shows the exact two-instruction expansion. **A load from a symbol clobbers nothing**: `lw s3, delay_val` now builds the address in `rd` itself (`lui x19` / `lw x19, …(x19)`) instead of borrowing a temporary; float loads, whose `rd` cannot hold an address, still need the register named. Those three were reported from use, so the assembler was then put through **51 deliberately-wrong programs — 28 assembled with no message at all**. Fixed from that audit: **missing operands were filled in with `x0`** and surplus ones dropped (operand counts now come from the instruction format and, for pseudo-instructions, from the highest `%N` in their own expansion template, so new ones are checked automatically); **`slli t0, t1, 32` was masked to a shift by zero**; **`lui t0, 0x100000` was truncated to 20 bits**; **a duplicate label silently redefined** and **a label named after a register was unreachable** (`j t0` read the register); **`.byte 256` stored 0** and the other data directives truncated the same way. Misaligned word and half accesses now warn — the Wrapper's memory is word-addressed. `parseReg`, `parseFReg` and `parseImm` tolerate a missing operand, so `sub t0` reports its arity instead of `Cannot read properties of undefined`. **`ecall` is flagged**: every built-in example that uses it says in a header comment that it is a simulator service the CG3207 hardware cannot provide, and the assembler repeats it once per assemble (assembly only — the CRT0 shim's exit `ecall` is not the student's). The **Native instruction column became a real disassembly**, naming registers `x0`–`x31` while ABI names stay in the source column beside it — and that renaming alone no longer marks a row as a pseudo-instruction expansion, so the expansion colour means only what it says. The **PC moved onto the always-visible metrics readout** (`Cycles: 3 est | Instr: 3 | PC: 0x0040000c`), which moved down to the status row: it was previously only in the transient status message, which the next message overwrites. The **optimisation level carries a note** about code size varying several-fold (`-O0` and `-O3` largest, `-Os` smallest) with a folded explanation of the `.text` / `IROM_DEPTH_BITS` limit, and **libgcc helper calls are reported at compile time** rather than as an unknown symbol during assembly, naming both ways out — enable M, or raise the optimisation level, since from `-O1` a multiply by a constant often becomes shifts and adds. The Example dropdown labels **Basic — start here**. All three external engines (CodeMirror, Icarus Verilog, Yosys — 78 MB) are now **vendored under `vendor/`** as a fallback for when the CDN is unreachable; the wasm ones need the page served over `http://`. Test suite gained sections [11] and [12] of the comprehensive suite. |
+| **v24.2 (Post-Synthesis Functional Simulation)** | Added **Post-synthesis functional simulation** (⚙ Settings → 🔌 HDL Simulation): every run is simulated twice, once as written and once as a gate-level netlist produced by **Yosys compiled to WebAssembly**, with the two traces diffed and the first divergence reported — which is what an inferred latch, an incomplete sensitivity list or a race between blocking assignments looks like. Only the core is synthesised; the Wrapper stays behavioural so its `$readmemh` keeps working and one synthesis serves every run. A generated parameter shim keeps the Wrapper's `RV #(.PC_INIT(…))` valid after synthesis resolves parameters away. `iverilog -S` was evaluated first and rejected: it refuses constructs every real tool accepts and gives identical errors for good and broken RTL, so a **synthesis lint** carrying file and line was written instead, tuned to stay quiet on the reference design. Yosys is ~13 MB over the wire, fetched only when the box is first ticked and then served from the browser's cache for a year. Also: the **M extension is now off by default**, and changing anything on the Compiler tab **clears the compiled program** so what is loaded always matches the settings on screen. |
 | **v24.1 (MMIO Timing, Resume & Breakpoints, Settings Reorganisation)** | Fixed MMIO being **one instruction late in both directions**. Inputs are nonblocking assignments, so a value stamped at cycle *C* was driven at the edge that *ends* C and only settled during *C+1* — the instruction of cycle *C* read the previous value; the testbench now drives at `cyc + 1`, so a timestamp means "in force during that cycle". On the way out, every peripheral signal the Wrapper exposes is an `output reg`, so it is now sampled on the **falling edge**, where it is readable but the trace still sits inside the causing step — previously correct only by Icarus's block ordering. **Run became Resume**: it continues to the next breakpoint, or to the end of the recording, and records another *Cycles* worth when it reaches the end; breakpoints are matched by mapping recorded PCs back to source lines. **`UART_RX_ack` is traced**, so the console's RX FIFO drains on the instruction that reads it and refills when you step back. Fixed **both engines running at once** — switching JS→HDL left the functional timer chain advancing the counters until it hit the JS run limit; it is now paused on the switch and the toggle is locked during an HDL run. **Statement Stepping now works in HDL mode**, seeking over a whole source line. **The HDL panel was retired**: everything it held is done once per session, so it moved to a new **🔌 HDL Simulation** settings tab, its output to the shared console tagged `[HDL]`, and its status to the status bar — returning the dock to four panels. The Simulator tab became **⏱ JS Simulation**, with Statement Stepping mirrored on both. Sources can be dropped **anywhere on the page** or opened with 📂 Open, a toolbar chip reports what is loaded, and switching to HDL with nothing loaded opens the tab that asks for it. The **console became resizable** (drag, double-click to reset, height remembered). Also: Apply & Close no longer reloads the program unless the memory layout changed, an input moved during a re-simulation is queued rather than dropped, the Registers panel explains itself when the register file cannot be reached, and `riscv_simulator.html` / `riscv_simulator_nohdl.html` were swapped so the two-engine build is the canonical one. Test suite grown to 120 HDL assertions. |
 | **v24.0 (HDL Simulation Mode — Your Verilog in the Browser)** | Added a **second execution engine**. A `JS | HDL` toolbar pill switches Run/Step/Back from the JavaScript functional model to **your own Verilog processor**, compiled and simulated in the browser by **Icarus Verilog built to WebAssembly** (`ivlpp` → `ivl` → `vvp`, loaded at runtime from a CDN with a local fallback). The simulator **generates a program-independent testbench** around your unmodified `Wrapper` — no assembled code, no switch settings, no input data in the Verilog; everything arrives at run time through plusargs (`+CYCLES`, `+TRACE`, `+DIP`, `+PB`, `+ACCEL`, `+VCD`) and through `stim.mem` / `uart_rx.mem`, so **one compile serves every run, every step and every input change**. The register file is located by **discovery** (a 32×32-bit array reachable under the Wrapper's core instance) and read by hierarchical reference, with writes detected by **shadow-comparing the array on the falling edge** so no write-port signal has to be named and a renamed port cannot break the trace. Because `vvp` cannot be paused, a run **records the whole simulation** and Step/Back navigate the recording — which makes stepping instant and, unlike any real Verilog simulator, makes **stepping backwards** possible. Unwritten registers render `xxxxxxxx`, not `0`. Optional **cross-check** replays the same program on the functional model and reports the first instruction where the two disagree. |
 | **v23.8 (Intra-Panel Column-Resize Separators, Unified Data-Panel Headers & No-Stretch Columns)** | Gave the three data panels — **Registers**, **Memory** (a new `.mem-col-header` label bar above the hex dump) and **Disassembly** — **one shared header design** (small uppercase labels) and an **always-visible hairline separator** (`.col-resizer`, 11px hit area) at every column boundary but the last, replacing three different header styles and a separator that was invisible until hovered. Column sizing moved into a single `PANEL_COLS` / `applyPanelColLayout()` model driving each table's `<colgroup>` (and Memory's `--mem-*-w` custom properties): `grow: 0` columns (`#`, `Name`, `Addr`, `Machine code`, `Content (Hex)`) hold their content-sized width and are never stretched when the panel widens, while the `grow`-weighted columns (the Value pair, `Native instruction` + `Original source`, `Content (ASCII)`) **share the surplus between them** — no single column is left to absorb it alone. A panel narrower than the sum of the minimums **scrolls horizontally** instead of crushing a column, and the text columns now wrap at word boundaries rather than `break-all` mid-mnemonic. **Dragging is spreadsheet-style**: the first movement pins every column at its rendered width, then only the dragged column changes, so everything to its right keeps its width and shifts along; double-click any separator to unpin the panel. A `ResizeObserver` re-runs the layout on panel resize. This replaced an earlier attempt whose `width: 1%` on the elastic columns **collapsed the last two columns while ballooning the first two** — in a fixed-layout table where every column has a specified width, surplus space is shared out *in proportion to those widths*. Memory's `Content (Hex)` | `Content (ASCII)` boundary is now clamped to the hex data's measured natural width so the separator can no longer be dragged back over the bytes. All three headers are **frozen** (`position: sticky`) so they stay put while their rows scroll, and Memory's columns are labelled **Addr / Content (Hex) / Content (ASCII)**. Widths persist per panel under `rvsim.panelColW.<panel>`; **Peripherals** is untouched. New regression assertions in `riscv_simulator_tests/test_panel_grid.js` (sections [16]–[18]). |
