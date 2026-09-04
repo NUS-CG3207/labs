@@ -52,6 +52,11 @@ const dom = new JSDOM(htmlContent, {
         clearRect: () => {}
       });
     }
+    // Installed here, inside beforeParse, so it exists before the page's
+    // own top-level script runs (it calls fetch() immediately on load to
+    // populate the Example menu from examples/*/index.md) - installing it
+    // after `new JSDOM()` returns would be too late.
+    installExamplesFetch(window);
   }
 });
 
@@ -60,7 +65,6 @@ const win = dom.window;
 // jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
 
 installGodboltCache(win);
-installExamplesFetch(win);
 const doc = win.document;
 
 setTimeout(async () => {

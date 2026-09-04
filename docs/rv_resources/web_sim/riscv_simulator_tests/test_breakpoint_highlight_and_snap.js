@@ -44,11 +44,11 @@ const dom = new JSDOM(html, {
         clearRect: () => {}
       });
     }
+    installExamplesFetch(window); // before the page's own fetch() for the Example menu
   }
 });
 
 const win = dom.window;
-installExamplesFetch(win);
 
 setTimeout(async () => {
   try {

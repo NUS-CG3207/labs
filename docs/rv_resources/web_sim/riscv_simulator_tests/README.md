@@ -1,6 +1,6 @@
 # RISC-V Simulator — Test Suites
 
-This directory contains the automated test suites, bundling tools, and generator utilities for **[riscv_simulator.html](../riscv_simulator.html)** and **[riscv_simulator.md](../riscv_simulator.md)**.
+This directory contains the automated test suites, bundling tools, and generator utilities for **[riscv_simulator.html](../riscv_simulator.html)** and **[riscv_simulator_specs.md](../riscv_simulator_specs.md)**.
 
 ---
 
@@ -192,10 +192,24 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 
 ### 18. `test_panel_grid.js` sections [16]–[18] — Intra-panel Column-Resize Separators & Column Sizing
 - **Purpose**: Regression coverage for the per-column `.col-resizer` separators and the `PANEL_COLS`/`applyPanelColLayout()` sizing model (also part of the 2×2 grid suite):
-  - **[16]** All three panels freeze their header row (`position: sticky`), Disassembly's is a real `<thead>`, Memory's columns read `Addr` / `Content (Hex)` / `Content (ASCII)`, and `.col-resizer` separators exist for **Registers** (3: `#`, `Name`, `Value (Hex)`), **Memory** (2: `Addr`, `Content (Hex)`, in the `.mem-col-header` bar), and **Disassembly** (3: `Addr`, `Machine code`, `Native instruction`) but **not** for **Peripherals** (deliberately untouched).
+  - **[16]** All three panels freeze their header row (`position: sticky`), Disassembly's is a real `<thead>`, Memory's columns read `Addr` / `Content (Hex)` / `Content (DEC)` (the third column reads `Content (ASCII)` in Byte mode instead — see test 19 — the default view mode is Word, so this check is against `Content (DEC)`), and `.col-resizer` separators exist for **Registers** (3: `#`, `Name`, `Content (Hex)`), **Memory** (2: `Addr`, `Content (Hex)`, in the `.mem-col-header` bar), and **Disassembly** (3: `Addr`, `Machine code`, `Native instruction`) but **not** for **Peripherals** (deliberately untouched).
   - **[17]** Both tables carry a 4-`<col>` `<colgroup>` and every column gets an explicit px width; `Addr`/`Machine code` sit at their content-sized widths. With the panel body's `clientWidth` stubbed to a real value, widening the panel **does not stretch** `Addr`/`Machine code` while `Native`+`Source` absorb the surplus **equally**; a too-narrow panel holds the natural widths and scrolls via the table's `min-width` instead of crushing a column. Guards the `width: 1%` regression that collapsed the last two columns while ballooning the first two.
   - **[18]** Dragging a separator resizes only that column while the columns to its right keep their widths (spreadsheet behaviour) and the table's `min-width` grows with it; the first move pins the whole row; a click without dragging pins nothing; double-click clears every pinned width for the panel. Also covers Memory's `--mem-*-w` custom properties staying in sync between the data rows and the header bar (shared `min-width` so they scroll together) and the `Content (Hex)` column being clamped to its floor rather than draggable back over the hex data.
 - **Run Command**: `node riscv_simulator_tests/test_panel_grid.js`
+
+---
+
+### 19. `test_mmio_editability_and_content_column.js` — MMIO Read-Only Enforcement & the Content Column
+- **Purpose**: Regression coverage for three related Memory/Registers panel fixes: (a) a read-only MMIO register (DIP, PB, ...) is not editable in the Memory view and a write to one — from a program or from the view — is ignored, matching real hardware, with `UART_RX` staying editable as a deliberate exception (injects a byte into the RX queue rather than being a real register write); (b) an MMIO edit is visible immediately because `initPeripherals()` now runs once at boot instead of only the first time the Peripherals tab is opened, so `updatePeripherals()` always has real DOM to update; (c) the Memory panel's third column reads `Content (ASCII)` in Byte mode and `Content (DEC)` in Word mode, each with a signed/unsigned switch in the header (the Registers panel's `Content (Dec)` column has the same switch).
+- **Covers**: Peripherals DOM existing right after boot with no tab visit; a WO write (LED) sticking and showing on the DOM immediately; RO writes (DIP, PB) being no-ops; `MMIO_REGISTERS`/`isMMIOReadOnlyAddr()`/`mmioRegisterAt()` classifying every register correctly, `UART_RX` included; read-only MMIO byte cells rendering non-`contenteditable`; the Content column's label and sign-toggle visibility tracking Byte/Word mode; an MMIO register's name/access rendering as a label above its cell instead of after the row with its address; the sign toggle changing the rendered value in both the Memory and Registers panels.
+- **Run Command**: `npm run test:mmio`
+
+---
+
+### 20. `test_memory_row_granularity_and_shortcuts.js` — One Word Per Row, Label Colons & New Keyboard Shortcuts
+- **Purpose**: Regression coverage for four related fixes: (a) the Memory panel renders exactly one 32-bit word per row (never two), in both Byte and Word mode and in every region including Stack, so a narrow-panel wrap can only ever separate a row's own Hex cell from its own Content cell, never from another word's; (b) a label above a memory row — a code/data symbol or an MMIO register's name — now carries a trailing `:`, matching how a label reads in the program itself; (c) the centre push button responds to `ArrowDown` rather than `ArrowUp` (←/↓/→ share a row on most keyboards); (d) a new keyboard shortcut for the accelerometer — hold X/Y/Z/T, then ←/→ nudges that axis (T = temperature), clamped to its slider's range, and releasing the letter hands ←/→ back to the push buttons.
+- **Covers**: address rows stepping by exactly 4 bytes (not 8) in Code, and decreasing by 4 bytes in Stack; exactly one `.word-cell` / `.mem-row-bytes` group per row; a code label and an MMIO register label both rendering with a trailing `:`; `ArrowDown` pressing/releasing the centre push button and `ArrowUp` doing nothing; holding X (or T) and pressing `←`/`→` changing `accelX`/`accelTemp` by ±1 per press; releasing the held letter restoring `←`/`→` to the push buttons; the axis shortcut clamping at the slider's max.
+- **Run Command**: `npm run test:memory-rows`
 
 ---
 
@@ -211,29 +225,44 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 ## 🌐 examples/ and the Godbolt cache
 
 Every example but `dip_led` / `dip_led_c` lives outside `riscv_simulator.html` entirely, in
-[`../examples/`](../examples/) (`asm/*.asm`, `c/*.c`) — the page `fetch()`es one when
-it is selected. jsdom has no `fetch`, so two shims stand in for it:
+[`../examples/`](../examples/) (`asm/*.asm`, `c/*.c`) — the page `fetch()`es one when it is
+selected. The **menu itself** is data too: `asm/index.md` and `c/index.md` each hold one
+markdown table (`| key | label | file | description |`), fetched and parsed at page load into
+the dropdown and the file each key maps to. jsdom has no `fetch`, so two shims stand in for
+both of these:
 
 - **`examples_fetch.js`**: `installExamplesFetch(win)` patches `window.fetch` to serve
-  `examples/asm/*` and `examples/c/*` straight off disk, so `win.loadExample(name)`
-  works under test exactly as it would over `http://`. Install it before any
-  `loadExample()` call for anything but `dip_led` / `dip_led_c` — those two are still
-  baked into the page, so they need no shim and no `await` either.
-- **`godbolt_cache.json` / `godbolt_cache.js`**: Godbolt's compiler output for the
-  eleven C examples, captured once, so C mode's live-compile path — also unreachable
-  under jsdom — doesn't have to run under test. `installGodboltCache(win)` feeds the
-  captured output in through the page's `window.__mockGodboltResponse` hook, matching
-  the incoming source against `examples/c/*.c` read fresh off disk, and is keyed by
-  **filename**, not example name, since that is the only identity the page and the
-  test both still agree on now that `window.cExamples` is gone. This data used to be
-  embedded in `riscv_simulator.html` as `cPrecompiled` (379 KB, a third of the file);
-  it moved to a `cExamples`-keyed cache in v24.6, then to this filename-keyed one in
-  v24.10 when the examples themselves left the page. **After editing a C example,
-  refresh its entry**, or its suite runs against stale assembly: POST
-  `examples/c/<file>.c` to `https://godbolt.org/api/compiler/rv32-cclang2010/compile`
-  and store the response under that filename in `godbolt_cache.json`. This is *only*
-  for compiling a C example, not for loading its source — `dip_led_c` still needs an
-  entry here despite being baked, since baking only skips the fetch, not Godbolt.
+  `examples/asm/*`, `examples/c/*` and the two `index.md` files straight off disk, so
+  `win.loadExample(name)` and the menu itself work under test exactly as they would over
+  `http://`.
+
+  **This must be installed inside `beforeParse`, not after `new JSDOM()` returns.** The
+  page's own top-level script calls `fetch('examples/*/index.md')` immediately as it loads,
+  which — with `runScripts: 'dangerously'` — happens *synchronously inside the `new JSDOM()`
+  call itself*, before any code after it (`const win = dom.window; installExamplesFetch(win);`)
+  gets to run. Installed there, that first fetch throws, the menu silently falls back to its
+  two-entry default (`dip_led` / `dip_led_c` only), and every `loadExample()` call for
+  anything else 404s — this broke six suites the first time (menu data race, not a flaky
+  test), fixed by moving the call inside `beforeParse(window) { ...; installExamplesFetch(window); }`.
+  `dip_led` / `dip_led_c` need no shim and no `await` either way — they are still baked
+  into the page.
+- **`godbolt_cache.json` / `godbolt_cache_dip_led.json` / `godbolt_cache.js`**: Godbolt's
+  compiler output for the eleven C examples, captured once, so C mode's live-compile path —
+  also unreachable under jsdom — doesn't have to run under test. `dip_led_c`'s entry lives in
+  its own file, `godbolt_cache_dip_led.json`, separate from the other ten in
+  `godbolt_cache.json` — it is the one C example baked into the page rather than fetched, so
+  its cache entry isn't tied to the same "one file per fetched example" set as the rest.
+  `godbolt_cache.js` merges both into one lookup table. `installGodboltCache(win)` feeds the
+  captured output in through the page's `window.__mockGodboltResponse` hook, matching the
+  incoming source against `examples/c/*.c` read fresh off disk, and is keyed by **filename**,
+  not example name, since that is the only identity the page and the test both still agree on
+  now that `window.cExamples` is gone. **After editing a C example, refresh its entry**, or
+  its suite runs against stale assembly: POST `examples/c/<file>.c` to
+  `https://godbolt.org/api/compiler/rv32-cclang2010/compile` and store the response under
+  that filename — in `godbolt_cache.json`, or in `godbolt_cache_dip_led.json` if the file is
+  `DIP_to_LED.c`. This is *only* for compiling a C example, not for loading its source —
+  `dip_led_c` still needs an entry despite being baked, since baking only skips the fetch,
+  not Godbolt.
 
 Both `async` — `loadExample()` fetches, and C-mode `assembleOnly()` calls Godbolt (or
 the mock) — so every call to either for a non-baked example, or in C mode, needs

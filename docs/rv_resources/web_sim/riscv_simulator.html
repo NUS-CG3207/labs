@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NUS-CG3207 RISC-V Simulator</title>
+  <title>NUS-CG3207 RISC-V Functional and HDL Simulator</title>
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='6' width='20' height='20' rx='3.5' fill='%23181825' stroke='%2389b4fa' stroke-width='1.5'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1.5' fill='%23313244' stroke='%23cba6f7' stroke-width='1'/%3E%3Cpath d='M2 11h4M2 16h4M2 21h4 M26 11h4M26 16h4M26 21h4 M11 2v4M16 2v4M21 2v4 M11 26v4M16 26v4M21 26v4' stroke='%23f9e2af' stroke-width='1.5' stroke-linecap='round'/%3E%3Ctext x='16' y='18.5' font-family='monospace' font-size='6.5' font-weight='bold' fill='%2389b4fa' text-anchor='middle'%3ERV%3C/text%3E%3C/svg%3E">
   <style>
@@ -761,13 +761,13 @@
        the 1% ones were squeezed to nothing.) */
     .reg-table .col-id,
     .reg-table .col-name {
-      text-align: left;
+      text-align: center;
       white-space: nowrap;
     }
 
     .reg-table th.col-val,
     .reg-table td.col-val {
-      text-align: left;
+      text-align: center;
     }
 
     .reg-table td {
@@ -789,7 +789,6 @@
 
     .reg-table .reg-val {
       color: #a6e3a1;
-      text-align: left;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
@@ -842,6 +841,13 @@
       overflow-wrap: anywhere;
     }
 
+    /* Registers' columns are narrow enough that a wrapped header only costs
+       height for no gain, unlike Memory/Disassembly - override after the
+       shared rule above so it actually wins. */
+    .reg-table th {
+      white-space: nowrap;
+    }
+
     /* All three headers stay pinned while their rows scroll under them.
        The scrollport is the shared `.panel-body`, so `top: 0` parks each
        header at the top of the panel while the toolbar/legend above it
@@ -855,6 +861,17 @@
       position: sticky;
       top: 0;
       z-index: 2;
+    }
+
+    /* A <th>'s own sticky position stops holding once its panel is short
+       enough to actually need scrolling (only exposed once a panel gets
+       genuinely short, e.g. the mobile view's bounded panel body) - the
+       <thead> row group needs position: sticky too, or the whole header
+       row scrolls away with the data under it. */
+    .reg-table thead,
+    .code-list thead {
+      position: sticky;
+      top: 0;
     }
 
     /* The boundary separator between two columns. Drawn as an always-visible
@@ -1039,22 +1056,19 @@
     .mem-col-h[data-mem-col="addr"] {
       flex: 0 0 auto;
       width: var(--mem-addr-w);
+      text-align: center;
     }
 
     .mem-col-h[data-mem-col="hex"] {
       flex: 0 0 auto;
       width: var(--mem-hex-w);
+      text-align: center;
     }
 
     .mem-col-h[data-mem-col="ascii"] {
       flex: 1 1 auto;
       min-width: var(--mem-ascii-w);
-    }
-
-    @media (max-width: 800px) {
-      .mem-col-header {
-        display: none;
-      }
+      text-align: center;
     }
 
     .mem-view {
@@ -1076,6 +1090,7 @@
       white-space: nowrap;
       flex: 0 0 auto;
       width: var(--mem-addr-w);
+      text-align: center;
     }
 
     .mem-view span.val {
@@ -1114,6 +1129,16 @@
       cursor: pointer;
     }
 
+    /* The 4 ASCII bytes of one word, kept together as one unbreakable unit -
+       matching .mem-row-bytes's grouping in the Hex column - so a narrow
+       panel wraps between words, never mid-word. Without this each byte is
+       an independent inline-block and wraps whenever it happens to run out
+       of room, scattering one word's characters across two lines. */
+    .mem-ascii-group {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
     .mem-view div {
       margin: 2px 0;
       /* Flex row: Addr (fixed) · hex block (natural, never wraps its data) ·
@@ -1134,17 +1159,13 @@
          stops exactly where the data does instead of sliding over it. */
       min-width: max-content;
       white-space: nowrap;
+      text-align: center;
     }
 
     .mem-view .mem-ascii-block {
       flex: 1 1 auto;
       min-width: var(--mem-ascii-w);
-      padding-left: 6px;
-    }
-
-    .wordgap {
-      display: inline-block;
-      width: 20px;
+      text-align: center;
     }
 
     .mem-view span.val.word-cell {
@@ -1184,6 +1205,28 @@
       outline: 1px solid #cba6f7;
     }
 
+    /* Word-mode Content(DEC) cell: one decimal number per 32-bit word. */
+    .mem-view span.val-dec {
+      display: inline-block;
+      text-align: center;
+      color: #94e2d5;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0 4px;
+      border-radius: 3px;
+    }
+    .mem-view span.val-dec:hover:not(.readonly-code) {
+      background: rgba(148, 226, 213, 0.15);
+    }
+    .mem-view span.val-dec.changed {
+      color: #ffe08f;
+      font-weight: bold;
+    }
+    .mem-view span.val-dec.readonly-code {
+      cursor: default;
+      opacity: 0.7;
+    }
+
     .mem-legend {
       display: flex;
       flex-wrap: wrap;
@@ -1215,26 +1258,79 @@
       color: #6c7086;
     }
 
-    .mmio-desc {
-      font-size: 11.5px;
-      color: #b4befe;
-      font-weight: 500;
-    }
-
     .mem-row-label {
       font-size: 11.5px;
       color: #fab387;
       font-weight: bold;
     }
 
+    /* An MMIO register's own name/access sits above its word cell the same
+       way a user symbol does (.mem-row-label-anchor below) — just in the
+       peripheral-purple used elsewhere for MMIO rather than label-orange,
+       so the two kinds of annotation stay visually distinct. */
+    .mmio-row-label {
+      color: #b4befe !important;
+    }
+
+    /* Compact signed/unsigned switch for a Value(Dec)/Content(DEC) column
+       header. Two single-character glyphs either side of the thumb (± / U)
+       carry the meaning; a title tooltip covers the rest, so nothing else
+       here spends space explaining itself. */
+    .sign-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      user-select: none;
+      vertical-align: middle;
+      margin-left: 6px;
+    }
+    /* The unconditional `display` above otherwise beats the `hidden`
+       attribute's own (UA-stylesheet) display:none, since author CSS wins
+       over UA CSS regardless of specificity - Byte mode's toggle would stay
+       visible and clickable despite `hidden` being set. */
+    .sign-toggle[hidden] { display: none; }
+    .sign-toggle input { display: none; }
+    .sign-toggle-lbl {
+      font-size: 9px;
+      color: #6c7086;
+      font-weight: 700;
+    }
+    .sign-toggle-track {
+      position: relative;
+      width: 20px;
+      height: 11px;
+      background: #45475a;
+      border-radius: 6px;
+      transition: background .15s;
+    }
+    .sign-toggle-thumb {
+      position: absolute;
+      top: 1px;
+      left: 10px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #cdd6f4;
+      transition: left .15s;
+    }
+    .sign-toggle input:checked ~ .sign-toggle-track { background: rgba(203, 166, 247, 0.55); }
+    .sign-toggle input:checked ~ .sign-toggle-track .sign-toggle-thumb { left: 1px; background: #f5c2e7; }
+
     /* Anchored symbol labels: the label is placed directly ABOVE the 4-byte word
        it belongs to. .mem-row-label-anchor stacks label + word cells vertically;
-       .mem-row-bytes wraps the four byte cells of a group so they stay in a row. */
+       .mem-row-bytes wraps the four byte cells of a group so they stay in a row.
+       The anchor's width is pinned to the column's, same as every other row's -
+       otherwise a long label (e.g. two labels sharing an address) would widen
+       just this one row's Hex column, throwing off every row's alignment with
+       the Content column beside it. A long label wraps within that width
+       instead. */
     .mem-row-label-anchor {
       display: inline-flex;
       flex-direction: column;
-      align-items: flex-start;
+      align-items: center;
       vertical-align: top;
+      width: var(--mem-hex-w);
     }
     .mem-row-label-anchor .mem-row-label {
       font-size: 10.5px;
@@ -1242,8 +1338,10 @@
       font-weight: bold;
       line-height: 1.15;
       padding: 0 6px;
-      white-space: nowrap;
-      text-align: left;
+      white-space: normal;
+      overflow-wrap: break-word;
+      text-align: center;
+      max-width: 100%;
     }
     .mem-row-label-anchor .mem-row-bytes {
       display: inline-flex;
@@ -2482,9 +2580,23 @@
     /* Button row: BTNL BTNC BTNR in a line */
     .btn-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 10px;
       justify-content: center;
+    }
+
+    .pb-btn-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .pb-key-hint {
+      font-size: 9px;
+      line-height: 1;
+      color: #6c7086;
+      user-select: none;
     }
 
     /* Push Button container */
@@ -2605,6 +2717,8 @@
       }
 
       .toolbar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         padding: 6px 8px;
         gap: 6px;
         font-size: 12px;
@@ -2617,17 +2731,20 @@
         display: none;
       }
 
-      /* Mobile 4-row layout */
+      /* Mobile 3-row toolbar. `.toolbar` itself is the grid (see `.toolbar`
+         above); the two row wrappers contribute nothing of their own on
+         mobile (`display: contents`) so their groups place directly into
+         it - which is what lets Editor and Dump/Settings share row 2 as
+         two half-width columns instead of each claiming a full row. */
       .toolbar-row-source,
       .toolbar-row-simulation {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-        width: 100%;
+        display: contents;
       }
 
-      /* Row 1: File & Mode (Toggle, Example, Open, Save, Dumps) */
+      /* Row 1: File & Mode (Toggle, Example, Open, Save) */
       .toolbar-group-file-mode {
+        grid-column: 1 / -1;
+        grid-row: 1;
         display: flex;
         width: 100%;
         gap: 4px;
@@ -2662,26 +2779,44 @@
         gap: 2px;
       }
 
-      /* Row 2: Editor Operations (Undo, Redo, Find) */
+      /* Row 2: Undo/Redo/Find and Dump Text/Dump Data/Settings, sharing the
+         row as two halves - freeing a whole row versus each on its own. */
       .toolbar-group-editor {
-        display: flex;
-        width: 100%;
-        gap: 4px;
+        grid-column: 1;
+        grid-row: 2;
       }
 
-      .toolbar-group-editor button {
+      .toolbar-group-config-stats {
+        grid-column: 2;
+        grid-row: 2;
+      }
+
+      .toolbar-group-editor,
+      .toolbar-group-config-stats {
+        display: flex;
+        width: 100%;
+        gap: 3px;
+      }
+
+      .toolbar-group-editor button,
+      .toolbar-group-config-stats button {
         flex: 1 1 0;
         min-width: 0;
         padding: 0 2px;
-        height: 32px;
-        font-size: 11.5px;
+        height: 34px;
+        font-size: 9.5px;
+        line-height: 1.15;
         font-weight: 550;
         justify-content: center;
-        gap: 2px;
+        white-space: normal;
+        gap: 0 2px;
       }
 
-      /* Row 3: Assemble, Run, Step, Back, Reset */
+      /* Row 3: Assemble, Run, Step, Back, Reset - last action row, right
+         above the status line. */
       .toolbar-group-simulation {
+        grid-column: 1 / -1;
+        grid-row: 3;
         display: flex;
         width: 100%;
         gap: 4px;
@@ -2698,28 +2833,8 @@
         gap: 2px;
       }
 
-      /* Row 4: Memory Dumps, Settings & Metrics */
-      .toolbar-group-config-stats {
-        display: flex;
-        width: 100%;
-        gap: 4px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      .toolbar-group-config-stats button {
-        flex: 1 1 auto;
-        min-width: 0;
-        padding: 0 5px;
-        height: 32px;
-        font-size: 11.5px;
-        font-weight: 550;
-        justify-content: center;
-        gap: 2px;
-      }
-
-      .toolbar-group-config-stats button.gear {
-        flex: 1.1 1 auto;
+      .toolbar-row-status {
+        grid-column: 1 / -1;
       }
 
       .toolbar .stats {
@@ -2735,8 +2850,8 @@
       }
 
       .editor-wrapper {
-        height: 360px;
-        min-height: 220px;
+        height: 300px;
+        min-height: 180px;
         flex: none;
         width: 100%;
         max-width: 100vw;
@@ -2751,6 +2866,25 @@
         width: 100%;
         max-width: 100vw;
         box-sizing: border-box;
+      }
+
+      /* Fixed small height (~4 lines) rather than the desktop drag-resizable
+         one — a status log this size is easy to scroll past to reach the
+         tabs below it; older messages are still there, just a scroll up
+         within the box away. `!important` because setConsoleHeight() sets
+         an inline height/max-height (the desktop drag handle, or a height
+         persisted from a previous desktop session) that would otherwise
+         win over this rule at any viewport width. */
+      .console {
+        height: 55px !important;
+        max-height: 55px !important;
+        min-height: 55px !important;
+      }
+
+      /* The drag handle resizes the desktop console; on mobile the height
+         is fixed (above), so there is nothing for it to do. */
+      .console-resizer {
+        display: none !important;
       }
 
       .tab-bar {
@@ -2787,9 +2921,9 @@
 
       /* Mobile tabbed view: exactly ONE panel is visible at a time — the chip
          bar becomes a classic mutually-exclusive tab strip. All docked and
-         floating panels are hidden; the active one is shown. The active panel
-         grows to its natural content height (no inner 500px scroll trap) so
-         the whole page scrolls down to reveal the full panel body. */
+         floating panels are hidden; the active one is shown, its header
+         fixed and its body (below) independently scrollable rather than
+         growing the whole page. */
       .tab-content,
       .tab-content.panel-docked,
       .tab-content.panel-floating {
@@ -2830,12 +2964,13 @@
         display: none;
       }
 
-      /* No inner scroll trap on mobile — the panel body expands to its full
-         content height and the page itself scrolls, so long tables/boards are
-         read by scrolling down rather than inside a small scrollbox. */
+      /* A bounded, independently-scrollable body — instead of growing to
+         full content height and pushing the page itself down; a long
+         table/board scrolls in place. Sized a little over half the
+         editor's height: the editor gave up the rest of the difference. */
       .panel-body {
-        overflow: visible;
-        max-height: none;
+        overflow: auto;
+        max-height: 186px;
         flex: 0 0 auto;
       }
 
@@ -3285,8 +3420,7 @@
               <path d="M2 11h4M2 16h4M2 21h4 M26 11h4M26 16h4M26 21h4 M11 2v4M16 2v4M21 2v4 M11 26v4M16 26v4M21 26v4"
                 stroke="#f9e2af" stroke-width="1.5" stroke-linecap="round" /><text x="16" y="18.5"
                 font-family="monospace" font-size="6.5" font-weight="bold" fill="#89b4fa" text-anchor="middle">RV</text>
-            </svg>NUS-CG3207 RISC-V Simulator</h1>
-          <span class="subtitle">RV32GC — Assembler + Simulator</span>
+            </svg>NUS-CG3207 RISC-V Functional and HDL Simulator</h1>
           <span class="header-info"><button type="button" class="header-info-link" onclick="openCreditsModal()">ⓘ
               Credits</button></span>
         </div>
@@ -3334,8 +3468,8 @@
             <div class="toolbar-divider"></div>
             <!-- Group 4: Memory Dump, Settings & Metrics -->
             <div class="toolbar-btn-group toolbar-group-config-stats">
-              <button id="btnDumpTxt" onclick="dumpTextSegment()" title="Dump code (text) memory to AA_IROM.mem">💾 Dump txt</button>
-              <button id="btnDumpData" onclick="dumpDataSegment()" title="Dump data memory to AA_DMEM.mem">💾 Dump data</button>
+              <button id="btnDumpTxt" onclick="dumpTextSegment()" title="Dump code (text) memory to AA_IROM.mem">💾 Dump Text</button>
+              <button id="btnDumpData" onclick="dumpDataSegment()" title="Dump data memory to AA_DMEM.mem">💾 Dump Data</button>
               <button id="hdlVcdBtn" style="display:none;" onclick="hdlDownloadVcd()"
                 title="Download the waveform recorded by the last HDL run">⭳ VCD</button>
               <button id="btnSettings" onclick="openSettingsModal()" title="Configure Compiler, Linker segments, and Simulator settings" class="gear">⚙ Settings…</button>
@@ -3401,9 +3535,9 @@
             <thead>
               <tr>
                 <th id="regId" class="col-left col-id">#<span class="col-resizer" data-panel="registers" data-col="id" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
-                <th id="regName" class="col-left col-name">Name<span class="col-resizer" data-panel="registers" data-col="name" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
-                <th id="regHex" class="col-left col-val">Value (Hex)<span class="col-resizer" data-panel="registers" data-col="hex" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
-                <th id="regDec" class="col-left col-val">Value (Dec)</th>
+                <th id="regName" class="col-left col-name">ABI Name<span class="col-resizer" data-panel="registers" data-col="name" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
+                <th id="regHex" class="col-left col-val">Content (Hex)<span class="col-resizer" data-panel="registers" data-col="hex" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
+                <th id="regDec" class="col-left col-val">Content (Dec)<label class="sign-toggle" title="Signed / unsigned decimal display"><span class="sign-toggle-lbl">±</span><input type="checkbox" checked onchange="setRegDecSigned(this.checked)"><span class="sign-toggle-track"><span class="sign-toggle-thumb"></span></span><span class="sign-toggle-lbl">U</span></label></th>
               </tr>
             </thead>
             <tbody id="regBody"></tbody>
@@ -3416,7 +3550,7 @@
               <input type="text" id="memAddr" value="0x400000" onchange="updateMemoryView()"
                 onkeydown="if(event.key==='Enter')updateMemoryView()">
               <div class="mem-subtabs" role="group" aria-label="Memory region">
-                <button class="mem-subtab-btn active" id="memTabBtn-code" onclick="memGo('code')" title="Program / code segment">Code</button>
+                <button class="mem-subtab-btn active" id="memTabBtn-code" onclick="memGo('code')" title="Program / text segment">Text</button>
                 <button class="mem-subtab-btn" id="memTabBtn-data" onclick="memGo('data')" title="Data / static segment (writes land here)">Data</button>
                 <button class="mem-subtab-btn" id="memTabBtn-stack" onclick="memGo('stack')" title="Stack region near the stack pointer">Stack</button>
                 <button class="mem-subtab-btn" id="memTabBtn-mmio" onclick="memGo('mmio')" title="Memory-mapped I/O region">MMIO</button>
@@ -3435,14 +3569,14 @@
             </div>
           </div>
           <div class="mem-legend">
-            <span id="memLegendText" class="mem-legend-mode">each row = two <span class="mem-legend-endian">32-bit words</span> &nbsp;·&nbsp; <span class="mem-legend-endian">Full word (LSB to the right)</span></span>
+            <span id="memLegendText" class="mem-legend-mode">each row = one <span class="mem-legend-endian">32-bit word</span> &nbsp;·&nbsp; <span class="mem-legend-endian">Full word (LSB to the right)</span></span>
             <span class="mem-legend-sep">&nbsp;·&nbsp;</span>
-            <span><span class="mem-legend-editable">Data/Stack/MMIO: editable</span> (Code: read-only)</span>
+            <span><span class="mem-legend-editable">Data/Stack/MMIO: editable</span> (Text: read-only)</span>
           </div>
           <div class="mem-col-header" id="memColHeader">
             <span class="mem-col-h" data-mem-col="addr">Addr<span class="col-resizer" data-panel="memory" data-col="addr" title="Drag to resize this column · double-click to reset the panel's columns"></span></span>
             <span class="mem-col-h" data-mem-col="hex">Content (Hex)<span class="col-resizer" data-panel="memory" data-col="hex" title="Drag to resize this column · double-click to reset the panel's columns"></span></span>
-            <span class="mem-col-h" data-mem-col="ascii">Content (ASCII)</span>
+            <span class="mem-col-h" data-mem-col="ascii"><span id="memContentColLabel">Content (ASCII)</span><label class="sign-toggle" id="memDecSignToggleWrap" title="Signed / unsigned decimal display" hidden><span class="sign-toggle-lbl">±</span><input type="checkbox" id="memDecSignToggle" checked onchange="setMemDecSigned(this.checked)"><span class="sign-toggle-track"><span class="sign-toggle-thumb"></span></span><span class="sign-toggle-lbl">U</span></label></span>
           </div>
           <div class="mem-view" id="memView"></div>
         </div>
@@ -3471,12 +3605,12 @@
             <div class="periph-pair">
               <div class="periph-section">
                 <div class="periph-title"
-                  title="Push Buttons: Read at 0xFFFF0068 RO [Bit 0: BTNL, Bit 1: BTNC, Bit 2: BTNR]. Click to toggle.">
+                  title="Push Buttons: Read at 0xFFFF0068 RO [Bit 0: BTNL, Bit 1: BTNC, Bit 2: BTNR]. Click to toggle or use arrow keys (← ↓ →).">
                   Push Buttons <span class="periph-addr">0xFFFF0068 RO</span>
                 </div>
                 <div id="pbContainer"></div>
                 <div style="margin-top:8px;font-size:10px;color:#585b70;">
-                  BTNL | BTNC | BTNR — click to toggle
+                  BTNL | BTNC | BTNR — click to toggle or use arrow keys (← ↓ →)
                 </div>
               </div>
               <div class="periph-section">
@@ -3556,7 +3690,7 @@
             <div class="periph-section" id="accelSection">
               <div class="periph-title"
                 style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;"
-                title="3-Axis Accelerometer &amp; Temp: 0xFFFF0040 ACCEL_DATA RO ([31:24] Temp, [23:16] Z, [15:8] Y, [7:0] X), 0xFFFF0044 ACCEL_DREADY RO (Bit 0).">
+                title="3-Axis Accelerometer &amp; Temp: 0xFFFF0040 ACCEL_DATA RO ([31:24] Temp, [23:16] Z, [15:8] Y, [7:0] X), 0xFFFF0044 ACCEL_DREADY RO (Bit 0). Hold X/Y/Z/T, then ← / → to adjust that axis.">
                 <span>3-Axis Accelerometer &amp; Temp &nbsp;<span class="periph-addr"
                     style="margin-left:4px;">0xFFFF0040–0xFFFF0044</span></span>
                 <span style="font-size:10px;color:#a6adc8;">
@@ -3567,24 +3701,28 @@
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="width:50px;color:#89b4fa;font-weight:bold;">X Axis:</span>
                   <input type="range" id="accelXSlider" min="-128" max="127" value="0"
+                    title="Hold X, then ← / → to decrease/increase"
                     style="flex:1;accent-color:#89b4fa;cursor:pointer;" oninput="updateAccelValues()">
                   <span id="accelXVal" style="width:130px;font-family:monospace;color:#cdd6f4;">0 (0x00, +0.00g)</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="width:50px;color:#a6e3a1;font-weight:bold;">Y Axis:</span>
                   <input type="range" id="accelYSlider" min="-128" max="127" value="0"
+                    title="Hold Y, then ← / → to decrease/increase"
                     style="flex:1;accent-color:#a6e3a1;cursor:pointer;" oninput="updateAccelValues()">
                   <span id="accelYVal" style="width:130px;font-family:monospace;color:#cdd6f4;">0 (0x00, +0.00g)</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="width:50px;color:#fab387;font-weight:bold;">Z Axis:</span>
                   <input type="range" id="accelZSlider" min="-128" max="127" value="64"
+                    title="Hold Z, then ← / → to decrease/increase"
                     style="flex:1;accent-color:#fab387;cursor:pointer;" oninput="updateAccelValues()">
                   <span id="accelZVal" style="width:130px;font-family:monospace;color:#cdd6f4;">64 (0x40, +1.00g)</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
                   <span style="width:50px;color:#f38ba8;font-weight:bold;">Temp:</span>
                   <input type="range" id="accelTempSlider" min="-40" max="85" value="25"
+                    title="Hold T, then ← / → to decrease/increase"
                     style="flex:1;accent-color:#f38ba8;cursor:pointer;" oninput="updateAccelValues()">
                   <span id="accelTempVal" style="width:130px;font-family:monospace;color:#cdd6f4;">25°C (0x19)</span>
                 </div>
@@ -3596,6 +3734,9 @@
                     title="Toggle Tilt Y (-1g / +1g)">Tilt Y (±1g)</button>
                   <button onclick="setAccelPreset('shake')" style="padding:2px 6px;font-size:10px;">Shake (±2g)</button>
                   <button onclick="setAccelPreset('zero')" style="padding:2px 6px;font-size:10px;">Zero All</button>
+                </div>
+                <div style="margin-top:4px;font-size:10px;color:#585b70;">
+                  X | Y | Z | T — hold, then ← → to adjust
                 </div>
               </div>
             </div>
@@ -3983,6 +4124,7 @@
     let breakpoints = new Set();           // set of source line numbers (1-based)
     let currentExecLine = -1;              // source line currently being executed (for highlight)
     let lastChangedReg = -1;
+    let regDecSigned = true; // sign of the Registers panel's Content (Dec) column
     let lastChangedMem = [];
     let lastExecutedRd = -1; // Track which register was last written
 
@@ -4049,6 +4191,37 @@
     let PERIPH_DIP = 0xFFFF0064;    // read-only: 16-bit DIP switches
     let PERIPH_PB = 0xFFFF0068;     // read-only: 3-bit push buttons
     let PERIPH_SEVENSEG = 0xFFFF0080; // write-only: 7-segment display
+
+    // Single source of truth for every mapped MMIO register: address, the
+    // short name shown as its label in the Memory view, and its access
+    // type. `editable` defaults to (access !== 'RO') and is only overridden
+    // for UART_RX, whose "write" is a deliberate simulator feature (inject
+    // a byte into the RX queue) rather than a real register write.
+    const MMIO_REGISTERS = [
+      { addr: UART_RX_VALID, name: 'UART RX VALID', access: 'RO' },
+      { addr: UART_RX, name: 'UART RX', access: 'RO', editable: true },
+      { addr: UART_TX_READY, name: 'UART TX READY', access: 'RO' },
+      { addr: UART_TX, name: 'UART TX', access: 'WO' },
+      { addr: OLED_COL, name: 'OLED COL', access: 'WO' },
+      { addr: OLED_ROW, name: 'OLED ROW', access: 'WO' },
+      { addr: OLED_DATA, name: 'OLED DATA', access: 'WO' },
+      { addr: OLED_CTRL, name: 'OLED CTRL', access: 'WO' },
+      { addr: ACCEL_DATA, name: 'ACCEL DATA', access: 'RO' },
+      { addr: ACCEL_DREADY, name: 'ACCEL DREADY', access: 'RO' },
+      { addr: PERIPH_LED, name: 'LED', access: 'WO' },
+      { addr: PERIPH_DIP, name: 'DIP', access: 'RO' },
+      { addr: PERIPH_PB, name: 'PB', access: 'RO' },
+      { addr: PERIPH_SEVENSEG, name: '7SEG', access: 'WO' },
+      { addr: CYCLECOUNT, name: 'CYCLECOUNT', access: 'RO' },
+    ].map(r => ({ ...r, addr: r.addr >>> 0, editable: r.editable ?? (r.access !== 'RO') }));
+    function mmioRegisterAt(addr) {
+      const a = addr >>> 0;
+      return MMIO_REGISTERS.find(r => r.addr === a);
+    }
+    function isMMIOReadOnlyAddr(addr) {
+      const r = mmioRegisterAt(addr);
+      return !!r && !r.editable;
+    }
 
     // UART & Console State
     let uartRxQueue = [];            // Queue of byte values (numbers 0..255) waiting to be read
@@ -4403,15 +4576,9 @@
       const setAddr = (a) => { if (section === 'text') textAddr = a; else dataAddr = a; };
       const bump = (n) => setAddr(getAddr() + n);
 
-      // Labels defined since the last real byte was placed - a run of
-      // `foo:` / `bar: .word 5` lines with nothing between them but other
-      // labels and pure repositioning (.align and friends). If what comes
-      // next needs to align forward, every one of these moves with it:
-      // `var1: .word 1` means "var1 names wherever this word actually
-      // ends up", not "wherever the address happened to be the instant
-      // the colon was parsed". Cleared the moment real content is placed,
-      // because a label after that point names its own address, not one
-      // some earlier directive's alignment might still be about to shift.
+      // Labels seen since the last real byte was placed. If the next
+      // directive aligns forward (`var1: .word 1`), these move with it, so
+      // `var1` names the aligned address rather than wherever the colon fell.
       let pendingLabelNames = [];
       const alignAddrForLabels = (newAddr) => {
         const oldAddr = getAddr();
@@ -4451,14 +4618,7 @@
             activeDataDirPass1 = mn;
             const vals = toks.slice(1).join('').split(',').filter(Boolean);
             const sz = (mn === '.byte' ? 1 : (mn === '.half' || mn === '.2byte' || mn === '.short') ? 2 : (mn === '.dword' || mn === '.8byte' || mn === '.quad') ? 8 : 4);
-            // A typed directive aligns itself to its own size first: a
-            // .word after an odd-length string starts on the next 4-byte
-            // boundary, not wherever the string happened to leave off. This
-            // is the padding every assembler inserts by default - without
-            // it, .word data lands at an unaligned address purely by
-            // accident of what came before it in the file. A label right
-            // before it (`var1: .word 1`) names the aligned address, not
-            // the one the colon happened to land on.
+            // Align to the directive's own width before placing it.
             if (sz > 1) alignAddrForLabels((getAddr() + (sz - 1)) & ~(sz - 1));
             bump(sz * vals.length);
             pendingLabelNames = [];
@@ -4506,10 +4666,9 @@
         }
         if (first.endsWith(':')) {
           const labelName = first.slice(0, -1);
-          // Two labels with the same name used to be accepted, with the second
-          // silently winning - so every reference pointed somewhere the author
-          // never meant. And a label named after a register can never be
-          // reached: parseReg wins, so `j t0` jumps to whatever x5 holds.
+          // A duplicate label would silently win over the first, and a
+          // label named after a register can never be reached (`j t0`
+          // jumps to whatever x5 holds - parseReg wins).
           if (labels[labelName] !== undefined) {
             labelDiagnostics.push({ line: i + 1, text: lines[i],
               message: `Label '${labelName}' is defined more than once. Every reference ` +
@@ -4733,10 +4892,8 @@
               case '.half': case '.2byte': case '.short':
               case '.byte': {
                 const sz = mn === '.byte' ? 1 : (mn === '.half' || mn === '.2byte' || mn === '.short') ? 2 : 4;
-                // Matches the same alignment sizeLine() already applied to
-                // the addresses in pass 1 - the padding has to be real bytes
-                // here, not just a skipped address, or the memory image
-                // would not match what pass 1 promised the labels.
+                // Same alignment as sizeLine() in pass 1, emitted as real
+                // padding bytes so the two passes' addresses agree.
                 if (sz > 1) {
                   const aligned = (getAddr() + (sz - 1)) & ~(sz - 1);
                   const pad = aligned - getAddr();
@@ -4747,9 +4904,8 @@
                 for (const v of vals) {
                   const val = parseImm(v);
                   if (isNaN(val)) throw new Error(`Bad numeric value '${v}' in ${mn}`);
-                  // A value too wide for the directive used to be truncated in
-                  // silence: `.byte 256` stored 0. Accept either the signed or
-                  // the unsigned range for the width, and reject the rest.
+                  // Accept either the signed or the unsigned range for the
+                  // width, and reject the rest rather than truncate silently.
                   const lo = -(2 ** (sz * 8 - 1));
                   const hi = 2 ** (sz * 8) - 1;
                   if (val < lo || val > hi) {
@@ -5634,31 +5790,17 @@
         return;
       }
 
-      // Peripherals: DIP Switches (0xFFFF0064 .. 0xFFFF0067)
+      // Peripherals: DIP Switches (0xFFFF0064 .. 0xFFFF0067) — read-only:
+      // real hardware ignores writes to it, so a program (or a memory-view
+      // edit) writing here has no effect; the switches only move via
+      // toggleDip()/the peripheral panel.
       const dipBase = PERIPH_DIP >>> 0;
-      if (u >= dipBase && u < dipBase + 4) {
-        if (size === 4) {
-          dipSwitches = val & 0xFFFF;
-        } else {
-          const offset = u - dipBase;
-          dipSwitches = (dipSwitches & ~(0xFF << (offset * 8))) | ((val & 0xFF) << (offset * 8));
-          dipSwitches &= 0xFFFF;
-        }
-        return;
-      }
+      if (u >= dipBase && u < dipBase + 4) return;
 
-      // Peripherals: Push Buttons (0xFFFF0068 .. 0xFFFF006B)
+      // Peripherals: Push Buttons (0xFFFF0068 .. 0xFFFF006B) — read-only,
+      // same reasoning as DIP above; only pbSetState()/pbToggle() move it.
       const pbBase = PERIPH_PB >>> 0;
-      if (u >= pbBase && u < pbBase + 4) {
-        if (size === 4) {
-          pbState = val & 0x7;
-        } else {
-          const offset = u - pbBase;
-          pbState = (pbState & ~(0xFF << (offset * 8))) | ((val & 0xFF) << (offset * 8));
-          pbState &= 0x7;
-        }
-        return;
-      }
+      if (u >= pbBase && u < pbBase + 4) return;
 
       // Peripherals: 7-Segment Display (0xFFFF0080 .. 0xFFFF0083)
       const sevBase = PERIPH_SEVENSEG >>> 0;
@@ -6401,37 +6543,8 @@
     let lastAssembledCode = null;
     let heapPointer = 0x24000;
 
-    // Every example but `dip_led` / `dip_led_c` is loaded from a file next
-    // to the page (see loadExample()) — this is the one map from a menu key
-    // to that file, used both to build the fetch path and to suggest a Save
-    // filename. Those two still get an entry here for the Save filename;
-    // they just skip the fetch, since they are baked into this page (see
-    // BAKED_ASM_EXAMPLE / BAKED_C_EXAMPLE), so DIP to LED works with no
-    // server at all.
-    const EXAMPLE_FILENAMES = {
-      basic: 'basic.asm',
-      rars_syscalls: 'rars_syscalls.asm',
-      fib: 'fibonacci.asm',
-      fact: 'factorial.asm',
-      loop: 'loop_array.asm',
-      io: 'io_mext.asm',
-      dip_led: 'DIP_to_LED.asm',
-      hello_world: 'HelloWorld.asm',
-      hello_jal: 'HelloWorld_jal_jalr.asm',
-      circle_accel: 'Circle_delay_accel.asm',
-      image_display_accel: 'ImageDisplay_autoadvance_accel.asm',
-      basic_c: 'basic.c',
-      factorial_c: 'factorial.c',
-      fibonacci_c: 'fibonacci.c',
-      loop_c: 'loop_array.c',
-      matrix_c: 'matrix_multiply.c',
-      peripherals_c: 'peripherals.c',
-      dip_led_c: 'DIP_to_LED.c',
-      hello_world_c: 'HelloWorld.c',
-      hello_jal_c: 'HelloWorld_jal_jalr.c',
-      circle_accel_c: 'Circle_delay_accel.c',
-      image_display_c: 'ImageDisplay_autoadvance_accel.c'
-    };
+    // EXAMPLE_FILENAMES and EXAMPLE_MENU are declared and loaded further
+    // down, next to updateExampleSelectorOptions() - see the comment there.
 
     // In-Editor Find & Replace state globals
     let findCaseSensitive = false;
@@ -7640,13 +7753,13 @@
     const PANEL_COLS = {
       registers: [
         { key: 'id',   min: 34,  fit: 44,  grow: 0 },
-        { key: 'name', min: 46,  fit: 72,  grow: 0 },
-        { key: 'hex',  min: 92,  fit: 104, grow: 1 },
+        { key: 'name', min: 46,  fit: 92,  grow: 0 },
+        { key: 'hex',  min: 92,  fit: 124, grow: 0 },
         { key: 'dec',  min: 80,  fit: 96,  grow: 1 },
       ],
       memory: [
         { key: 'addr',  min: 92,  fit: 106, grow: 0 },
-        { key: 'hex',   min: 200, fit: 244, grow: 0 },
+        { key: 'hex',   min: 108, fit: 140, grow: 0 },
         // `fit` here is set by the "CONTENT (ASCII)" header rather than the
         // 8 monospace characters under it, so the label sits on one line at
         // the panel's natural width.
@@ -9017,17 +9130,23 @@ function updateRegisters() {
         const name = ABI_NAMES[i];
         const val = regs[i];
         const uval = val >>> 0;
+        const decVal = regDecSigned ? val : uval;
         const isChanged = i === lastChangedReg;
         const valClass = 'reg-val' + (isChanged ? ' reg-changed' : '');
         html += `<tr><td class="reg-name col-id">x${i}</td><td class="reg-name col-name">${name}</td>
-      <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${uval.toString(16).padStart(8, '0')}" data-type="hex" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">0x${uval.toString(16).padStart(8, '0')}</td>
-      <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${val.toString().padStart(11, ' ')}" data-type="dec" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">${val}</td></tr>`;
+      <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${uval.toString(16).padStart(8, '0')}" data-type="hex" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">${uval.toString(16).padStart(8, '0')}</td>
+      <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${decVal.toString().padStart(11, ' ')}" data-type="dec" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">${decVal}</td></tr>`;
       }
       regBody.innerHTML = html;
       // The <thead> (and its column widths) survives this rebuild untouched
       // since only the <tbody> is replaced — nothing to reapply here.
       // Also update peripherals (PC LEDs, etc.) when registers are refreshed
       updatePeripherals();
+    }
+
+    function setRegDecSigned(signed) {
+      regDecSigned = !!signed;
+      updateRegisters();
     }
 
     // ============================================================
@@ -9088,11 +9207,15 @@ function updateRegisters() {
       const pbCont = document.getElementById('pbContainer');
       if (pbCont) {
         const SQ = String.fromCharCode(39);
+        // Click toggles (matches every other peripheral input here); the
+        // arrow key held next to each button is momentary instead - down on
+        // keydown, up on keyup - because that is what a real push button
+        // does and a toggle cannot fake it without a second key press.
         pbCont.innerHTML =
           '<div class="btn-row">' +
-          '<div class="pb-btn" id="pbBtnL" title="BTNL (bit 2)" onclick="pbToggle(' + SQ + '2' + SQ + ')">L</div>' +
-          '<div class="pb-btn" id="pbBtnC" title="BTNC (bit 1)" onclick="pbToggle(' + SQ + '1' + SQ + ')">C</div>' +
-          '<div class="pb-btn" id="pbBtnR" title="BTNR (bit 0)" onclick="pbToggle(' + SQ + '0' + SQ + ')">R</div>' +
+          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnL" title="BTNL (bit 2) — click to toggle; hold ← to press" onclick="pbToggle(' + SQ + '2' + SQ + ')">L</div><div class="pb-key-hint">←</div></div>' +
+          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnC" title="BTNC (bit 1) — click to toggle; hold ↓ to press" onclick="pbToggle(' + SQ + '1' + SQ + ')">C</div><div class="pb-key-hint">↓</div></div>' +
+          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnR" title="BTNR (bit 0) — click to toggle; hold → to press" onclick="pbToggle(' + SQ + '0' + SQ + ')">R</div><div class="pb-key-hint">→</div></div>' +
           '</div>';
       }
 
@@ -9272,6 +9395,28 @@ function updateRegisters() {
       if (xS) xS.value = accelX;
       if (yS) yS.value = accelY;
       if (zS) zS.value = accelZ;
+
+      updatePeripherals();
+    }
+
+    // Keyboard shortcut: hold X/Y/Z/T, tap ←/→ to nudge that axis by one
+    // step, clamped to the same range as its slider - see the keydown
+    // handler (heldAxisKeys) for where `axis`/`delta` come from.
+    function bumpAccelAxis(axis, delta) {
+      if (axis === 'x') accelX = Math.max(-128, Math.min(127, accelX + delta));
+      else if (axis === 'y') accelY = Math.max(-128, Math.min(127, accelY + delta));
+      else if (axis === 'z') accelZ = Math.max(-128, Math.min(127, accelZ + delta));
+      else if (axis === 't') accelTemp = Math.max(-40, Math.min(85, accelTemp + delta));
+      else return;
+
+      const xS = document.getElementById('accelXSlider');
+      const yS = document.getElementById('accelYSlider');
+      const zS = document.getElementById('accelZSlider');
+      const tS = document.getElementById('accelTempSlider');
+      if (xS) xS.value = accelX;
+      if (yS) yS.value = accelY;
+      if (zS) zS.value = accelZ;
+      if (tS) tS.value = accelTemp;
 
       updatePeripherals();
     }
@@ -9488,6 +9633,17 @@ function updateRegisters() {
       updatePeripherals();
     }
 
+    // Push button: keyboard hold. Sets the bit to exactly `down`, so it
+    // behaves as a momentary button - pressed while held, not latched on.
+    function pbSetState(btn, down) {
+      if (btn < 0 || btn > 2) return;
+      const bit = 1 << btn;
+      const next = down ? (pbState | bit) : (pbState & ~bit);
+      if (next === pbState) return; // key-repeat while already held: no-op
+      pbState = next;
+      updatePeripherals();
+    }
+
     // ============================================================
     // SVG 7-Segment Display
     // ============================================================
@@ -9561,6 +9717,7 @@ function updateRegisters() {
 
     let activeMemRegion = 'code';
     let memViewMode = 'word'; // 'word' = one whole 32-bit word per 4-byte group (default), 'bytes' = separate editable bytes
+    let memDecSigned = true; // sign of the Word-mode Content(DEC) column; irrelevant in Byte mode (always ASCII)
 
     function isCodeSegmentAddress(addr) {
       return (addr >= baseAddress && addr < dataBase) || (activeMemRegion === 'code' && addr < dataBase);
@@ -9576,7 +9733,7 @@ function updateRegisters() {
       const rows = parseInt(rowsEl.value) || 16;
       let addr = parseInt(addrStr, 16);
       if (isNaN(addr)) addr = (activeMemRegion === 'stack' || currentMemSegment === 'stack') ? stackBase : baseAddress;
-      addr = (addr >>> 0) & ~0x7;  // Align to 8-byte boundary unsigned
+      addr = (addr >>> 0) & ~0x3;  // Align to 4-byte (one word) boundary unsigned
 
       const isStackView = (activeMemRegion === 'stack' || currentMemSegment === 'stack');
       const wordMode = (memViewMode === 'word');
@@ -9617,178 +9774,158 @@ function updateRegisters() {
         const unaligned = offsets.some(o => (o - wordStart) % 4 !== 0);
         const title = unaligned
           ? ` title="Symbol${offsets.length > 1 ? 's' : ''} at ${offsets.map(o => '0x' + o.toString(16).padStart(8, '0')).join(', ')}"` : '';
+        // Trailing ':' to match how a label reads in the program itself.
         return '<span class="mem-row-label-anchor"><span class="mem-row-label"' + title + '>' +
-          names.map(escapeHtml).join(', ') + '</span>' + inner + '</span>';
+          names.map(escapeHtml).join(', ') + ':</span>' + inner + '</span>';
       };
+
+      // Same anchored-above placement as labelAnnotationHtml, but for an
+      // MMIO register's own name instead of a user symbol - "UART RX VALID
+      // (RO):", no address (the register IS the address). One register per
+      // word, so this is a straight lookup rather than a byte scan.
+      const mmioLabelAnnotationHtml = (wordStart, inner) => {
+        const reg = mmioRegisterAt(wordStart);
+        if (!reg) return inner;
+        return '<span class="mem-row-label-anchor"><span class="mem-row-label mmio-row-label">' +
+          escapeHtml(reg.name) + ' (' + reg.access + '):</span>' + inner + '</span>';
+      };
+
+      // Content column header/toggle: Byte mode is always ASCII; Word mode
+      // is decimal, with a signed/unsigned switch that only makes sense there.
+      const contentLabelEl = document.getElementById('memContentColLabel');
+      const signToggleWrap = document.getElementById('memDecSignToggleWrap');
+      const signToggleInput = document.getElementById('memDecSignToggle');
+      if (contentLabelEl) contentLabelEl.textContent = wordMode ? 'Content (DEC)' : 'Content (ASCII)';
+      if (signToggleWrap) signToggleWrap.hidden = !wordMode;
+      if (signToggleInput) signToggleInput.checked = memDecSigned;
 
       // Update legend hint for the active view mode
       const legendEl = document.getElementById('memLegendText');
       if (legendEl) {
         legendEl.innerHTML = wordMode
-          ? 'each row = two <span class="mem-legend-endian">32-bit words</span> &nbsp;·&nbsp; <span class="mem-legend-endian">Full word (LSB to the right)</span>'
-          : 'groups of 4 bytes = one 32-bit <span class="mem-legend-endian">little endian (LSB to the left) </span> word';
+          ? 'each row = one <span class="mem-legend-endian">32-bit word</span> &nbsp;·&nbsp; <span class="mem-legend-endian">Full word (LSB to the right)</span>'
+          : 'each row = one 32-bit word, <span class="mem-legend-endian">little endian (LSB to the left)</span>';
       }
 
+      // One 32-bit word per row - each row's Hex and Content cells are the
+      // one word at that address, so wrapping (a narrow panel) drops the
+      // Content cell to its own line below the Hex cell but never splits a
+      // word's hex from its own ASCII/DEC, and never has a second word's
+      // data to be confused with. Previously a row held two words, and a
+      // wrap there interleaved word 1's content with word 2's hex.
       let html = '';
       for (let r = 0; r < rows; r++) {
-        if (isStackView && addr < r * 8) break;
-        // Stack grows downwards -> rows step downwards by 8 bytes; all other regions step upwards
-        const base = isStackView ? ((addr - r * 8) >>> 0) : ((addr + r * 8) >>> 0);
+        if (isStackView && addr < r * 4) break;
+        // Stack grows downwards -> rows step downwards by 4 bytes; all other regions step upwards
+        const wordStart = isStackView ? ((addr - r * 4) >>> 0) : ((addr + r * 4) >>> 0);
 
-        const isMMIO = (base >= 0xFFFF0000 && base < 0xFFFF0100) || (base >= mmioBase && base < mmioBase + 256);
-        const hasPeriph = (base === PERIPH_LED || base === PERIPH_DIP || base === PERIPH_PB || base === PERIPH_SEVENSEG);
+        const isMMIO = (wordStart >= 0xFFFF0000 && wordStart < 0xFFFF0100) || (wordStart >= mmioBase && wordStart < mmioBase + 256);
+        const hasPeriph = (wordStart === PERIPH_LED || wordStart === PERIPH_DIP || wordStart === PERIPH_PB || wordStart === PERIPH_SEVENSEG);
 
         if (isMMIO || hasPeriph) {
-          let hexVals = '';
-          let asciiVals = '';
-          const descriptors = [];
+          const reg = mmioRegisterAt(wordStart);
+          const editable = !reg || reg.editable; // unmapped MMIO space is plain scratch memory
+          const roTitle = reg ? `title="${escapeHtml(reg.name)} (${reg.access}) is read-only"` : '';
 
           if (wordMode) {
-            // Word view: one whole 32-bit word per 4-byte register
-            for (let p = 0; p < 8; p += 4) {
-              const wordStart = (base + p) >>> 0;
-              let wordVal = 0;
-              let isChanged = false;
-              for (let i = 0; i < 4; i++) {
-                const offset = (wordStart + i) >>> 0;
-                const bv = readMem(offset, 1, true) & 0xFF;
-                wordVal |= bv << (i * 8);
-                if (lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size)) isChanged = true;
-              }
-              const cls = isChanged ? ' changed' : '';
-              const wordHex = (wordVal >>> 0).toString(16).padStart(8, '0');
-              const cell = `<span class="val word-cell${cls}" data-addr="${wordStart}" data-size="4" onclick="startMemWordCellEdit(event,${wordStart})" title="Click to edit 32-bit word (little-endian)">${wordHex}</span>`;
-              if (p > 0) hexVals += '<span class="wordgap"></span>';
-              hexVals += labelAnnotationHtml(wordStart, cell);
-              if (wordStart === (UART_RX_VALID >>> 0)) descriptors.push('UART RX VALID RO 0xFFFF0000');
-              else if (wordStart === (UART_RX >>> 0)) descriptors.push('UART RX RO 0xFFFF0004');
-              else if (wordStart === (UART_TX_READY >>> 0)) descriptors.push('UART TX READY RO 0xFFFF0008');
-              else if (wordStart === (UART_TX >>> 0)) descriptors.push('UART TX WO 0xFFFF000C');
-              else if (wordStart === (OLED_COL >>> 0)) descriptors.push('OLED COL WO 0xFFFF0020');
-              else if (wordStart === (OLED_ROW >>> 0)) descriptors.push('OLED ROW WO 0xFFFF0024');
-              else if (wordStart === (OLED_DATA >>> 0)) descriptors.push('OLED DATA WO 0xFFFF0028');
-              else if (wordStart === (OLED_CTRL >>> 0)) descriptors.push('OLED CTRL WO 0xFFFF002C');
-              else if (wordStart === (ACCEL_DATA >>> 0)) descriptors.push('ACCEL DATA RO 0xFFFF0040');
-              else if (wordStart === (ACCEL_DREADY >>> 0)) descriptors.push('ACCEL DREADY RO 0xFFFF0044');
-              else if (wordStart === (PERIPH_LED >>> 0)) descriptors.push('LED WO 0xFFFF0060');
-              else if (wordStart === (PERIPH_DIP >>> 0)) descriptors.push('DIP RO 0xFFFF0064');
-              else if (wordStart === (PERIPH_PB >>> 0)) descriptors.push('PB RO 0xFFFF0068');
-              else if (wordStart === (PERIPH_SEVENSEG >>> 0)) descriptors.push('7SEG WO 0xFFFF0080');
-              else if (wordStart === (CYCLECOUNT >>> 0)) descriptors.push('CYCLECOUNT RO 0xFFFF00A0');
+            let wordVal = 0;
+            let isChanged = false;
+            for (let i = 0; i < 4; i++) {
+              const offset = (wordStart + i) >>> 0;
+              const bv = readMem(offset, 1, true) & 0xFF;
+              wordVal |= bv << (i * 8);
+              if (lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size)) isChanged = true;
             }
-            let desc = descriptors.length ? `[${descriptors.join(' · ')}]` : '[MMIO]';
-            html += `<div><span class="addr" data-col="addr">0x${base.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mmio-desc" style="font-size:10px;color:#cba6f7;">${desc}</span></div>`;
+            const cls = isChanged ? ' changed' : '';
+            const wordHex = (wordVal >>> 0).toString(16).padStart(8, '0');
+            const cell = editable
+              ? `<span class="val word-cell${cls}" data-addr="${wordStart}" data-size="4" onclick="startMemWordCellEdit(event,${wordStart})" title="Click to edit 32-bit word (little-endian)">${wordHex}</span>`
+              : `<span class="val word-cell${cls} readonly-code" data-addr="${wordStart}" data-size="4" ${roTitle}>${wordHex}</span>`;
+            const hexVals = mmioLabelAnnotationHtml(wordStart, cell);
+
+            const decText = (memDecSigned ? (wordVal | 0) : (wordVal >>> 0)).toString();
+            const contentVals = editable
+              ? `<span class="val-dec${cls}" onclick="startMemWordCellEdit(event,${wordStart})" title="Click to edit 32-bit word">${decText}</span>`
+              : `<span class="val-dec${cls} readonly-code" ${roTitle}>${decText}</span>`;
+            html += `<div><span class="addr" data-col="addr">0x${wordStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
             continue;
           }
 
-          // Byte view: render 4-byte groups so a label can be anchored above them
-          for (let c = 0; c < 8; c += 4) {
-            const wordStart = (base + c) >>> 0;
-            let groupBytes = '';
-            if (c > 0) hexVals += '<span class="wordgap"></span>';
-            for (let i = 0; i < 4; i++) {
-              const offset = (wordStart + i) >>> 0;
-              const val = readMem(offset, 1, true) & 0xFF;
-              const isChanged = lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size);
-              const cls = isChanged ? ' changed' : '';
+          // Byte view: one 4-byte group, so a label can be anchored above it
+          let groupBytes = '';
+          let groupAscii = '';
+          for (let i = 0; i < 4; i++) {
+            const offset = (wordStart + i) >>> 0;
+            const val = readMem(offset, 1, true) & 0xFF;
+            const isChanged = lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size);
+            const cls = isChanged ? ' changed' : '';
+            if (editable) {
               groupBytes += `<span class="val${cls}" contenteditable="true" spellcheck="false" data-addr="${offset}" data-size="1" data-old="${val.toString(16).padStart(2, '0')}" onfocus="startMemByteEdit(this)" ondblclick="startMemWordEdit(event,${offset})" onkeydown="handleMemByteEditKey(event,this)" onblur="commitMemByteEdit(this)" title="Single-click: edit byte | Double-click: edit word">${val.toString(16).padStart(2, '0')}</span>`;
+            } else {
+              groupBytes += `<span class="val${cls} readonly-code" data-addr="${offset}" data-size="1" style="cursor:default;opacity:0.88;" title="${escapeHtml(reg.name)} (${reg.access}) is read-only">${val.toString(16).padStart(2, '0')}</span>`;
+            }
 
+            const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
+            const asciiAttrs = editable
+              ? `onclick="focusMemByte(${offset})" title="Click matching hex byte to edit"`
+              : `title="${escapeHtml(reg.name)} (${reg.access}) is read-only"`;
+            groupAscii += `<span class="ascii${cls}" ${asciiAttrs}>${escapeHtml(ch)}</span>`;
+          }
+          const hexVals = mmioLabelAnnotationHtml(wordStart, '<span class="mem-row-bytes">' + groupBytes + '</span>');
+          const contentVals = '<span class="mem-ascii-group">' + groupAscii + '</span>';
+          html += `<div><span class="addr" data-col="addr">0x${wordStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
+        } else if (wordMode) {
+          // Word view: the one 32-bit word at this row (little-endian)
+          const offsets = [];
+          let wordVal = 0;
+          let isChanged = false;
+          let allReadonly = true;
+          for (let c = 0; c < 4; c++) {
+            const offset = isStackView ? ((wordStart - c) >>> 0) : ((wordStart + c) >>> 0);
+            offsets.push(offset);
+            const bv = getMemByte(offset);
+            wordVal |= bv << (c * 8);
+            if (lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size)) isChanged = true;
+            if (!isCodeSegmentAddress(offset)) allReadonly = false;
+          }
+          const cls = isChanged ? ' changed' : '';
+          const rowAddr = offsets[0];
+          const wordHex = (wordVal >>> 0).toString(16).padStart(8, '0');
+          const cell = allReadonly
+            ? `<span class="val word-cell${cls} readonly-code" data-addr="${rowAddr}" data-size="4" title="Text segment is read-only in Memory View (edit in Code Editor and Assemble)">${wordHex}</span>`
+            : `<span class="val word-cell${cls}" data-addr="${rowAddr}" data-size="4" onclick="startMemWordCellEdit(event,${rowAddr})" title="Click to edit 32-bit word (little-endian)">${wordHex}</span>`;
+          const hexVals = labelAnnotationHtml(rowAddr, cell);
+
+          const decText = (memDecSigned ? (wordVal | 0) : (wordVal >>> 0)).toString();
+          const contentVals = allReadonly
+            ? `<span class="val-dec${cls} readonly-code" title="Text segment is read-only in Memory View (edit in Code Editor and Assemble)">${decText}</span>`
+            : `<span class="val-dec${cls}" onclick="startMemWordCellEdit(event,${rowAddr})" title="Click to edit 32-bit word">${decText}</span>`;
+          html += `<div><span class="addr" data-col="addr">0x${wordStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
+        } else {
+          // Byte view: the one 4-byte group at this row, so a label can be anchored above it
+          let groupBytes = '';
+          let groupAscii = '';
+          for (let i = 0; i < 4; i++) {
+            const offset = isStackView ? ((wordStart - i) >>> 0) : ((wordStart + i) >>> 0);
+            const val = getMemByte(offset);
+            const isChanged = lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size);
+            const cls = isChanged ? ' changed' : '';
+            const isCodeSegment = isCodeSegmentAddress(offset);
+
+            if (isCodeSegment) {
+              groupBytes += `<span class="val${cls} readonly-code" data-addr="${offset}" data-size="1" style="cursor:default;opacity:0.88;" title="Text segment is read-only in Memory View (edit in Code Editor and Assemble)">${val.toString(16).padStart(2, '0')}</span>`;
+              const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
+              groupAscii += `<span class="ascii${cls}" title="Text segment byte (read-only)">${escapeHtml(ch)}</span>`;
+            } else {
+              groupBytes += `<span class="val${cls}" contenteditable="true" spellcheck="false" data-addr="${offset}" data-size="1" data-old="${val.toString(16).padStart(2, '0')}" onfocus="startMemByteEdit(this)" ondblclick="startMemWordEdit(event,${offset})" onkeydown="handleMemByteEditKey(event,this)" onblur="commitMemByteEdit(this)" title="Single-click: edit byte (00-ff) | Double-click: edit word (Enter commits, Esc cancels)">${val.toString(16).padStart(2, '0')}</span>`;
               const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
               const asciiOnclick = `onclick="focusMemByte(${offset})" title="Click matching hex byte to edit"`;
-              asciiVals += `<span class="ascii${cls}" ${asciiOnclick}>${escapeHtml(ch)}</span>`;
-            }
-            hexVals += labelAnnotationHtml(wordStart, '<span class="mem-row-bytes">' + groupBytes + '</span>');
-          }
-
-          for (let p = 0; p < 8; p += 4) {
-            const wordAddr = (base + p) >>> 0;
-            if (wordAddr === (UART_RX_VALID >>> 0)) descriptors.push('UART RX VALID RO 0xFFFF0000');
-            else if (wordAddr === (UART_RX >>> 0)) descriptors.push('UART RX RO 0xFFFF0004');
-            else if (wordAddr === (UART_TX_READY >>> 0)) descriptors.push('UART TX READY RO 0xFFFF0008');
-            else if (wordAddr === (UART_TX >>> 0)) descriptors.push('UART TX WO 0xFFFF000C');
-            else if (wordAddr === (OLED_COL >>> 0)) descriptors.push('OLED COL WO 0xFFFF0020');
-            else if (wordAddr === (OLED_ROW >>> 0)) descriptors.push('OLED ROW WO 0xFFFF0024');
-            else if (wordAddr === (OLED_DATA >>> 0)) descriptors.push('OLED DATA WO 0xFFFF0028');
-            else if (wordAddr === (OLED_CTRL >>> 0)) descriptors.push('OLED CTRL WO 0xFFFF002C');
-            else if (wordAddr === (ACCEL_DATA >>> 0)) descriptors.push('ACCEL DATA RO 0xFFFF0040');
-            else if (wordAddr === (ACCEL_DREADY >>> 0)) descriptors.push('ACCEL DREADY RO 0xFFFF0044');
-            else if (wordAddr === (PERIPH_LED >>> 0)) descriptors.push('LED WO 0xFFFF0060');
-            else if (wordAddr === (PERIPH_DIP >>> 0)) descriptors.push('DIP RO 0xFFFF0064');
-            else if (wordAddr === (PERIPH_PB >>> 0)) descriptors.push('PB RO 0xFFFF0068');
-            else if (wordAddr === (PERIPH_SEVENSEG >>> 0)) descriptors.push('7SEG WO 0xFFFF0080');
-            else if (wordAddr === (CYCLECOUNT >>> 0)) descriptors.push('CYCLECOUNT RO 0xFFFF00A0');
-          }
-          let desc = descriptors.length ? `[${descriptors.join(' · ')}]` : '[MMIO]';
-
-          html += `<div><span class="addr" data-col="addr">0x${base.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${asciiVals}</span><span class="mmio-desc" style="font-size:10px;color:#cba6f7;">${desc}</span></div>`;
-        } else {
-          let hexVals = '';
-          let asciiVals = '';
-
-          if (wordMode) {
-            // Word view: each 4-byte group rendered as one whole 32-bit word (little-endian)
-            for (let w = 0; w < 8; w += 4) {
-              const offsets = [];
-              let wordVal = 0;
-              let isChanged = false;
-              let allReadonly = true;
-              for (let c = 0; c < 4; c++) {
-                const offset = isStackView ? ((base - (w + c)) >>> 0) : ((base + (w + c)) >>> 0);
-                offsets.push(offset);
-                const bv = getMemByte(offset);
-                wordVal |= bv << (c * 8);
-                if (lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size)) isChanged = true;
-                if (!isCodeSegmentAddress(offset)) allReadonly = false;
-              }
-              const cls = isChanged ? ' changed' : '';
-              const wordStart = offsets[0];
-              const wordHex = (wordVal >>> 0).toString(16).padStart(8, '0');
-              let cell;
-              if (allReadonly) {
-                cell = `<span class="val word-cell${cls} readonly-code" data-addr="${wordStart}" data-size="4" title="Code segment is read-only in Memory View (edit in Code Editor and Assemble)">${wordHex}</span>`;
-              } else {
-                cell = `<span class="val word-cell${cls}" data-addr="${wordStart}" data-size="4" onclick="startMemWordCellEdit(event,${wordStart})" title="Click to edit 32-bit word (little-endian)">${wordHex}</span>`;
-              }
-              if (w > 0) hexVals += '<span class="wordgap"></span>';
-              hexVals += labelAnnotationHtml(wordStart, cell);
-            }
-            for (let c = 0; c < 8; c++) {
-              const offset = isStackView ? ((base - c) >>> 0) : ((base + c) >>> 0);
-              const val = getMemByte(offset);
-              const isChanged = lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size);
-              const cls = isChanged ? ' changed' : '';
-              const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
-              asciiVals += `<span class="ascii${cls}" title="Byte 0x${offset.toString(16).padStart(8, '0')}">${escapeHtml(ch)}</span>`;
-            }
-          } else {
-            // Byte view: render 4-byte groups so a label can be anchored above them
-            for (let c = 0; c < 8; c += 4) {
-              const wordStart = isStackView ? ((base - c) >>> 0) : ((base + c) >>> 0);
-              let groupBytes = '';
-              if (c > 0) hexVals += '<span class="wordgap"></span>';
-              for (let i = 0; i < 4; i++) {
-                const offset = isStackView ? ((wordStart - i) >>> 0) : ((wordStart + i) >>> 0);
-                const val = getMemByte(offset);
-                const isChanged = lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size);
-                const cls = isChanged ? ' changed' : '';
-                const isCodeSegment = isCodeSegmentAddress(offset);
-
-                if (isCodeSegment) {
-                  groupBytes += `<span class="val${cls} readonly-code" data-addr="${offset}" data-size="1" style="cursor:default;opacity:0.88;" title="Code segment is read-only in Memory View (edit in Code Editor and Assemble)">${val.toString(16).padStart(2, '0')}</span>`;
-                  const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
-                  asciiVals += `<span class="ascii${cls}" title="Code segment byte (read-only)">${escapeHtml(ch)}</span>`;
-                } else {
-                  groupBytes += `<span class="val${cls}" contenteditable="true" spellcheck="false" data-addr="${offset}" data-size="1" data-old="${val.toString(16).padStart(2, '0')}" onfocus="startMemByteEdit(this)" ondblclick="startMemWordEdit(event,${offset})" onkeydown="handleMemByteEditKey(event,this)" onblur="commitMemByteEdit(this)" title="Single-click: edit byte (00-ff) | Double-click: edit word (Enter commits, Esc cancels)">${val.toString(16).padStart(2, '0')}</span>`;
-                  const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
-                  const asciiOnclick = `onclick="focusMemByte(${offset})" title="Click matching hex byte to edit"`;
-                  asciiVals += `<span class="ascii${cls}" ${asciiOnclick}>${escapeHtml(ch)}</span>`;
-                }
-              }
-              hexVals += labelAnnotationHtml(wordStart, '<span class="mem-row-bytes">' + groupBytes + '</span>');
+              groupAscii += `<span class="ascii${cls}" ${asciiOnclick}>${escapeHtml(ch)}</span>`;
             }
           }
-
-          html += `<div><span class="addr" data-col="addr">0x${base.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${asciiVals}</span></div>`;
+          const hexVals = labelAnnotationHtml(wordStart, '<span class="mem-row-bytes">' + groupBytes + '</span>');
+          const contentVals = '<span class="mem-ascii-group">' + groupAscii + '</span>';
+          html += `<div><span class="addr" data-col="addr">0x${wordStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
         }
       }
       memView.innerHTML = html;
@@ -9809,9 +9946,18 @@ function updateRegisters() {
       setStatus(memViewMode === 'word' ? 'Memory view: 32-bit word display' : 'Memory view: separate byte display', 'info');
     }
 
+    function setMemDecSigned(signed) {
+      memDecSigned = !!signed;
+      updateMemoryView();
+    }
+
     function editMemByte(addr) {
       if (isCodeSegmentAddress(addr)) {
-        setStatus('Code segment is read-only in Memory View (edit in Code Editor and Assemble)', 'warning');
+        setStatus('Text segment is read-only in Memory View (edit in Code Editor and Assemble)', 'warning');
+        return;
+      }
+      if (isMMIOReadOnlyAddr(addr)) {
+        setStatus(mmioRegisterAt(addr).name + ' is a read-only MMIO register', 'warning');
         return;
       }
       focusMemByte(addr);
@@ -9821,7 +9967,12 @@ function updateRegisters() {
       const addr = parseInt(el.dataset.addr, 10);
       if (isCodeSegmentAddress(addr)) {
         el.blur();
-        setStatus('Code segment is read-only in Memory View (edit in Code Editor and Assemble)', 'warning');
+        setStatus('Text segment is read-only in Memory View (edit in Code Editor and Assemble)', 'warning');
+        return;
+      }
+      if (isMMIOReadOnlyAddr(addr)) {
+        el.blur();
+        setStatus(mmioRegisterAt(addr).name + ' is a read-only MMIO register', 'warning');
         return;
       }
       el.dataset.old = (el.textContent || '').trim().padStart(2, '0').slice(-2);
@@ -9856,7 +10007,13 @@ function updateRegisters() {
       if (isCodeSegmentAddress(addr)) {
         el.textContent = el.dataset.old || '00';
         el.classList.remove('editing');
-        setStatus('Code segment is read-only in Memory View', 'warning');
+        setStatus('Text segment is read-only in Memory View', 'warning');
+        return;
+      }
+      if (isMMIOReadOnlyAddr(addr)) {
+        el.textContent = el.dataset.old || '00';
+        el.classList.remove('editing');
+        setStatus(mmioRegisterAt(addr).name + ' is a read-only MMIO register', 'warning');
         return;
       }
       const text = (el.textContent || '').trim();
@@ -9894,7 +10051,11 @@ function updateRegisters() {
       event.preventDefault();
       event.stopPropagation();
       if (isCodeSegmentAddress(wordStartAddr)) {
-        setStatus('Code segment is read-only in Memory View (edit in Code Editor and Assemble)', 'warning');
+        setStatus('Text segment is read-only in Memory View (edit in Code Editor and Assemble)', 'warning');
+        return;
+      }
+      if (isMMIOReadOnlyAddr(wordStartAddr)) {
+        setStatus(mmioRegisterAt(wordStartAddr).name + ' is a read-only MMIO register', 'warning');
         return;
       }
       // Find the four bytes in this word (aligned to 4-byte boundary)
@@ -9914,7 +10075,11 @@ function updateRegisters() {
       event.preventDefault();
       event.stopPropagation();
       if (isCodeSegmentAddress(wordStartAddr)) {
-        setStatus('Code segment is read-only in Memory View (edit in Code Editor and Assemble)', 'warning');
+        setStatus('Text segment is read-only in Memory View (edit in Code Editor and Assemble)', 'warning');
+        return;
+      }
+      if (isMMIOReadOnlyAddr(wordStartAddr)) {
+        setStatus(mmioRegisterAt(wordStartAddr).name + ' is a read-only MMIO register', 'warning');
         return;
       }
       openMemWordOverlay(wordStartAddr & ~0x3, null);
@@ -9994,7 +10159,12 @@ function updateRegisters() {
       const addr = overlay._wordAddr;
       if (isCodeSegmentAddress(addr)) {
         cancelMemWordEdit(overlay);
-        setStatus('Code segment is read-only in Memory View', 'warning');
+        setStatus('Text segment is read-only in Memory View', 'warning');
+        return;
+      }
+      if (isMMIOReadOnlyAddr(addr)) {
+        cancelMemWordEdit(overlay);
+        setStatus(mmioRegisterAt(addr).name + ' is a read-only MMIO register', 'warning');
         return;
       }
 
@@ -10150,7 +10320,7 @@ function updateRegisters() {
       const type = el.dataset.type || 'hex';
       const val = regs[idx];
       const uval = val >>> 0;
-      const initVal = (type === 'hex') ? '0x' + uval.toString(16).padStart(8, '0') : val.toString();
+      const initVal = (type === 'hex') ? uval.toString(16).padStart(8, '0') : val.toString();
 
       let overlay = document.getElementById('regEditOverlay');
       if (!overlay) {
@@ -10465,37 +10635,62 @@ function updateRegisters() {
     // still needs the network for Godbolt regardless, same as every other
     // C example, baked or not.
 
-    // The Example menu, in one place. It used to be written out twice - once
-    // in the markup and once here - so a label edited in one of them reverted
-    // the moment the language was switched and switched back.
-    const EXAMPLE_MENU = {
-      asm: [
-        ['dip_led', 'DIP to LED (start here)', 'DIP to LED (DIP_to_LED.asm) — the one example baked into the page, works with no server'],
-        ['basic', 'Basic', 'A short, complete program: sum = a + b + c'],
-        ['rars_syscalls', 'RARS Syscalls', 'RARS ecall syscalls demo (rars_syscalls.asm)'],
-        ['fib', 'Fibonacci', 'Fibonacci sequence'],
-        ['fact', 'Factorial', 'Factorial computation'],
-        ['loop', 'Loop & Array', 'Loop and array traversal'],
-        ['io', 'I/O & M-Ext', 'I/O and the M extension'],
-        ['hello_world', 'Hello World', 'Hello World (HelloWorld.asm)'],
-        ['hello_jal', 'Hello Subroutine', 'Hello World with a subroutine (HelloWorld_jal_jalr.asm)'],
-        ['circle_accel', 'Circle & Accel', 'Circle and delay accel (Circle_delay_accel.asm)'],
-        ['image_display_accel', 'Image Display & Accel', 'Image display autoadvance and accel (ImageDisplay_autoadvance_accel.asm)'],
-      ],
-      c: [
-        ['dip_led_c', 'DIP to LED (start here)', 'DIP switches mirrored to LEDs (C translation of DIP_to_LED.asm) — the one C example baked into the page, works with no server'],
-        ['basic_c', 'Basic Sum', 'A short, complete program: sum = a + b + c'],
-        ['factorial_c', 'Factorial', 'Recursive factorial'],
-        ['fibonacci_c', 'Fibonacci', 'Fibonacci sequence'],
-        ['loop_c', 'Array Search', 'Array search and accumulation'],
-        ['matrix_c', 'Matrix Multiply', '2x2 matrix multiplication'],
-        ['peripherals_c', 'MMIO Peripherals', 'Nexys 4 MMIO peripherals and UART'],
-        ['hello_world_c', 'Hello World', 'UART command echo with a greeting (C translation of HelloWorld.asm)'],
-        ['hello_jal_c', 'Hello Subroutine', 'UART command echo, greeting printed by a function taking a parameter (C translation of HelloWorld_jal_jalr.asm)'],
-        ['circle_accel_c', 'Circle & Accel', 'Circle and delay accel (Circle_delay_accel.c)'],
-        ['image_display_c', 'Image Display & Accel', 'Image display autoadvance and accel (ImageDisplay_autoadvance_accel.c)'],
-      ],
+    // The Example menu is read from examples/asm/index.md and
+    // examples/c/index.md, not written out here - adding a program is a row
+    // in one of those files plus the file itself, no HTML edit. Each row is
+    // `| key | label | file | description |`; loadExampleIndex() parses it
+    // into EXAMPLE_MENU (for the dropdown) and EXAMPLE_FILENAMES (for the
+    // fetch path and the Save filename). Until that fetch resolves - and
+    // permanently, over file://, where it never will - both fall back to
+    // just the one baked example in each language, so the dropdown is never
+    // genuinely empty.
+    let EXAMPLE_MENU = {
+      asm: [['dip_led', 'DIP to LED (start here)', 'DIP to LED — the one example baked into the page, works with no server']],
+      c: [['dip_led_c', 'DIP to LED (start here)', 'DIP switches mirrored to LEDs — the one C example baked into the page, works with no server']],
     };
+    let EXAMPLE_FILENAMES = { dip_led: 'DIP_to_LED.asm', dip_led_c: 'DIP_to_LED.c' };
+
+    // Parses the simple markdown table format above into [key, label, file,
+    // description] rows. Only structure matters, not header wording: the
+    // first all-dashes row (markdown's column-alignment row) marks the start
+    // of real data, so a row before it is a header regardless of its text.
+    function parseExampleIndexMarkdown(text) {
+      const rows = [];
+      let dataStarted = false;
+      for (let line of String(text || '').split('\n')) {
+        line = line.trim();
+        if (!line.startsWith('|')) continue;
+        line = line.slice(1);
+        if (line.endsWith('|')) line = line.slice(0, -1);
+        const cells = line.split('|').map(c => c.trim());
+        if (!dataStarted) {
+          if (cells.length && cells.every(c => /^:?-+:?$/.test(c))) dataStarted = true;
+          continue;
+        }
+        if (cells.length < 4 || !cells[0]) continue;
+        rows.push([cells[0], cells[1], cells[2], cells.slice(3).join(' | ')]);
+      }
+      return rows;
+    }
+
+    async function loadExampleIndex() {
+      for (const lang of ['asm', 'c']) {
+        try {
+          const resp = await fetch(`examples/${lang}/index.md`);
+          if (!resp.ok) continue;
+          const rows = parseExampleIndexMarkdown(await resp.text());
+          if (!rows.length) continue;
+          EXAMPLE_MENU[lang] = rows.map(([key, label, , desc]) => [key, label, desc]);
+          for (const [key, , file] of rows) EXAMPLE_FILENAMES[key] = file;
+        } catch (err) { /* index.md unreachable (e.g. file://) - stay on the fallback */ }
+      }
+      updateExampleSelectorOptions();
+    }
+    // Captured so loadExample() can await it - a non-baked key looked up in
+    // EXAMPLE_FILENAMES before this resolves would build its fetch URL from
+    // the two-entry fallback and 404 on a real example, e.g. `fact` fetched
+    // as `fact.asm` instead of `factorial.asm`.
+    const exampleIndexReady = loadExampleIndex();
 
     function updateExampleSelectorOptions() {
       const select = document.getElementById('exampleSelect');
@@ -10735,6 +10930,7 @@ int main()
         // pair and nothing else is.
         source = name === 'dip_led' ? BAKED_ASM_EXAMPLE : BAKED_C_EXAMPLE;
       } else {
+        await exampleIndexReady; // don't build the URL off the two-entry fallback
         const lang = editorLanguageMode === 'c' ? 'c' : 'asm';
         const fileName = EXAMPLE_FILENAMES[name] || (name + '.' + lang);
         const url = 'examples/' + lang + '/' + fileName;
@@ -12359,54 +12555,11 @@ int main()
       event.target.value = '';
     }
 
-    // Default example
-    editor.value = `# NUS-CG3207 RISC-V Simulator
-# Write your code here, click "Assemble", then "Run" (F5).
-# Use Tab to indent — it aligns to the natural tab stops.
-
-.text
-main:
-\taddi\tx1, x0, 42\t# x1 = 42
-\taddi\tx2, x0, 58\t# x2 = 58
-\tadd\tx3, x1, x2\t# x3 = 100
-\tsw\tx3, 0(x0)\t# Store to memory
-
-\t# Multiplication
-\taddi\tx4, x0, 7
-\taddi\tx5, x0, 8
-\tmul\tx6, x4, x5\t# x6 = 56
-
-\t# Division
-\tdiv\tx7, x6, x4\t# x7 = 8
-
-\t# Loop
-\taddi\tx8, x0, 5\t# counter = 5
-loop:
-\taddi\tx8, x8, -1\t# counter--
-\tbne\tx8, x0, loop\t# if counter != 0, loop
-
-\t# Branching demo
-\taddi\tx9, x0, 100
-\taddi\tx10, x0, 100
-\tbeq\tx9, x10, equal\t# branch if equal
-\taddi\tx11, x0, 0\t# skipped
-\tj\tdone
-
-equal:
-\taddi\tx11, x0, 1\t# x11 = 1 (equal flag)
-done:
-\tsw\tx11, 4(x0)\t# Store result
-\tj\tdone\t# Infinite loop to prevent crash
-`;
-
-    updateEditor();
-    updateRegisters();
-    updateMemoryView();
-    updateStats();
-    setStatus('Ready. Assemble, Run (F5), or Step (F8). Click a line number to set a breakpoint.');
-    log('NUS-CG3207 RISC-V Simulator loaded', 'success');
-    log('Supports: RV32I, M, F, D, A extensions', 'info');
-    log('F5 Run · Ctrl+Enter Assemble · F8 Step · Shift+F8 Back · F9 Breakpoint · Ctrl+F Find · Ctrl+/ Comment', 'info');
+    // This runs before CodeMirror exists (editor.value's setter no-ops
+    // until cmEditor is mounted), so it is only ever the place that wires
+    // up the splitters and panel docking - everything else it used to do
+    // here (a hardcoded demo program, status/log messages) was overwritten
+    // by bootSimulator()'s own loadExample() a moment later regardless.
     initSplitter();
     initPanelDock();
 
@@ -12810,6 +12963,10 @@ done:
       return false;
     }
 
+    // Accelerometer axis keys currently held (X/Y/Z/T) - see the keydown
+    // handler below.
+    let heldAxisKeys = new Set();
+
     // --- Master Keyboard shortcuts for the Editor & Simulator ---
     document.addEventListener('keydown', (e) => {
       // Find/Replace shortcuts
@@ -12851,6 +13008,35 @@ done:
       if (t && t !== editor && t.id !== 'asmEditor' &&
         (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) {
         return;
+      }
+
+      // Push-button keys (L/C/R = ←/↓/→ — ↓ rather than ↑ for the centre
+      // button since ←/↓/→ share a row on most keyboards), held like the
+      // real thing. Excluded while the editor has focus, where these keys
+      // move the cursor instead. (Checked against cmEditor.contentDOM, not
+      // an `asmEditor` id - no element in this page actually carries that id.)
+      const inEditor = !!(t && cmEditor && cmEditor.contentDOM && cmEditor.contentDOM.contains(t));
+      if (!inEditor && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        // Accelerometer axis keys: hold X/Y/Z/T, then ←/→ to decrease/
+        // increase that axis (T = temperature) — the same held-key idiom
+        // as the push buttons, so a chord tweaks a value without reaching
+        // for its slider. Checked first so the chord doesn't also toggle
+        // a push button on the same keystroke.
+        const lower = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+        if (['x', 'y', 'z', 't'].includes(lower)) heldAxisKeys.add(lower);
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && heldAxisKeys.size) {
+          e.preventDefault();
+          const delta = e.key === 'ArrowLeft' ? -5 : 5;
+          heldAxisKeys.forEach(axis => bumpAccelAxis(axis, delta));
+          return;
+        }
+
+        const pbKey = { ArrowLeft: 2, ArrowDown: 1, ArrowRight: 0 }[e.key];
+        if (pbKey !== undefined) {
+          e.preventDefault();
+          pbSetState(pbKey, true);
+          return;
+        }
       }
 
       if (e.target && e.target.id === 'asmEditor') {
@@ -12907,6 +13093,27 @@ done:
       else if (e.key === 'F9') { e.preventDefault(); toggleBreakpoint(editorCursorLine()); }
       else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); assembleOnly(); }
       else if (e.key === 's' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveFile(); }
+    });
+
+    // Releases whichever push-button key was held, and un-arms any released
+    // accelerometer axis key. Not gated on focus like the keydown handler -
+    // a key released after focus moved away (e.g. the user Tabbed elsewhere
+    // mid-press) must still let go of the button / axis.
+    document.addEventListener('keyup', (e) => {
+      const pbKey = { ArrowLeft: 2, ArrowDown: 1, ArrowRight: 0 }[e.key];
+      if (pbKey !== undefined) pbSetState(pbKey, false);
+      const lower = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      if (['x', 'y', 'z', 't'].includes(lower)) heldAxisKeys.delete(lower);
+    });
+
+    // Safety net: if the window loses focus while a key is held down (alt-tab,
+    // clicking into another app), no keyup ever arrives. Release all three
+    // rather than leave a button stuck pressed.
+    window.addEventListener('blur', () => {
+      pbSetState(0, false);
+      pbSetState(1, false);
+      pbSetState(2, false);
+      heldAxisKeys.clear();
     });
 
     document.addEventListener('click', (e) => {
@@ -15283,6 +15490,12 @@ endmodule
         return;
       }
       updateExampleSelectorOptions();
+      // Peripherals is a lazily-shown tab (refreshPanel() only builds it on
+      // first visit) but updatePeripherals() is called from many other
+      // places (memory edits, stepping) long before a user might open that
+      // tab. Build its DOM now so those calls have somewhere to write to,
+      // instead of silently no-op'ing against elements that don't exist yet.
+      initPeripherals();
       initCodeMirrorEditor();
       // Auto-assemble the initial example so Run / Step are active on first load
       if (editorLanguageMode === 'asm' && editor.value.trim()) {
@@ -15357,6 +15570,10 @@ endmodule
     window.updateRunButtonState = updateRunButtonState;
     window.updateToolbarButtonStates = updateToolbarButtonStates;
     window.setMemViewMode = setMemViewMode;
+    window.setMemDecSigned = setMemDecSigned;
+    window.bumpAccelAxis = bumpAccelAxis;
+    window.getHeldAxisKeys = () => heldAxisKeys;
+    window.setRegDecSigned = setRegDecSigned;
     window.getMemViewMode = () => memViewMode;
     window.setDisasmViewMode = setDisasmViewMode;
     window.getDisasmViewMode = () => disasmViewMode;

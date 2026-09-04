@@ -55,6 +55,7 @@ const dom = new JSDOM(html, {
       createPattern: () => {},
       drawImage: () => {}
     });
+    installExamplesFetch(window); // before the page's own fetch() for the Example menu
   }
 });
 
@@ -63,7 +64,6 @@ const win = dom.window;
 // jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
 
 installGodboltCache(win);
-installExamplesFetch(win);
 
 setTimeout(async () => {
   try {
@@ -390,10 +390,11 @@ setTimeout(async () => {
     if (win.document.getElementById('memAddr').value !== '0x10010200') {
       throw new Error('Stack memory address not set to 0x10010200');
     }
-    // Verify stack rows are in decreasing order starting from top (0x10010200, 0x100101F8, 0x100101F0...)
+    // Verify stack rows are in decreasing order starting from top, one word
+    // (4 bytes) per row: 0x10010200, 0x100101FC, 0x100101F8...
     const stackAddrs = Array.from(win.document.querySelectorAll('#memView .addr')).map(el => parseInt(el.textContent, 16));
     console.log('Stack Memory View First 4 Row Addresses:', stackAddrs.slice(0, 4).map(a => '0x' + a.toString(16)));
-    if (stackAddrs.length < 3 || stackAddrs[0] !== 0x10010200 || stackAddrs[1] !== 0x100101F8 || stackAddrs[2] !== 0x100101F0) {
+    if (stackAddrs.length < 3 || stackAddrs[0] !== 0x10010200 || stackAddrs[1] !== 0x100101FC || stackAddrs[2] !== 0x100101F8) {
       throw new Error(`Expected decreasing stack addresses starting at 0x10010200, got: ${stackAddrs.slice(0, 4).map(a => '0x' + a.toString(16)).join(', ')}`);
     }
     console.log('✅ Stack memory addresses in decreasing order verified!');

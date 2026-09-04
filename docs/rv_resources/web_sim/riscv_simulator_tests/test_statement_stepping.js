@@ -52,6 +52,7 @@ const dom = new JSDOM(htmlContent, {
         clearRect: () => {}
       });
     }
+    installExamplesFetch(window); // before the page's own fetch() for the Example menu
   }
 });
 
@@ -60,7 +61,6 @@ const win = dom.window;
 // jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
 
 installGodboltCache(win);
-installExamplesFetch(win);
 const doc = win.document;
 
 setTimeout(async () => {

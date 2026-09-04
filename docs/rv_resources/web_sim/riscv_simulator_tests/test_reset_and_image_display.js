@@ -85,12 +85,12 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
         createPattern: () => {},
         drawImage: () => {}
       });
+      installExamplesFetch(window); // before the page's own fetch() for the Example menu
     }
   });
   const win = dom.window;
   // jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
   installGodboltCache(win);
-  installExamplesFetch(win);
 
   await new Promise(r => setTimeout(r, 200));
 

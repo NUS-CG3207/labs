@@ -45,6 +45,7 @@ const dom = new JSDOM(html, {
         clearRect: () => {}
       });
     }
+    installExamplesFetch(window); // before the page's own fetch() for the Example menu
   }
 });
 
@@ -53,7 +54,6 @@ const win = dom.window;
 // jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
 
 installGodboltCache(win);
-installExamplesFetch(win);
 
 setTimeout(async () => {
   try {
@@ -195,12 +195,15 @@ setTimeout(async () => {
 
     // 9. Memory View protection model, in BOTH display modes.
     //
-    // The rule is the same either way - code is read-only, data/stack/MMIO are
-    // editable - but the mechanism differs, and this check used to know only
-    // the byte-mode one. Since v23.5 the view opens in WORD mode, where a cell
-    // is edited through the word overlay (an onclick calling
-    // startMemWordCellEdit) rather than by being contenteditable, so asserting
-    // contenteditable unconditionally failed against the default mode.
+    // Code is read-only; Data and Stack are fully editable. (MMIO is a mix -
+    // read-only registers like DIP/PB are also non-editable here, covered by
+    // test_mmio_editability_and_content_column.js instead of this generic
+    // Code/Data check.)
+    // The mechanism differs between the two display modes this checks: since
+    // v23.5 the view opens in WORD mode, where a cell is edited through the
+    // word overlay (an onclick calling startMemWordCellEdit) rather than by
+    // being contenteditable, so asserting contenteditable unconditionally
+    // failed against the default mode.
     console.log('\n[9] Testing Memory View read-only code / editable data (word + byte modes)...');
     const doc = win.document;
     const cellAt = addr => doc.getElementById('memView').querySelector(`[data-addr="${addr}"]`);

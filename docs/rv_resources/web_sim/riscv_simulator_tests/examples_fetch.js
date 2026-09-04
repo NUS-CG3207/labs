@@ -1,14 +1,29 @@
-// Serves examples/asm/*.asm and examples/c/*.c from local disk, so the
-// page's own fetch() calls in loadExample() work under jsdom - which has no
+// Serves examples/asm/*.asm and examples/c/*.c (and the two index.md files
+// that list them - see EXAMPLE_MENU in riscv_simulator.html) from local
+// disk, so the page's own fetch() calls work under jsdom, which has no
 // fetch of its own (confirmed: window.fetch is undefined there by default).
 //
 // This is the runtime counterpart of the offline godbolt_cache: without it,
-// every example but `basic` fails to load under test, the same way it fails
-// when the page is opened via file:// instead of http://.
+// every example but `dip_led` / `dip_led_c` fails to load under test, the
+// same way it fails when the page is opened via file:// instead of http://.
 //
-// Install before any loadExample() call:
-//   const { installExamplesFetch } = require('./examples_fetch');
-//   installExamplesFetch(win);
+// MUST be installed inside beforeParse, not after `new JSDOM()` returns:
+//
+//   const dom = new JSDOM(html, {
+//     runScripts: 'dangerously',
+//     beforeParse(window) {
+//       ...
+//       installExamplesFetch(window);   // last statement in beforeParse
+//     }
+//   });
+//
+// The page's own top-level script calls fetch('examples/*/index.md')
+// immediately as it loads - which, with runScripts: 'dangerously', happens
+// synchronously while `new JSDOM()` is still running, before any code after
+// it (including `const win = dom.window; installExamplesFetch(win);`) gets
+// to run. Installed too late, that first fetch throws, EXAMPLE_MENU and
+// EXAMPLE_FILENAMES stay on their two-entry fallback, and every
+// win.loadExample() call for anything but the two baked examples 404s.
 //
 // Safe to install alongside installGodboltCache()/a Godbolt fetch: only
 // `examples/...` requests are intercepted here, anything else falls through

@@ -24,8 +24,10 @@ catch (e) { JSDOM = require(path.resolve(__dirname, 'node_modules/jsdom')).JSDOM
 
 const ROOT = path.resolve(__dirname, '..');
 const RV = path.join(ROOT, 'RV');
-const ENGINE = process.env.HDL_ENGINE_DIR ||
-  '/tmp/claude-1000/-home-rajesh-GitHub-Visualisations/dd03718e-6ed5-4869-8832-495d819635e9/scratchpad/engine';
+// vendor/verisim/ is the repo's own vendored copy of the same engine the page
+// falls back to (see vendor/README.md) - a stray absolute scratchpad path
+// here previously meant this only worked inside one Claude Code session.
+const ENGINE = process.env.HDL_ENGINE_DIR || path.join(ROOT, 'vendor', 'verisim');
 
 const html = fs.readFileSync(path.join(ROOT, 'riscv_simulator.html'), 'utf8');
 const CM6 = fs.readFileSync(path.join(__dirname, 'cm6_bundle.min.js'), 'utf8');
@@ -61,11 +63,11 @@ const dom = new JSDOM(html, {
         getImageData: () => ({ data: new Uint8Array(4) }), measureText: () => ({ width: 0 })
       });
     }
+    installExamplesFetch(window); // before the page's own fetch() for the Example menu
   }
 });
 
 const win = dom.window, doc = win.document;
-installExamplesFetch(win);
 
 // --------------------------------------------------------------------
 // A minimal Icarus driver, mirroring what the page does: preprocess and

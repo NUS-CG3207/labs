@@ -41,6 +41,7 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
         putImageData: () => {},
         clearRect: () => {}
       });
+      installExamplesFetch(window); // before the page's own fetch() for the Example menu
     }
   });
 
@@ -49,7 +50,6 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   // jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
 
   installGodboltCache(win);
-  installExamplesFetch(win);
   await new Promise(r => setTimeout(r, 400));
 
   // --- 1. ASM Mode: circle_accel ---
