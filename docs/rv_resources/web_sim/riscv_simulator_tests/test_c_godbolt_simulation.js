@@ -3,6 +3,8 @@
  */
 
 const fs = require('fs');
+const { installGodboltCache } = require('./godbolt_cache');
+const { installExamplesFetch } = require('./examples_fetch');
 const path = require('path');
 
 let JSDOM;
@@ -57,6 +59,11 @@ const dom = new JSDOM(html, {
 });
 
 const win = dom.window;
+
+// jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
+
+installGodboltCache(win);
+installExamplesFetch(win);
 
 setTimeout(async () => {
   try {
@@ -124,7 +131,7 @@ setTimeout(async () => {
     ];
 
     for (const testCase of cExamplesToTest) {
-      win.loadExample(testCase.name);
+      await win.loadExample(testCase.name);
       const mc = await win.assembleOnly();
       if (!mc || mc.length === 0) {
         throw new Error(`Failed to compile C example: ${testCase.name}`);
@@ -146,7 +153,7 @@ setTimeout(async () => {
     // 4. Test Algorithmic Execution of C Programs
     console.log('\n[4] Testing Algorithmic Simulation Execution of C Programs...');
     for (const testCase of cExamplesToTest) {
-      win.loadExample(testCase.name);
+      await win.loadExample(testCase.name);
       await win.assembleOnly();
 
       let steps = 0;
@@ -174,7 +181,7 @@ setTimeout(async () => {
 
     // 5. Test C Source Stepping & Highlight Tracking
     console.log('\n[5] Testing Line-by-Line C Stepping & Active Line Highlight...');
-    win.loadExample('basic_c');
+    await win.loadExample('basic_c');
     await win.assembleOnly();
 
     const initialCLine = win.getCurrentExecLine();
@@ -199,7 +206,7 @@ setTimeout(async () => {
 
     // 7. Test C Breakpoints & Snapping
     console.log('\n[7] Testing C Breakpoint Setting, Snapping & Hits...');
-    win.loadExample('factorial_c');
+    await win.loadExample('factorial_c');
     await win.assembleOnly();
 
     // Snap test: Line 1 is comment -> snaps to line 2 (factorial function header) or next valid line
@@ -235,7 +242,7 @@ setTimeout(async () => {
 
     // 8. Test Nexys 4 MMIO Peripherals from C
     console.log('\n[8] Testing MMIO Peripheral Manipulation in C Mode...');
-    win.loadExample('peripherals_c');
+    await win.loadExample('peripherals_c');
     await win.assembleOnly();
 
     // Run to completion
@@ -273,7 +280,7 @@ setTimeout(async () => {
     if (win.getLanguageMode() !== 'asm') {
       throw new Error('Failed to switch back to ASM mode');
     }
-    win.loadExample('basic');
+    await win.loadExample('basic');
     const asmMc = win.assembleOnly();
     if (!asmMc || asmMc.length === 0) {
       throw new Error('Failed to assemble basic assembly example after mode switch');
@@ -334,7 +341,7 @@ setTimeout(async () => {
 
     // Switch to C mode and verify compiled CRT0 uses stackBase = 0x20400
     win.setLanguageMode('c');
-    win.loadExample('basic_c');
+    await win.loadExample('basic_c');
     await win.assembleOnly();
 
     // Step past CRT0 li sp, 0x20400 (lui + addi) -> check sp (x2)
@@ -351,7 +358,7 @@ setTimeout(async () => {
     win.document.getElementById('ms-stack').value = '0x80000';
     win.applyAndCloseSettings();
 
-    win.loadExample('basic_c');
+    await win.loadExample('basic_c');
     await win.assembleOnly();
     win.stepOnce();
     const customSp = win.getRegs()[2];

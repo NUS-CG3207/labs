@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { installExamplesFetch } = require('./examples_fetch');
 let JSDOM;
 try {
   JSDOM = require('jsdom').JSDOM;
@@ -47,12 +48,13 @@ const dom = new JSDOM(html, {
 });
 
 const win = dom.window;
+installExamplesFetch(win);
 
-setTimeout(() => {
+setTimeout(async () => {
   try {
     // Test Factorial program execution
     console.log('Testing Factorial calculation (5! = 120)...');
-    win.loadExample('fact');
+    await win.loadExample('fact');
     console.log('Editor value after loadExample length:', win.editor.value.length);
     const mc = win.assembleOnly();
     console.log('assembleOnly returned mc length:', mc ? mc.length : 'null');
@@ -72,7 +74,7 @@ setTimeout(() => {
 
     // Test Fibonacci program execution
     console.log('Testing Fibonacci calculation...');
-    win.loadExample('fib');
+    await win.loadExample('fib');
     win.assembleOnly();
     steps = 0;
     for (let i = 0; i < 60; i++) {

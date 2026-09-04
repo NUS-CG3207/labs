@@ -2,6 +2,8 @@
 // Verification of Disassembly Labels and FPGA Memory Warning notices
 
 const fs = require('fs');
+const { installGodboltCache } = require('./godbolt_cache');
+const { installExamplesFetch } = require('./examples_fetch');
 const path = require('path');
 let JSDOM;
 try {
@@ -54,13 +56,18 @@ const dom = new JSDOM(htmlContent, {
 });
 
 const win = dom.window;
+
+// jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
+
+installGodboltCache(win);
+installExamplesFetch(win);
 const doc = win.document;
 
-setTimeout(() => {
+setTimeout(async () => {
   try {
     // 1. Verify ASM Disassembly Labels
     win.setLanguageMode('asm');
-    win.loadExample('fib');
+    await win.loadExample('fib');
     win.assembleOnly();
     win.switchTab('disassembly');
 
@@ -87,8 +94,8 @@ setTimeout(() => {
 
     // 3. Verify C Mode Disassembly Labels (e.g. Factorial)
     win.setLanguageMode('c');
-    win.loadExample('c_fact');
-    win.assembleOnly();
+    await win.loadExample('factorial_c');
+    await win.assembleOnly();
     win.switchTab('disassembly');
 
     const cLabelRows = disasm.querySelectorAll('.disasm-label-row');

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { installExamplesFetch } = require('./examples_fetch');
 let JSDOM;
 try {
   JSDOM = require('jsdom').JSDOM;
@@ -47,13 +48,14 @@ const dom = new JSDOM(html, {
 });
 
 const win = dom.window;
+installExamplesFetch(win);
 
-setTimeout(() => {
+setTimeout(async () => {
   try {
     console.log('Testing breakpoint snapping and line number highlighting...');
     
     // Load 'basic' example
-    win.loadExample('basic');
+    await win.loadExample('basic');
     console.log('Editor code lines:\n' + win.editor.value);
     
     // Line 1 is: "# Basic RISC-V — compute sum = a + b + c"

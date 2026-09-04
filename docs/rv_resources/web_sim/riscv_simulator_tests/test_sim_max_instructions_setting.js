@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { installExamplesFetch } = require('./examples_fetch');
 let JSDOM;
 try {
   JSDOM = require('jsdom').JSDOM;
@@ -54,9 +55,10 @@ const dom = new JSDOM(htmlContent, {
 });
 
 const win = dom.window;
+installExamplesFetch(win);
 const doc = win.document;
 
-setTimeout(() => {
+setTimeout(async () => {
   try {
     // 1. Verify DOM element exists
     const maxInstrInput = doc.getElementById('simMaxInstrPerRun');
@@ -111,11 +113,11 @@ setTimeout(() => {
     // 7. Test running a program with custom limit
     win.maxInstructionsPerRun = 25000;
     win.setLanguageMode('asm');
-    win.loadExample('basic');
+    await win.loadExample('basic');
     win.assembleOnly();
     win.runProgram();
 
-    setTimeout(() => {
+    setTimeout(async () => {
       if (win.programFinished || win.pc > 0) {
         console.log(`✅ Simulation ran successfully with custom maxInstructionsPerCycle (25,000). Finished: ${win.programFinished}`);
       } else {

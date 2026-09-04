@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { installGodboltCache } = require('./godbolt_cache');
 const path = require('path');
 const https = require('https');
 
@@ -86,12 +87,14 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
     }
   });
   const win = dom.window;
+  // jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
+  installGodboltCache(win);
 
   await new Promise(r => setTimeout(r, 400));
 
   // --- Test 1: Circle_delay_accel.c Simulation ---
   console.log('\n[1] Testing Circle_delay_accel.c Simulation...');
-  const circleCSource = fs.readFileSync(path.resolve(__dirname, '../Circle_delay_accel.c'), 'utf8');
+  const circleCSource = fs.readFileSync(path.resolve(__dirname, '../examples/c/Circle_delay_accel.c'), 'utf8');
   console.log('  - Compiling Circle C via Godbolt...');
   const circleCompileRes = await compileGodbolt(circleCSource, 'rv32-cgcc1420', '-O0');
   if (circleCompileRes.code !== 0 || !circleCompileRes.asm) {
@@ -143,7 +146,7 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
 
   // --- Test 2: ImageDisplay_autoadvance_accel.c Simulation ---
   console.log('\n[2] Testing ImageDisplay_autoadvance_accel.c Simulation...');
-  const imgCSource = fs.readFileSync(path.resolve(__dirname, '../ImageDisplay_autoadvance_accel.c'), 'utf8');
+  const imgCSource = fs.readFileSync(path.resolve(__dirname, '../examples/c/ImageDisplay_autoadvance_accel.c'), 'utf8');
 
   console.log('  - Compiling ImageDisplay C via Godbolt...');
   const compileRes = await compileGodbolt(imgCSource, 'rv32-cgcc1420', '-O0');

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { installExamplesFetch } = require('./examples_fetch');
 let JSDOM;
 try {
   JSDOM = require('jsdom').JSDOM;
@@ -57,6 +58,7 @@ const dom = new JSDOM(htmlContent, {
         };
       };
     }
+    installExamplesFetch(window);
   }
 });
 
@@ -64,7 +66,7 @@ const { window } = dom;
 const { document } = window;
 
 // Wait for DOMContentLoaded / CM6 to initialize
-setTimeout(() => {
+setTimeout(async () => {
   try {
     console.log('\n--- JSDOM Test 1: Verification of DOM & Editor ---');
     console.log('Window Title:', document.title);
@@ -76,6 +78,12 @@ setTimeout(() => {
     const initialCode = window.editor.value;
     console.log('Initial code lines in editor:', initialCode.split('\n').length);
     console.log('First line of code:', initialCode.split('\n')[0]);
+    if (!initialCode.trim()) throw new Error('Editor is empty at boot - the baked default failed to load');
+
+    // The rest of this suite steps through a program checking specific
+    // register values, so it loads a known one explicitly rather than
+    // assuming what boots by default stays whatever it is today.
+    await window.loadExample('basic');
 
     console.log('\n--- JSDOM Test 2: Assembly & Machine Code Generation ---');
     const assembleBtn = document.getElementById('btnAssemble');
@@ -128,14 +136,14 @@ setTimeout(() => {
     console.log('\n--- JSDOM Test 6: Example Loading & Execution ---');
     const examples = ['fib', 'fact', 'loop', 'circle_accel', 'basic'];
     for (const ex of examples) {
-      window.loadExample(ex);
+      await window.loadExample(ex);
       window.assembleOnly();
       console.log(`Loaded and assembled example '${ex}': ${window.machineCode.length} instructions.`);
       if (window.machineCode.length === 0) throw new Error(`Example '${ex}' produced 0 instructions`);
     }
 
     console.log('\n--- JSDOM Test 7: Find & Replace ---');
-    window.loadExample('basic');
+    await window.loadExample('basic');
     window.openFindReplace(false);
     const findInput = document.getElementById('findInput');
     const replaceInput = document.getElementById('replaceInput');

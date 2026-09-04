@@ -1,4 +1,6 @@
 const fs = require('fs');
+const { installGodboltCache } = require('./godbolt_cache');
+const { installExamplesFetch } = require('./examples_fetch');
 const path = require('path');
 const https = require('https');
 
@@ -86,12 +88,15 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
     }
   });
   const win = dom.window;
+  // jsdom has no fetch, so C mode reaches Godbolt's captured output through this.
+  installGodboltCache(win);
+  installExamplesFetch(win);
 
   await new Promise(r => setTimeout(r, 200));
 
   // --- Test 1: ImageDisplay_autoadvance_accel.asm in Assembly Mode ---
   console.log('\n[1] Testing ImageDisplay_autoadvance_accel.asm in ASM Mode...');
-  const imgAsmSource = fs.readFileSync(path.resolve(__dirname, '../ImageDisplay_autoadvance_accel.asm'), 'utf8');
+  const imgAsmSource = fs.readFileSync(path.resolve(__dirname, '../examples/asm/ImageDisplay_autoadvance_accel.asm'), 'utf8');
   win.setLanguageMode('asm');
   win.cmEditor.dispatch({
     changes: { from: 0, to: win.cmEditor.state.doc.length, insert: imgAsmSource }
@@ -123,7 +128,7 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
 
   // --- Test 2: ImageDisplay_autoadvance_accel.c in C Mode via compileAndAssembleC ---
   console.log('\n[2] Testing ImageDisplay_autoadvance_accel.c in C Mode via GCC 14.2 compilation...');
-  const imgCSource = fs.readFileSync(path.resolve(__dirname, '../ImageDisplay_autoadvance_accel.c'), 'utf8');
+  const imgCSource = fs.readFileSync(path.resolve(__dirname, '../examples/c/ImageDisplay_autoadvance_accel.c'), 'utf8');
   const compileRes = await compileGodbolt(imgCSource, 'rv32-cgcc1420', '-O0');
   if (compileRes.code !== 0 || !compileRes.asm) {
     throw new Error(`Failed to compile ImageDisplay C: ${JSON.stringify(compileRes)}`);
@@ -164,7 +169,7 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   // --- Test 3: Reset Button Override & Wait Behavior ---
   console.log('\n[3] Testing Reset Button Override & Wait Behavior...');
   win.setLanguageMode('asm');
-  win.loadExample('circle_accel');
+  await win.loadExample('circle_accel');
   await win.assembleOnly();
 
   // Start execution with runProgram()

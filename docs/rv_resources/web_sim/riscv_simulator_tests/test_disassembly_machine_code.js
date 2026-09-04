@@ -8,6 +8,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { installExamplesFetch } = require('./examples_fetch');
 let JSDOM;
 try {
   JSDOM = require('jsdom').JSDOM;
@@ -57,9 +58,10 @@ const dom = new JSDOM(html, {
 });
 
 const win = dom.window;
+installExamplesFetch(win);
 const doc = win.document;
 
-setTimeout(() => {
+setTimeout(async () => {
   try {
     let passed = 0, failed = 0;
     function check(label, cond) {
@@ -68,7 +70,7 @@ setTimeout(() => {
     }
 
     win.setLanguageMode('asm');
-    win.loadExample('basic');
+    await win.loadExample('basic');
     win.assembleOnly();
     win.setDisasmViewMode('word');
 

@@ -72,12 +72,11 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 
 ---
 
-### 2. `test_baked_examples_full.js` — Full Precompiled Offline Examples Verification
-- **Purpose**: Validates offline precompiled compilation and execution across all 19 built-in examples (11 Assembly + 8 C).
+### 2. `test_baked_examples_full.js` — Heaviest Built-in Examples, End to End
+- **Purpose**: Compiles, assembles and runs the four most demanding built-in examples — two in Assembly, two in C — to the point where their output is visible on the peripherals.
 - **Test Scenarios & Assertions**:
   - Tests `circle_accel` (ASM) and `circle_accel_c` (C): verifies pixel writes on 96x64 OLED display and UART terminal output (`"Tilt in various directions to see the colour change\r\n"`).
   - Tests `image_display_accel` (ASM) and `image_display_c` (C): verifies Mode 5 auto-advance rendering of 6,144 pixels and UART telemetry (`"Tilt X to observe the effect\r\n"`).
-  - Ensures 100% offline functionality without Godbolt internet connectivity.
 - **Run Command**: `node riscv_simulator_tests/test_baked_examples_full.js`
 
 ---
@@ -89,7 +88,7 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 ---
 
 ### 4. `test_new_c_simulation.js` — Advanced C Simulation & Peripheral Integration Test
-- **Purpose**: Tests live and offline simulation for complex C examples (`Circle_delay_accel.c`, `ImageDisplay_autoadvance_accel.c`), verifying midpoint circle drawing, OLED Mode 5 auto-advance row-major rendering, accelerometer sensor polling, and 7-segment display output.
+- **Purpose**: Tests simulation of the complex C examples (`Circle_delay_accel.c`, `ImageDisplay_autoadvance_accel.c`), against both live Godbolt output and a response injected by the harness, verifying midpoint circle drawing, OLED Mode 5 auto-advance row-major rendering, accelerometer sensor polling, and 7-segment display output.
 - **Run Command**: `node riscv_simulator_tests/test_new_c_simulation.js`
 
 ---
@@ -205,3 +204,37 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 ### `cm6_bundle.min.js` & `cm6_entry.js`
 - **`cm6_entry.js`**: Source entrypoint that imports CodeMirror 6 and Lezer modules and attaches them to `window.CM6`.
 - **`cm6_bundle.min.js`**: Minified single-file IIFE bundle created with esbuild (`esbuild cm6_entry.js --bundle --minify --outfile=cm6_bundle.min.js`). Contains zero external dependencies and runs 100% offline.
+
+
+---
+
+## 🌐 examples/ and the Godbolt cache
+
+Every example but `dip_led` / `dip_led_c` lives outside `riscv_simulator.html` entirely, in
+[`../examples/`](../examples/) (`asm/*.asm`, `c/*.c`) — the page `fetch()`es one when
+it is selected. jsdom has no `fetch`, so two shims stand in for it:
+
+- **`examples_fetch.js`**: `installExamplesFetch(win)` patches `window.fetch` to serve
+  `examples/asm/*` and `examples/c/*` straight off disk, so `win.loadExample(name)`
+  works under test exactly as it would over `http://`. Install it before any
+  `loadExample()` call for anything but `dip_led` / `dip_led_c` — those two are still
+  baked into the page, so they need no shim and no `await` either.
+- **`godbolt_cache.json` / `godbolt_cache.js`**: Godbolt's compiler output for the
+  eleven C examples, captured once, so C mode's live-compile path — also unreachable
+  under jsdom — doesn't have to run under test. `installGodboltCache(win)` feeds the
+  captured output in through the page's `window.__mockGodboltResponse` hook, matching
+  the incoming source against `examples/c/*.c` read fresh off disk, and is keyed by
+  **filename**, not example name, since that is the only identity the page and the
+  test both still agree on now that `window.cExamples` is gone. This data used to be
+  embedded in `riscv_simulator.html` as `cPrecompiled` (379 KB, a third of the file);
+  it moved to a `cExamples`-keyed cache in v24.6, then to this filename-keyed one in
+  v24.10 when the examples themselves left the page. **After editing a C example,
+  refresh its entry**, or its suite runs against stale assembly: POST
+  `examples/c/<file>.c` to `https://godbolt.org/api/compiler/rv32-cclang2010/compile`
+  and store the response under that filename in `godbolt_cache.json`. This is *only*
+  for compiling a C example, not for loading its source — `dip_led_c` still needs an
+  entry here despite being baked, since baking only skips the fetch, not Godbolt.
+
+Both `async` — `loadExample()` fetches, and C-mode `assembleOnly()` calls Godbolt (or
+the mock) — so every call to either for a non-baked example, or in C mode, needs
+`await`.

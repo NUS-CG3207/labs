@@ -17,6 +17,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { installExamplesFetch } = require('./examples_fetch');
 let JSDOM;
 try { JSDOM = require('jsdom').JSDOM; }
 catch (e) { JSDOM = require(path.resolve(__dirname, 'node_modules/jsdom')).JSDOM; }
@@ -64,6 +65,7 @@ const dom = new JSDOM(html, {
 });
 
 const win = dom.window, doc = win.document;
+installExamplesFetch(win);
 
 // --------------------------------------------------------------------
 // A minimal Icarus driver, mirroring what the page does: preprocess and
@@ -369,7 +371,7 @@ setTimeout(async () => {
 
     // The compiled program belongs to the toolchain settings that produced
     // it, so changing one has to invalidate it.
-    win.loadExample('fib');
+    await win.loadExample('fib');
     win.assembleOnly();
     check('A program is loaded to begin with', win.getMachineCode().length > 0);
     win.invalidateCompiledProgram('M extension');
@@ -379,7 +381,7 @@ setTimeout(async () => {
       .test(doc.getElementById('statusBar').textContent));
 
     // A libgcc helper is what a multiply becomes with the M extension off.
-    win.loadExample('fib');
+    await win.loadExample('fib');
     win.editor.value = 'main:\n  call __mulsi3\n';
     win.assembleOnly();
     const errLines = [...doc.getElementById('console').querySelectorAll('div.error')]
@@ -389,11 +391,11 @@ setTimeout(async () => {
 
     // A program that does not fit its segment used to be reported only in the
     // console, where the success message immediately followed it.
-    win.loadExample('circle_accel');
+    await win.loadExample('circle_accel');
     win.assembleOnly();
     check('A code-segment overflow survives on the status bar',
       /too many for the Code segment/.test(doc.getElementById('statusBar').textContent));
-    win.loadExample('fib');
+    await win.loadExample('fib');
     win.assembleOnly();
     check('A program that fits reports normally',
       /Ready to run/.test(doc.getElementById('statusBar').textContent));
@@ -419,7 +421,7 @@ setTimeout(async () => {
 
     // --- 4. The testbench is program-independent -----------------------
     console.log('\n[4] Generated testbench carries no program-specific data');
-    win.loadExample('dip_led');
+    await win.loadExample('dip_led');
     win.setDipSwitches(0xBEAD);
     const tb = win.hdlBuildTestbench({});
 
@@ -469,11 +471,11 @@ setTimeout(async () => {
     // The decisive check: change every input and load a different program,
     // and the Verilog must come out byte-identical.
     win.setDipSwitches(0x0001);
-    win.loadExample('hello_world');
+    await win.loadExample('hello_world');
     const tbOther = win.hdlBuildTestbench({});
     check('Identical Verilog for a different program and different inputs',
       tbOther === tb);
-    win.loadExample('dip_led');
+    await win.loadExample('dip_led');
 
     check('Testbench without a register path still compiles-shaped output',
       !/rf_shadow/.test(win.hdlBuildTestbench({ regBankPath: null })));
@@ -640,7 +642,7 @@ setTimeout(async () => {
       // HelloWorld.asm blocks in a UART_RX_VALID poll until it receives 'A'
       // then CR, echoes each byte, and only then prints its greeting.
       console.log('\n[10] Bidirectional UART, supplied through uart_rx.mem');
-      win.loadExample('hello_world');
+      await win.loadExample('hello_world');
       const mem2 = win.hdlMemFiles(wrapperSrc);
       const icarus3 = await makeIcarus(tb);
       check('The same testbench serves a completely different program', icarus3.ok);
@@ -666,7 +668,7 @@ setTimeout(async () => {
       // changed while paused must be seen by the very next instruction, and
       // a peripheral write must show up on the instruction that made it.
       console.log('\n[11] MMIO reads and writes land on the right instruction');
-      win.loadExample('dip_led');
+      await win.loadExample('dip_led');
       const memD = win.hdlMemFiles(wrapperSrc);
       const icarus4 = await makeIcarus(tb);
       if (icarus4.ok) {
@@ -734,7 +736,7 @@ setTimeout(async () => {
 
         // --- 13. The console RX FIFO drains as the hardware reads it --
         console.log('\n[13] UART RX_VALID follows the hardware');
-        win.loadExample('hello_world');
+        await win.loadExample('hello_world');
         const memH = win.hdlMemFiles(wrapperSrc);
         win.hdlSetRx([{ cycle: 0, byte: 0x41 }, { cycle: 0, byte: 0x0D }]);
         const rxTxt = win.hdlRxFile();
@@ -768,7 +770,7 @@ setTimeout(async () => {
         // One Step should cover every machine instruction a source line
         // expands to, in the recording exactly as in the functional model.
         console.log('\n[14] Statement Stepping moves the same distance in HDL');
-        win.loadExample('basic');
+        await win.loadExample('basic');
         const memB = win.hdlMemFiles(wrapperSrc);
         const outB = await icarus4.run(['+CYCLES=60', '+TRACE=2'], {
           'AA_IROM.mem': memB.files['AA_IROM.mem'],

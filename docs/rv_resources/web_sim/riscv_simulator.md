@@ -7,18 +7,40 @@
 
 | File | What it is |
 |---|---|
-| [`riscv_simulator.html`](riscv_simulator.html) | The simulator. Single file, no build step, works offline. Runs programs on either of **two execution engines** — the built-in JavaScript functional model, or **your own Verilog processor** compiled and simulated in the browser. |
-| [`riscv_simulator_nohdl.html`](riscv_simulator_nohdl.html) | The same simulator without the HDL engine — kept for anyone who wants the smaller, functional-only build. |
+| [`riscv_simulator.html`](riscv_simulator.html) | The simulator. Single file, no build step. Assembling, simulating and the HDL engine all run in the browser with nothing fetched; **DIP to LED** (both languages) is baked in for the same reason. Every other example, and C compilation, need the page served over `http://` — see below. |
+| [`examples/`](examples/) | Every example but DIP to LED — `asm/*.asm`, `c/*.c` — fetched by the page when you select one. |
 | [`vendor/`](vendor/README.md) | Local copies of the three external engines (CodeMirror, Icarus Verilog, Yosys), used only when the CDN cannot be reached. |
 
 **Live:** <https://nus-cg3207.github.io/labs> · Vibe coded by Rajesh Panicker.
 
 A self-contained **RISC-V RV32GC** assembler, C compiler front-end, emulator and
 visual debugger built for the NUS **CG3207** computer architecture labs. The editor
-engine, ISA tables, peripherals and every example program are embedded in one HTML
-file with no external dependencies at runtime. C compilation optionally uses the
-Compiler Explorer (Godbolt) REST API, but ships with precompiled offline mappings for
-all built-in examples, so nothing needs the network.
+engine, ISA tables and peripherals are embedded in one HTML file with no external
+dependencies at runtime. Example programs are not: only **DIP to LED** is, in both
+Assembly and C, so that opening the page directly from disk — `file://`, no server —
+always has *something* to work from in whichever mode you are in. Every other example
+is a plain file in `examples/`, fetched with `fetch()` when you pick it from the menu,
+which is what makes it editable without touching `riscv_simulator.html` at all — and
+what stops it working over `file://`, where browsers block `fetch()` outright. C
+compilation optionally uses the Compiler Explorer (Godbolt) REST API, which needs the
+network regardless of how the page is served; everything else — assembling,
+simulating, the HDL engine — runs in the browser.
+
+### Running it locally
+
+Double-clicking `riscv_simulator.html` works for a quick look, but only DIP to LED
+loads. To get every example and C compilation, serve the repository root over
+`http://` instead:
+
+```bash
+cd Visualisations   # the repository root - riscv_simulator.html lives here
+python3 -m http.server 8000
+```
+
+then open <http://localhost:8000/riscv_simulator.html>. Any other static server works
+the same way (`npx serve`, VS Code's Live Server, etc.) — the only requirement is that
+`examples/` and `vendor/` stay siblings of `riscv_simulator.html`, exactly as checked
+out.
 
 ---
 
@@ -82,7 +104,7 @@ mapping and read-only code protection, downward-growing stack visualisation,
 configurable instruction cycle timing, a hardware-accurate simulation of the
 **Digilent Nexys 4 FPGA board**, a 16550 **UART serial console**, a **96×64 pixel OLED
 display**, a **3-axis accelerometer & temperature sensor**, a **system cycle counter**,
-**RARS `ecall` syscalls**, and 19 pre-loaded assembly and C example programs.
+**RARS `ecall` syscalls**, and 22 pre-loaded assembly and C example programs.
 
 The distinguishing feature is that the same program, the same breakpoints and the same
 peripheral panels drive **either** a functional model **or** real RTL — so a student can
@@ -137,7 +159,7 @@ The simulator incorporates a state-of-the-art **CodeMirror 6** editor architectu
 
 #### 1. Language Mode Switcher (`[ RV32 ASM | C Code ]`)
 - **Assembly Mode**: Activates `riscvStreamParser` with RISC-V instruction/register autocomplete and 11 assembly example programs.
-- **C Code Mode**: Activates `cStreamParser` with C keyword/type autocomplete, `#define` MMIO macros (`LEDS`, `SWITCHES`, `BUTTONS`, `SEVSEG`, `UART_TX`, `ACCEL_DATA`, `OLED_COL`, `OLED_ROW`, `OLED_DATA`, `OLED_CTRL`), Godbolt compiler configuration modal, and 8 C example programs.
+- **C Code Mode**: Activates `cStreamParser` with C keyword/type autocomplete, `#define` MMIO macros (`LEDS`, `SWITCHES`, `BUTTONS`, `SEVSEG`, `UART_TX`, `ACCEL_DATA`, `OLED_COL`, `OLED_ROW`, `OLED_DATA`, `OLED_CTRL`), Godbolt compiler configuration modal, and 11 C example programs.
 
 #### 2. CodeMirror 6 Loading (`window.CM6`)
 The editor engine is bootstrapped by a tiny loader script that fetches a **single self-contained CodeMirror 6 bundle** (`riscv_simulator_tests/cm6_bundle.min.js`, one copy of every `@codemirror/*` / `@lezer/*` package) from **jsDelivr** (served from this repo's GitHub raw file), with a **local IIFE fallback** (`riscv_simulator_tests/cm6_bundle.min.js`) loaded automatically if the CDN is unreachable (offline / CSP-blocked). Loading the individual `@codemirror/*` ESM packages separately (as was done originally) does **not** work — each jsDelivr `+esm` bundle inlines its own `@lezer/common` internals, so `StreamLanguage`/`HighlightStyle` extensions built against one instance fail `EditorState` validation ("Unrecognized extension value") and syntax highlighting silently breaks. A single pre-bundled unit guarantees every package shares one instance. The app defers its editor bootstrap (`bootSimulator()`) until `window.CM6` exists, so load timing is non-blocking. The namespace exposes:
@@ -323,7 +345,6 @@ including the HDL engine's progress (`HDL: compiling…`, `HDL: simulating 2000 
 - **Single Stepping (`F8` / `⏭ Step`)**: Highlights the active C source statement in CodeMirror 6 while advancing the underlying RV32 machine code.
 - **Step Back (`Shift+F8` / `⏮ Back`)**: Restores CPU registers, memory, and active C line highlighting.
 - **Breakpoints in C**: Click on C source lines to toggle breakpoints with smart line snapping; `▶ Run` (`F5`) halts on active C lines.
-- **Offline Precompiled C Cache**: All 8 pre-loaded C examples include precompiled Godbolt assembly JSON mappings embedded directly in `riscv_simulator.html`, ensuring instantaneous offline simulation without network access.
 
 ---
 
@@ -521,6 +542,47 @@ patch it. Everything it needs, it generates around it as a **testbench** — the
 thing you would write by hand in Vivado. Use **Save testbench** to get that exact file
 for offline use with Vivado or `iverilog`.
 
+Instantiation is **positional**, exactly as generated:
+
+```verilog
+Wrapper dut(DIP, PB, LED_OUT, LED_PC, SEVENSEGHEX, UART_TX, UART_TX_ready,
+            UART_TX_valid, UART_RX, UART_RX_valid, UART_RX_ack, OLED_Write,
+            OLED_Col, OLED_Row, OLED_Data, ACCEL_Data, ACCEL_DReady, RESET, CLK);
+```
+
+which fixes the port list — name, width, direction and order — that `module Wrapper`
+must declare:
+
+| # | Port | Width | Direction (seen from `Wrapper`) |
+|---|---|---|---|
+| 1 | `DIP` | `[15:0]` | input |
+| 2 | `PB` | `[2:0]` | input |
+| 3 | `LED_OUT` | `[7:0]` | output |
+| 4 | `LED_PC` | `[6:0]` | output |
+| 5 | `SEVENSEGHEX` | `[31:0]` | output |
+| 6 | `UART_TX` | `[7:0]` | output |
+| 7 | `UART_TX_ready` | 1 bit | input |
+| 8 | `UART_TX_valid` | 1 bit | output |
+| 9 | `UART_RX` | `[7:0]` | input |
+| 10 | `UART_RX_valid` | 1 bit | input |
+| 11 | `UART_RX_ack` | 1 bit | output |
+| 12 | `OLED_Write` | 1 bit | output |
+| 13 | `OLED_Col` | `[6:0]` | output |
+| 14 | `OLED_Row` | `[5:0]` | output |
+| 15 | `OLED_Data` | `[23:0]` | output |
+| 16 | `ACCEL_Data` | `[31:0]` | input |
+| 17 | `ACCEL_DReady` | 1 bit | input |
+| 18 | `RESET` | 1 bit | input |
+| 19 | `CLK` | 1 bit | input |
+
+Reorder, resize, rename or drop any of them and the testbench still compiles — Verilog
+port connections are positional — but it wires the wrong signal to the wrong pin with no
+error, so the failure shows up as nonsense on a peripheral rather than as a rejected
+design. `IROM_DEPTH_BITS` and `DMEM_DEPTH_BITS` are the only things about the Wrapper
+the simulator reads back out of your source rather than assuming (§5.8); everything else
+about its *body* — the core inside it, the memories, how it wires them together — is
+entirely yours.
+
 ---
 
 
@@ -598,10 +660,16 @@ instruction gap you asked for, and delivered on that schedule inside the recordi
 
 ### 5.8 Memory images
 
-`IROM_DEPTH_BITS` and `DMEM_DEPTH_BITS` are read out of *your* Wrapper, so a design
-with an enlarged IROM gets a correspondingly sized image. If the program needs more
-instruction words than your IROM holds, the console says so rather than letting the
-Wrapper quietly fetch NOPs past the end.
+Your Wrapper owns instruction and data memory outright — it must declare an IROM and a
+DMEM (or reach ones declared below it), sized by two localparams, `IROM_DEPTH_BITS` and
+`DMEM_DEPTH_BITS`, and load them itself with `$readmemh("AA_IROM.mem", ...)` /
+`$readmemh("AA_DMEM.mem", ...)`, the same call Vivado's simulator would make. The
+simulator's part is narrower than it looks: it assembles your program, writes those two
+files to match what your localparams say the memories can hold, and reads the depths
+back out of your source so a design with an enlarged IROM gets a correspondingly sized
+image. It never creates the memories, and it never simulates a default size behind your
+back. If the program needs more instruction words than your IROM holds, the console
+says so rather than letting the Wrapper quietly fetch NOPs past the end.
 
 Images are built from the assembled memory image, so gaps inside a segment keep their
 addresses. Words past the end of the program are left uninitialised (`X`), matching
@@ -983,26 +1051,32 @@ sources** — those are your work, and *Clear files* is right there.
 
 ## 9. Pre-loaded example programs
 
-The simulator comes pre-loaded with **19 rich example programs** (11 in Assembly and 8 in C):
+The simulator comes pre-loaded with **22 rich example programs** (11 in Assembly and 11 in C).
+`dip_led` / `dip_led_c` are the two baked into the page; every other example is fetched from
+`examples/asm/` or `examples/c/` when selected, which is what needs the page served over
+`http://` (see the file table at the top of this document).
 
-### 9.1 C examples (8)
-1. **`basic_c` (Basic Sum)**: Computes sum = $a + b + c$ with local variables and function calls.
-2. **`factorial_c` (Factorial)**: Recursive factorial computation demonstrating stack frames and base cases.
-3. **`fibonacci_c` (Fibonacci)**: Iterative Fibonacci series generator storing values in an array.
-4. **`loop_c` (Array Search)**: Searches for an element in an integer array and accumulates totals.
-5. **`matrix_c` (Matrix Multiply)**: $2 \times 2$ integer matrix multiplication with nested loops.
-6. **`peripherals_c` (MMIO Peripherals)**: Reads DIP switches and buttons, writes to LEDs, 7-Segment display, and outputs greeting string over UART.
-7. **`circle_accel_c` (Circle & Delay Accel - `Circle_delay_accel.c`)**: Implements the Midpoint Circle Algorithm on the OLED display, polls accelerometer X/Y tilt, animates circle positions, outputs frame counts to the 7-Segment display, and sends UART telemetry.
-8. **`image_display_c` (Image Display & Accel - `ImageDisplay_autoadvance_accel.c`)**: High-performance OLED graphics rendering using Auto-Advance Mode 5 (`autoadvance_row`), displaying 96x64 8-bit color bitmap artwork (`Uphill.png` / `Downhill.png`), responding dynamically to X-axis accelerometer tilt, and logging status messages to the UART terminal.
+### 9.1 C examples (11)
+1. **`dip_led_c` (DIP to LED)**: C translation of `DIP_to_LED.asm` — mirrors the DIP switches onto the LEDs on a short polling delay. The one C example baked into the page.
+2. **`basic_c` (Basic Sum)**: Computes sum = $a + b + c$ with local variables and function calls.
+3. **`factorial_c` (Factorial)**: Recursive factorial computation demonstrating stack frames and base cases.
+4. **`fibonacci_c` (Fibonacci)**: Iterative Fibonacci series generator storing values in an array.
+5. **`loop_c` (Array Search)**: Searches for an element in an integer array and accumulates totals.
+6. **`matrix_c` (Matrix Multiply)**: $2 \times 2$ integer matrix multiplication with nested loops.
+7. **`peripherals_c` (MMIO Peripherals)**: Reads DIP switches and buttons, writes to LEDs, 7-Segment display, and outputs greeting string over UART.
+8. **`hello_world_c` (Hello World)**: C translation of `HelloWorld.asm` — a single unstructured-but-goto-free loop with one state variable, no callee function, matching how `HelloWorld.asm` predates `jal`/`jalr` in the course.
+9. **`hello_jal_c` (Hello Subroutine)**: C translation of `HelloWorld_jal_jalr.asm` — the same echo loop, but the greeting is printed by a real function, `print_string(const char *s)`, taking the string as a parameter the way `PRINT_S` takes it in `a0`.
+10. **`circle_accel_c` (Circle & Delay Accel - `Circle_delay_accel.c`)**: Implements the Midpoint Circle Algorithm on the OLED display, polls accelerometer X/Y tilt, animates circle positions, outputs frame counts to the 7-Segment display, and sends UART telemetry.
+11. **`image_display_c` (Image Display & Accel - `ImageDisplay_autoadvance_accel.c`)**: High-performance OLED graphics rendering using Auto-Advance Mode 5 (`autoadvance_row`), displaying 96x64 8-bit color bitmap artwork (`Uphill.png` / `Downhill.png`), responding dynamically to X-axis accelerometer tilt, and logging status messages to the UART terminal.
 
 ### 9.2 Assembly examples (11)
-1. **`basic` (`basic.asm`)**: Basic sum = $a + b + c$ utilizing integer registers and syscalls.
-2. **`rars_syscalls` (`rars_syscalls.asm`)**: Comprehensive demonstration of RARS `ecall` services (print string, integer, hex, char, exit).
-3. **`fib` (`fibonacci.asm`)**: Computes Fibonacci numbers in registers `x1`–`x5`.
-4. **`fact` (`factorial.asm`)**: Calculates $5! = 120$ using recursion and stack management.
-5. **`loop` (`loop_array.asm`)**: Array initialization and element accumulation loop.
-6. **`io` (`io_mext.asm`)**: I/O operations combined with RV32M multiply instructions (`mul`, `div`).
-7. **`dip_led` (`DIP_to_LED.asm`)**: Direct hardware loop copying 16-bit DIP switch states directly to output LEDs.
+1. **`dip_led` (`DIP_to_LED.asm`)**: Direct hardware loop copying 16-bit DIP switch states directly to output LEDs. The one example baked into the page.
+2. **`basic` (`basic.asm`)**: Basic sum = $a + b + c$ utilizing integer registers and syscalls.
+3. **`rars_syscalls` (`rars_syscalls.asm`)**: Comprehensive demonstration of RARS `ecall` services (print string, integer, hex, char, exit).
+4. **`fib` (`fibonacci.asm`)**: Computes Fibonacci numbers in registers `x1`–`x5`.
+5. **`fact` (`factorial.asm`)**: Calculates $5! = 120$ using recursion and stack management.
+6. **`loop` (`loop_array.asm`)**: Array initialization and element accumulation loop.
+7. **`io` (`io_mext.asm`)**: I/O operations combined with RV32M multiply instructions (`mul`, `div`).
 8. **`hello_world` (`HelloWorld.asm`)**: Direct character-by-character UART transmission of "Hello World".
 9. **`hello_jal` (`HelloWorld_jal_jalr.asm`)**: Modular UART printing subroutine utilizing `jal` and `jalr`.
 10. **`circle_accel` (`Circle_delay_accel.asm`)**: Complete assembly implementation of OLED circle rendering and accelerometer integration.
@@ -1011,7 +1085,6 @@ The simulator comes pre-loaded with **19 rich example programs** (11 in Assembly
 ---
 
 
-All C examples carry embedded precompiled Godbolt assembly, so they run fully offline.
 The `DIP_to_LED` and `HelloWorld` assembly examples double as the HDL mode's smoke
 tests — they exercise a DIP read, an LED write and the full UART handshake against real
 RTL in a few hundred cycles.
@@ -1096,8 +1169,12 @@ Models 32 32-bit integer registers (`x0`–`x31`), 32 floating-point registers (
 
 A Node/jsdom harness lives in [`riscv_simulator_tests/`](riscv_simulator_tests). Every
 suite loads the real `riscv_simulator.html`, so the tests exercise the shipped file
-rather than a copy of its logic. `npm test` runs all **18** of them, and every script in
-the directory is one of the 18 — there is no build step and nothing else to run.
+rather than a copy of its logic. `npm test` runs all **18** of them — every `test_*.js`
+file in the directory is one of the 18, there is no build step and nothing else to run.
+The remaining files there are shared test infrastructure, not suites of their own:
+`godbolt_cache.js`/`.json` mock Godbolt's response for C compilation, and
+`examples_fetch.js` serves `examples/` from disk — both stand in for network access
+jsdom does not have.
 
 | Test script | Target subsystem & scenarios |
 |-------------|------------------------------|
@@ -1105,8 +1182,8 @@ the directory is one of the 18 — there is no build step and nothing else to ru
 | `test_hdl_mode.js` | **HDL mode, end to end (159 assertions).** Drives the real Icarus/WASM pipeline over the unmodified `RV/*.v` sources — see below. |
 | `test_panel_grid.js` | Dockable-panel 2×2 grid layout, splitters, per-panel column sizing and persistence. |
 | `test_c_godbolt_simulation.js` | Godbolt REST API compilation, bidirectional line mapping, C breakpoints and C stepping. |
-| `test_new_c_simulation.js` | Offline and live verification for `Circle_delay_accel.c` and `ImageDisplay_autoadvance_accel.c`. |
-| `test_baked_examples_full.js` | Compilation and execution of all 19 built-in examples using offline precompiled mappings. |
+| `test_new_c_simulation.js` | Compilation and execution of `Circle_delay_accel.c` and `ImageDisplay_autoadvance_accel.c`. |
+| `test_baked_examples_full.js` | Compilation and execution of the four heaviest built-in examples, two in assembly and two in C. |
 | `test_statement_stepping.js` | Statement Stepping in both C and ASM, multi-instruction execution and discrete step back. |
 | `test_sim_max_instructions_setting.js` | Run-limit setting and execution-loop throttling. |
 | `test_disassembly_labels_and_warnings.js` | Label header rendering, jump/branch target annotations, FPGA hardware notice. |
@@ -1206,6 +1283,15 @@ Newest first. Versions before v15.0 are grouped.
 
 | Version | Milestone description & features implemented |
 |---------|----------------------------------------------|
+| **v24.14 (HelloWorld Rewritten Without `goto`; a New Function-Call Example)** | `hello_world_c` no longer uses `goto` or a callee function, matching `HelloWorld.asm`, which predates `jal`/`jalr` in the course and inlines everything into `main`. The three-stage `goto` chain became one `while(1)` loop with a single state variable (`gotA`), which also fixed a size regression the `goto` version had already hit once before (v24.9): writing the echo sequence out twice, once per stage, doubled its cost at `-O0` and pushed the program over the default Code segment again. Added **`hello_jal_c`**, a new example translating `HelloWorld_jal_jalr.asm` — same loop, but the greeting is printed by a real function, `print_string(const char *s)`, taking the string the way `PRINT_S` takes it in `a0`. Both were checked against every branch of the protocol Godbolt compiles to, not just the happy path: a repeated `A` (absorbed, matching `WAIT_CRorLF`'s own re-check), and a byte that is neither `A` nor Enter (abandons the attempt, matching the fall-through to `WAIT_A`) — the second is the one branch that never printed anything in either the original `.asm` or these translations, so it is the one most likely to silently break. 22 examples now (11 in each language). |
+| **v24.13 (DIP to LED Baked In, Not Basic)** | The one example guaranteed to load with the page opened straight from disk is now **DIP to LED**, in both languages, not Basic — `dip_led` replaces `basic` as `BAKED_ASM_EXAMPLE`, and `dip_led_c` becomes the first C example ever baked in, as `BAKED_C_EXAMPLE`, alongside it. Compiling a baked C example still needs Godbolt regardless — baking only means its *source* survives a `file://` open with no fetch, the same guarantee `dip_led` already had. Two call sites had hardcoded the old default and needed to follow it: `setLanguageMode()`, which reloads a starting example on every ASM↔C switch, and `initCodeMirrorEditor()`'s first-paint fallback, which turned out to already be dead code — a stale reference to a **local** `examples` object that stopped existing in v24.10, silently falling through to its own separate literal copy of the Basic program every time. That's the bug behind "the baked C program doesn't load anymore": switching to C mode called `loadExample('basic_c')`, which had just become a fetched example, so with the page opened over `file://` it failed exactly the way every other non-baked example was already documented to. Two files the test suite reads directly from disk (`Circle_delay_accel.c`, `ImageDisplay_autoadvance_accel.asm`/`.c`) had also moved to `examples/` outside this change, breaking `test_new_c_simulation.js` and `test_reset_and_image_display.js` at the fixture-path level; repointed both. `examples/asm/basic.asm` did not exist yet either — `basic` had been baked when the split happened in v24.10, so nothing had ever extracted it — three suites that loaded it with no fetch shim broke the same way as a real `file://` user switching examples would have. Documented **how to run the page locally with every example available**: `python3 -m http.server` from the repository root, in both the reference manual and the user guide, not just in `vendor/README.md` where it lived before. |
+| **v24.12 (`.word`/`.half`/`.dword` Now Align Themselves)** | A label immediately followed by one of these directives used to land wherever the previous directive happened to leave off, not on the boundary its own width needs — `var1: .word 1` right after a 23-character `.asciz` landed on an address that was word-aligned purely by chance of the string's exact length, and the shipped `DIP_to_LED.asm` says so in its own comment: *"Food for thought: what will be the address of `var1` if `string1` had one extra character? Hint: words are word-aligned"* — a hint the assembler was not actually honouring. Fixed for real, not by padding around the label: alignment is now applied *before* the label captures its address, so `var1: .word 1` names wherever the word actually ends up, matching what every other assembler does by default. That needed care in both passes — pass 1 tracks which labels are still "pending" (defined since the last real byte was placed) and slides them forward if what follows aligns past them; pass 2 emits the identical padding as real zero bytes, not just a skipped address, so the two passes' addresses never disagree. Verified against the exact scenario in the file's own comment (adding the third `.` moves `var1` from `DMEM+0x1C` to `DMEM+0x20`, not `DMEM+0x1D`) plus a `.byte`→`.half`→`.word` chain and a label alone on its own line before the directive that aligns it. |
+| **v24.11 (Credits Expanded)** | The Credits pop-up (v24.8) now names every open-source project the simulator actually runs, not just RARS: **CodeMirror 6** (the editor), **Icarus Verilog** — the upstream compiler/simulator HDL mode runs, compiled to WebAssembly by the **verisim** project — and **Yosys** — the upstream synthesiser post-synthesis simulation runs, compiled to WebAssembly by **YoWASP**. Both engines get two links each: the tool itself and the WASM port that makes it run in a browser, since crediting only the port and not what it wraps (or the reverse) would each be half the story. All eight links in the pop-up were checked resolving before publishing. |
+| **v24.10 (Examples Taken Out of the Page)** | Every example but **`basic`** — 10 assembly, 10 C — is no longer inside `riscv_simulator.html`. Each now lives as a plain file under `examples/asm/` or `examples/c/`, fetched by `loadExample()` when picked from the menu, editable there with no rebuild step at all. `basic` stays embedded on purpose: it is the one example guaranteed to work with the page opened straight from disk, exactly as `file://` blocks `fetch()` for every other example and for C compilation — a constraint raised and shelved twice earlier in this project's history, revisited here because editing an example by hand-patching a JS template literal inside a 800 KB file, every time, was worse than accepting that trade. The error when a fetch fails names the cause and points at Basic, rather than leaving the editor showing stale content with no explanation. Byte-for-byte extraction: every file was produced by loading the *previous*, still-baked build in a real DOM and reading `editor.value` back after `loadExample()`, not by regex over the JS source — which is exactly the class of mistake v24.9 already found once (the `\r`/`\n` doubling a JS template literal needs). Test-side fallout was the larger part of this change: jsdom has no `fetch`, so every suite touching a non-`basic` example needed a new shim (`examples_fetch.js`, serving `examples/` from disk) alongside `await` on every now-async `loadExample()` call — 12 files, ~35 call sites. The Godbolt-response cache moved with it: keyed by example name against a `cExamples` object that no longer exists, it is now keyed by filename and matched by reading `examples/c/*.c` straight off disk. One real bug fell out of the churn: two tests loaded a C factorial example by a key, `c_fact`, that had never been a real one — `loadExample`'s old silent fallback to Basic Sum on a bad key hid it, and both assertions happened to pass anyway because Basic Sum's disassembly also has a `main:` label. Fixed to `factorial_c`. `npm test`: 18 suites, exit 0. |
+| **v24.9 (Two New C Examples: DIP to LED, Hello World)** | Added **`dip_led_c`** and **`hello_world_c`**, C translations of `DIP_to_LED.asm` and `HelloWorld.asm`, in the style of `circle_accel_c`/`image_display_c` — explicit `MMIO_BASE`-plus-offset `#define`s and a manual `asm volatile("li sp, ...")` stack-pointer init, rather than the plainer style of `peripherals_c`. `dip_led_c` mirrors the DIP switches onto the LEDs on a short polling delay; `hello_world_c` echoes every UART byte it receives (to UART, LEDs and the 7-segment display at once) and sends a greeting once it sees `A` followed by Enter, matching `HelloWorld.asm`'s three-stage `WAIT_A` / `WAIT_CRorLF` / `PRINT_S` protocol via `goto`-labelled stages rather than a literal transliteration of its word-packed byte loop. Two things caught in verification, not just eyeballing the diff: a **backslash-escaping bug** — `\r`, `\n` and `\0` need doubling (`\\r`) in the JS template literal so the *C source* still has one backslash left after the browser's own parsing, not zero — which silently truncated a string literal and only showed up as a Godbolt compile error, not an assembler one; and `hello_world_c`'s first draft (137 instructions, six local MMIO pointers, a five-argument helper) **exceeded the default 512-byte Code segment at -O0** by 32 bytes, silently dropping its last 8 instructions — exactly enough to break the goto that prints the greeting, without erroring at all. Replacing the local pointers with address macros and cutting the helper to one argument brought it to 107 instructions, comfortably inside the default. Both were verified compiling live against Godbolt and running to the expected result — LEDs mirroring an injected DIP pattern, and the UART transcript reading `A\r` then the full greeting — then again fully offline against the test cache, with no code-path difference between the two. Both are in `godbolt_cache.json` (10 C examples now), and every count in §9 updated to match (21 examples total, 10 in C). |
+| **v24.8 (Credits Pop-up, Trimmed Legend, Documented Wrapper Contract)** | The header's inline credit line — a link plus "Vibe coded by Rajesh Panicker" — is now an **ⓘ Credits pop-up**, reached from the same spot, which also names and links **RARS**, the RISC-V Assembler and Runtime Simulator: the MMIO layout and the `ecall` system call services follow its conventions. `Esc` now closes it and the Settings dialog, which it never did despite the shortcuts table claiming otherwise. The **Memory panel legend** dropped "label = symbol at row" and "highlighted bytes were written at runtime" — both stated what the panel already makes obvious; the colours themselves, and the rest of the legend, are unchanged. The **user guide is no longer CG3207-specific**: the course name, the deployment link, and a fixed lab file list are gone from it, and its troubleshooting table lost the eight rows that only restated an assembler message already printed in full with the fix in it. In their place, a **"Requirements your Verilog must meet"** section states the Wrapper contract the simulator actually enforces — one file declaring `module Wrapper`, a fixed port list connected positionally (never written down before; now in §5.3 of the reference manual, with the full 19-port table sourced from the generated testbench), an IROM and a DMEM the Wrapper owns and sizes itself while the simulator only writes their contents, and a 32-entry register array the Registers panel searches for but does not require. |
+| **v24.7 (Functional-only Build Retired)** | Deleted **`riscv_simulator_nohdl.html`**. It began as the same simulator minus the HDL engine, kept for anyone who wanted the smaller build, but it was a copy rather than the output of a build step, so it stopped tracking `riscv_simulator.html` — by the end it was missing the assembler-strictness diagnostics of v24.3, the message de-duplication of v24.4 and the Example-menu fix of v24.5. "No HDL" was no longer the difference between the two; "older, with known bugs" was. Keeping one file removes the risk of a fix landing in only half the project. There is one simulator: **`riscv_simulator.html`**. |
+| **v24.6 (Godbolt Cache Moved Out of the Page)** | The embedded **precompiled Godbolt cache** — `cPrecompiled`, a 379 KB JSON blob holding the compiler's output for all eight built-in C examples — is no longer part of `riscv_simulator.html`. It was **32% of the whole file** for a path a browser almost never takes: `compileAndAssembleC` tries the live Godbolt API first and only falls back to the cache, so in a browser it earned its size solely by letting the unmodified examples compile with no network. It was not dead weight everywhere, though: **jsdom provides no `fetch`**, so under the test harness the live path is skipped and the cache was the *only* way C mode compiled anything. It therefore moved rather than vanished — to `riscv_simulator_tests/godbolt_cache.json`, installed by `installGodboltCache(win)` through the page's existing `window.__mockGodboltResponse` hook, which now also accepts a function of the source so one window can compile several programs. The suites stay hermetic and offline; the page keeps one honest compilation path. **`riscv_simulator.html` went from 1.20 MB to 808 KB.** The trade is stated plainly: **C mode now requires the network**, and the message when Godbolt is unreachable says so and points at Assembly mode, which still compiles and runs entirely in the browser. |
 | **v24.5 (Instruction Semantics Suite & Example-menu Fix)** | Added **`test_instruction_semantics.js` (136 cases)**: every instruction is executed and its result checked against a value worked out from the RISC-V spec, which exercises encoder → machine code → decoder → execution rather than only asking whether a program assembles. The suite was **mutation-tested** against 12 seeded faults; two initially slipped through (`SLTI`'s `<` made `<=`, and `seqz`'s `sltiu rd, rs, 1` made `, 2`) because no case sat on the boundary, so boundary cases were added for every comparison — equal as well as less and greater, zero as well as positive and negative. Fixed the **Example menu reverting on a language round-trip**: the list was written out twice, once in the markup and once in `updateExampleSelectorOptions()`, so a label edited in one came back the old way after switching to C and back. There is now one `EXAMPLE_MENU` table, rendered at boot and on every switch. The starting-point entry reads **Basic (start here)**, and the C list marks **Basic Sum (start here)** the same way, which it never did. The **JS Simulation tab's hint lost its double negative** ("so nothing here silently does nothing"), and the **Statement Stepping description was cut to one sentence** on both tabs. |
 | **v24.4 (Message De-duplication & Test-suite Cleanup)** | With the PC and the instruction count now permanently on the metrics readout, the step messages stopped repeating them: `Back step: PC = 0x40000c` beside `… | Instr: 12 | PC: 0x0040000c` said the same thing twice, in two different formats. A step message now says what the step did — **`Stepped to line 16`**, `Stepped back to line 15`, `Statement step over line 7 — 3 instructions, now at line 8` — and the same for HDL mode. The three **segment-overflow warnings** were rewritten to one shape (what it is, how much over, what to change): each size is printed once instead of in both decimal and hex, and the status bar states the outcome while the console carries the fix, rather than both carrying it. **15 files were deleted from `riscv_simulator_tests/`**: the pre-CodeMirror bare-eval harnesses (`test_asm.js`, `test_all_instructions.js`, `test_run.js`, `tests_body.js`, `sim_harness.js`), the one-off exploratory scripts kept from developing the image and circle examples (`debug_circle.js`, `test_prep.js`, `test_circle_compile.js`, `test_img_compile.js`, `test_mode5_render.js`, `analyze_imagedisplay.js`, `inspect_img.js`, `render_ascii.js`), and the v2-experiment relics `generate_v2.js` and `build_v2.js` — the first of which wrote a `riscv_simulatorv2.html` that is not part of the repository, and the second of which read a bundle from a hardcoded path in another tool's scratch directory. All were broken or assertion-free. What remains is 17 real suites, every one of them wired into `npm test` — `test_hdl_mode.js` had never been in it. |
 | **v24.3 (Assembler Strictness, PC Readout & Vendored Engines)** | Operand forms that used to be accepted silently are now diagnosed. **A bare number is no longer a register**: `add t0, t0, 1` assembled as `add t0, t0, x1` and the disassembly still showed `1`, so nothing gave it away; it now reports `'1' is a number, not a register` and suggests `addi`. The same applies to the FP file. **A store to a symbol must name its scratch register** — `sw t0, var1` picked `x5` (or `x6`) and clobbered it without a word; the third operand is now required, as in GNU `as`, and the message shows the exact two-instruction expansion. **A load from a symbol clobbers nothing**: `lw s3, delay_val` now builds the address in `rd` itself (`lui x19` / `lw x19, …(x19)`) instead of borrowing a temporary; float loads, whose `rd` cannot hold an address, still need the register named. Those three were reported from use, so the assembler was then put through **51 deliberately-wrong programs — 28 assembled with no message at all**. Fixed from that audit: **missing operands were filled in with `x0`** and surplus ones dropped (operand counts now come from the instruction format and, for pseudo-instructions, from the highest `%N` in their own expansion template, so new ones are checked automatically); **`slli t0, t1, 32` was masked to a shift by zero**; **`lui t0, 0x100000` was truncated to 20 bits**; **a duplicate label silently redefined** and **a label named after a register was unreachable** (`j t0` read the register); **`.byte 256` stored 0** and the other data directives truncated the same way. Misaligned word and half accesses now warn — the Wrapper's memory is word-addressed. `parseReg`, `parseFReg` and `parseImm` tolerate a missing operand, so `sub t0` reports its arity instead of `Cannot read properties of undefined`. **`ecall` is flagged**: every built-in example that uses it says in a header comment that it is a simulator service the CG3207 hardware cannot provide, and the assembler repeats it once per assemble (assembly only — the CRT0 shim's exit `ecall` is not the student's). The **Native instruction column became a real disassembly**, naming registers `x0`–`x31` while ABI names stay in the source column beside it — and that renaming alone no longer marks a row as a pseudo-instruction expansion, so the expansion colour means only what it says. The **PC moved onto the always-visible metrics readout** (`Cycles: 3 est | Instr: 3 | PC: 0x0040000c`), which moved down to the status row: it was previously only in the transient status message, which the next message overwrites. The **optimisation level carries a note** about code size varying several-fold (`-O0` and `-O3` largest, `-Os` smallest) with a folded explanation of the `.text` / `IROM_DEPTH_BITS` limit, and **libgcc helper calls are reported at compile time** rather than as an unknown symbol during assembly, naming both ways out — enable M, or raise the optimisation level, since from `-O1` a multiply by a constant often becomes shifts and adds. The Example dropdown labels **Basic — start here**. All three external engines (CodeMirror, Icarus Verilog, Yosys — 78 MB) are now **vendored under `vendor/`** as a fallback for when the CDN is unreachable; the wasm ones need the page served over `http://`. Test suite gained sections [11] and [12] of the comprehensive suite. |
