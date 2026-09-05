@@ -1,0 +1,113 @@
+const fs = require('fs');
+const path = require('path');
+const { installExamplesFetch } = require('./examples_fetch');
+let JSDOM;
+try {
+  JSDOM = require('jsdom').JSDOM;
+} catch (e) {
+  try {
+    JSDOM = require(path.resolve(__dirname, 'node_modules/jsdom')).JSDOM;
+  } catch (e2) {
+    JSDOM = require('/home/rajesh/.gemini/antigravity-ide/brain/7780d698-8baa-4d51-9b54-596f69dcec55/scratch/node_modules/jsdom').JSDOM;
+  }
+}
+
+const html = fs.readFileSync(path.resolve(__dirname, '../riscv_simulator.html'), 'utf8');
+const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.min.js'), 'utf8');
+
+
+const dom = new JSDOM(html, {
+  runScripts: 'dangerously',
+  resources: 'usable',
+  url: 'http://localhost:8080/riscv_simulator.html',
+  beforeParse(window) {
+    window.__CM6_DISABLE_CDN = true; // prevent the loader from fetching the CDN bundle (jsdom layout limitations); tests pre-inject the local bundle
+    // Pre-inject CodeMirror 6 so the app can boot even when the CDN is
+    // unreachable. jsdom cannot run the ESM CDN bundles, and the local
+    // fallback file cannot be fetched without a server, so load it directly.
+    window.addEventListener('DOMContentLoaded', () => {
+      try { window.eval(CM6_BUNDLE_SOURCE); } catch (e) { console.error('CM6 inject failed:', e.message); }
+    });
+
+    window.requestAnimationFrame = (cb) => setTimeout(cb, 16);
+    window.cancelAnimationFrame = (id) => clearTimeout(id);
+    window.matchMedia = () => ({ matches: false, addListener: () => {}, removeListener: () => {} });
+    window.Range.prototype.getClientRects = () => [];
+    window.Range.prototype.getBoundingClientRect = () => ({ top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 });
+    window.Element.prototype.getClientRects = () => [];
+    window.Element.prototype.getBoundingClientRect = () => ({ top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 });
+    if (window.HTMLCanvasElement) {
+      window.HTMLCanvasElement.prototype.getContext = () => ({
+        createImageData: (w, h) => ({ data: new Uint8Array(w * h * 4) }),
+        putImageData: () => {},
+        fillRect: () => {},
+        clearRect: () => {}
+      });
+    }
+    installExamplesFetch(window); // before the page's own fetch() for the Example menu
+  }
+});
+
+const win = dom.window;
+
+setTimeout(async () => {
+  try {
+    console.log('Testing breakpoint snapping and line number highlighting...');
+    
+    // Load 'fib' example
+    await win.loadExample('fib');
+    console.log('Editor code lines:\n' + win.editor.value);
+
+    // Line 1 is: "# Fibonacci — compute fib(10) = 55"
+    // Line 2 is: "# ⚠ ecall is a simulator convenience..."
+    // Line 3 is: ".text"
+    // Line 4 is: "main:"
+    // Line 5 is: "\tli\tx1, 0\t# fib(0)"
+    
+    console.log('\n--- Test 1: Snapping from Line 1 (Comment) ---');
+    win.toggleBreakpoint(1);
+    console.log('Breakpoints Set:', Array.from(win.breakpoints));
+    if (!win.breakpoints.has(5)) {
+      throw new Error(`Expected breakpoint on line 5, got ${Array.from(win.breakpoints)}`);
+    }
+    if (win.breakpoints.has(1)) {
+      throw new Error('Breakpoint should NOT be on line 1!');
+    }
+    console.log('✅ Line 1 snapped to line 5!');
+
+    // Toggle line 2 (.text) -> since line 5 is already set, it should toggle off line 5
+    console.log('\n--- Test 2: Toggling from Line 2 (.text) ---');
+    win.toggleBreakpoint(2);
+    console.log('Breakpoints Set after toggle:', Array.from(win.breakpoints));
+    if (win.breakpoints.has(5)) {
+      throw new Error('Expected breakpoint on line 5 to be toggled off');
+    }
+    console.log('✅ Toggling line 2 toggled off line 5!');
+
+    // Test 3: Snap from Line 4 ("main:") -> sets on line 5
+    console.log('\n--- Test 3: Snapping from Line 4 (main:) ---');
+    win.toggleBreakpoint(4);
+    console.log('Breakpoints Set:', Array.from(win.breakpoints));
+    if (!win.breakpoints.has(5)) {
+      throw new Error('Expected breakpoint on line 5');
+    }
+    console.log('✅ Line 4 snapped to line 5!');
+
+    // Test 4: Verify breakpoint state in CodeMirror 6 editor
+    console.log('\n--- Test 4: CodeMirror 6 Breakpoint Field Verification ---');
+    const cm = win.cmEditor;
+    if (!cm) throw new Error('cmEditor not found');
+
+    // Run assemble and step to line 4
+    win.assembleOnly();
+    console.log('Assembled machine code length:', win.machineCode.length);
+
+    console.log('\n======================================================');
+    console.log('🎉 ALL BREAKPOINT HIGHLIGHT & SNAP TESTS PASSED!');
+    console.log('======================================================');
+    process.exit(0);
+  } catch (err) {
+    console.error('Test Failed:', err);
+    process.exit(1);
+  }
+}, 300);

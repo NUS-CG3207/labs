@@ -1,0 +1,21 @@
+# Assembly Example Index
+
+Read by the simulator's **Example:** dropdown in Assembly mode, in row order.
+Add a program by adding a row here and dropping a matching `.asm` file in this
+folder — no HTML changes needed. Up to 15 rows; the simulator does not enforce
+that limit, it is just what the menu is designed for.
+
+`dip_led` is the one exception: it is also baked directly into
+`riscv_simulator.html` (`BAKED_ASM_EXAMPLE`), so the page always has one
+working example even with no server. If you change this file's row for it,
+update that baked copy too, or the two will say different things.
+
+| Key | Label | File | Description |
+|-----|-------|------|--------------|
+| dip_led | DIP to LED (start here) | DIP_to_LED.asm | DIP to LED — the one example baked into the page, works with no server |
+| rars_syscalls | RARS Syscalls | rars_syscalls.asm | RARS ecall syscalls demo |
+| fib | Fibonacci | fibonacci.asm | Fibonacci sequence |
+| hello_world | Hello World | HelloWorld.asm | Hello World |
+| hello_jal | Hello Subroutine | HelloWorld_jal_jalr.asm | Hello World with a subroutine |
+| circle_accel | Circle & Accel | Circle_delay_accel.asm | Circle and delay accel |
+| image_display_accel | Image Display & Accel | ImageDisplay_autoadvance_accel.asm | Image display autoadvance and accel |
