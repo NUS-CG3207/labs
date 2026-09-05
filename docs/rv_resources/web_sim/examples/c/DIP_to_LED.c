@@ -27,7 +27,6 @@
 
 int main()
 {
-    asm volatile("li sp, %0" : : "i" (STACK_INIT)); //inline assembly to init sp. Registers cant be accessed explicitly in pure C
     volatile unsigned int* DIP_ADDR = (unsigned int*) (MMIO_BASE+DIP_OFF);
     volatile unsigned int* LED_ADDR = (unsigned int*) (MMIO_BASE+LED_OFF);
 

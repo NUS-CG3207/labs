@@ -82,7 +82,7 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 ---
 
 ### 3. `test_c_godbolt_simulation.js` — Compiler Explorer (Godbolt) C Compilation Pipeline
-- **Purpose**: Verifies online Godbolt REST API compilation, CRT0 startup shim injection, bidirectional source-to-assembly line mapping, C breakpoints, and C variable inspection across standard C examples (`basic_c`, `factorial_c`, `fibonacci_c`, `loop_c`, `matrix_c`, `peripherals_c`).
+- **Purpose**: Verifies online Godbolt REST API compilation, CRT0 startup shim injection, bidirectional source-to-assembly line mapping, C breakpoints, and C variable inspection across standard C examples (`dip_led_c`, `fibonacci_c`, `hello_world_c`, `hello_jal_c`, `circle_accel_c`, `image_display_c`).
 - **Run Command**: `node riscv_simulator_tests/test_c_godbolt_simulation.js`
 
 ---
@@ -226,18 +226,20 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 
 Every example but `dip_led` / `dip_led_c` lives outside `riscv_simulator.html` entirely, in
 [`../examples/`](../examples/) (`asm/*.asm`, `c/*.c`) — the page `fetch()`es one when it is
-selected. The **menu itself** is data too: `asm/index.md` and `c/index.md` each hold one
-markdown table (`| key | label | file | description |`), fetched and parsed at page load into
-the dropdown and the file each key maps to. jsdom has no `fetch`, so two shims stand in for
+selected. The **menu itself** is data too: `asm/index.txt` and `c/index.txt` each hold one
+markdown-style table (`| key | label | file | description |`), fetched and parsed at page load
+into the dropdown and the file each key maps to. Plain `.txt`, not `.md` — a static site
+generator hosting this repo tends to render `.md` through its own Markdown pipeline instead of
+serving it verbatim, which broke this fetch. jsdom has no `fetch`, so two shims stand in for
 both of these:
 
 - **`examples_fetch.js`**: `installExamplesFetch(win)` patches `window.fetch` to serve
-  `examples/asm/*`, `examples/c/*` and the two `index.md` files straight off disk, so
+  `examples/asm/*`, `examples/c/*` and the two `index.txt` files straight off disk, so
   `win.loadExample(name)` and the menu itself work under test exactly as they would over
   `http://`.
 
   **This must be installed inside `beforeParse`, not after `new JSDOM()` returns.** The
-  page's own top-level script calls `fetch('examples/*/index.md')` immediately as it loads,
+  page's own top-level script calls `fetch('examples/*/index.txt')` immediately as it loads,
   which — with `runScripts: 'dangerously'` — happens *synchronously inside the `new JSDOM()`
   call itself*, before any code after it (`const win = dom.window; installExamplesFetch(win);`)
   gets to run. Installed there, that first fetch throws, the menu silently falls back to its

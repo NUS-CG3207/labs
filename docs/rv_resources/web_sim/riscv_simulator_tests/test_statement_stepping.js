@@ -70,12 +70,12 @@ setTimeout(async () => {
     if (!stmtCheckbox) throw new Error('simStatementStep checkbox not found in DOM');
     console.log('✅ Settings Modal Statement Stepping toggle element verified');
 
-    // 2. Test in C Mode (e.g. Factorial or Circle)
+    // 2. Test in C Mode (e.g. Fibonacci or Circle)
     win.setLanguageMode('c');
-    await win.loadExample('factorial_c');
+    await win.loadExample('fibonacci_c');
     await win.assembleOnly();
-    
-    console.log(`\n[C Mode] Assembled Fact example: ${win.machineCode.length} instructions`);
+
+    console.log(`\n[C Mode] Assembled Fibonacci example: ${win.machineCode.length} instructions`);
     
     // With Statement Stepping disabled:
     win.statementStepping = false;
@@ -112,9 +112,9 @@ setTimeout(async () => {
 
     // 3. Test in ASM Mode
     win.setLanguageMode('asm');
-    await win.loadExample('fact');
+    await win.loadExample('fib');
     win.assembleOnly();
-    console.log(`\n[ASM Mode] Assembled Fact example: ${win.machineCode.length} instructions`);
+    console.log(`\n[ASM Mode] Assembled Fibonacci example: ${win.machineCode.length} instructions`);
 
     win.statementStepping = true;
     win.stepOnce();

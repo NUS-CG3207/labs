@@ -105,7 +105,7 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   await win.loadExample('circle_accel_c');
   const mc3 = await win.assembleOnly();
   console.log(`  - Assembled instructions: ${mc3.length}`);
-  if (mc3.length !== 289) throw new Error(`Expected 289 instructions, got ${mc3.length}`);
+  if (mc3.length !== 286) throw new Error(`Expected 286 instructions, got ${mc3.length}`);
 
   for (let s = 0; s < 6000; s++) win.executeOne();
 
@@ -122,7 +122,7 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   await win.loadExample('image_display_c');
   const mc4 = await win.assembleOnly();
   console.log(`  - Assembled instructions: ${mc4.length}`);
-  if (mc4.length !== 661) throw new Error(`Expected 661 instructions, got ${mc4.length}`);
+  if (mc4.length !== 658) throw new Error(`Expected 658 instructions, got ${mc4.length}`);
 
   for (let s = 0; s < 200000; s++) win.executeOne();
 

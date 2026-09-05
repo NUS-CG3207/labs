@@ -91,7 +91,7 @@ setTimeout(async () => {
 
     const exampleSelect = win.document.getElementById('exampleSelect');
     const cOptionValues = Array.from(exampleSelect.options).map(o => o.value);
-    if (!cOptionValues.includes('basic_c') || !cOptionValues.includes('factorial_c') || !cOptionValues.includes('peripherals_c')) {
+    if (!cOptionValues.includes('dip_led_c') || !cOptionValues.includes('fibonacci_c') || !cOptionValues.includes('circle_accel_c')) {
       throw new Error('Example dropdown does not contain C examples in C mode');
     }
     console.log('✅ Language mode switching and UI controls verified!');
@@ -121,13 +121,12 @@ setTimeout(async () => {
     // 3. Test C Examples Compilation & Line Mapping
     console.log('\n[3] Testing C Examples Compilation & Line Mapping...');
     const cExamplesToTest = [
-      { name: 'basic_c', expectedA0: 60 },
-      { name: 'factorial_c', expectedA0: 120 },
+      { name: 'dip_led_c', isInfinite: true },
       { name: 'fibonacci_c', expectedA0: 34 },
-      { name: 'loop_c', expectedA0: 89 },
-      { name: 'matrix_c', expectedA0: 50 },
-      { name: 'peripherals_c', expectedA0: 0 },
-      { name: 'circle_accel_c', isInfinite: true }
+      { name: 'hello_world_c', isInfinite: true },
+      { name: 'hello_jal_c', isInfinite: true },
+      { name: 'circle_accel_c', isInfinite: true },
+      { name: 'image_display_c', isInfinite: true }
     ];
 
     for (const testCase of cExamplesToTest) {
@@ -148,7 +147,7 @@ setTimeout(async () => {
 
       console.log(`  - Compiled '${testCase.name}': ${mc.length} RV32 instructions, ${pcToCMap.size} C line mappings.`);
     }
-    console.log('✅ All 7 C examples compiled and mapped cleanly!');
+    console.log(`✅ All ${cExamplesToTest.length} C examples compiled and mapped cleanly!`);
 
     // 4. Test Algorithmic Execution of C Programs
     console.log('\n[4] Testing Algorithmic Simulation Execution of C Programs...');
@@ -181,7 +180,7 @@ setTimeout(async () => {
 
     // 5. Test C Source Stepping & Highlight Tracking
     console.log('\n[5] Testing Line-by-Line C Stepping & Active Line Highlight...');
-    await win.loadExample('basic_c');
+    await win.loadExample('fibonacci_c');
     await win.assembleOnly();
 
     const initialCLine = win.getCurrentExecLine();
@@ -206,10 +205,10 @@ setTimeout(async () => {
 
     // 7. Test C Breakpoints & Snapping
     console.log('\n[7] Testing C Breakpoint Setting, Snapping & Hits...');
-    await win.loadExample('factorial_c');
+    await win.loadExample('fibonacci_c');
     await win.assembleOnly();
 
-    // Snap test: Line 1 is comment -> snaps to line 2 (factorial function header) or next valid line
+    // Snap test: Line 1 is comment -> snaps to line 4 (compute_fib function header) or next valid line
     win.toggleBreakpoint(1);
     const bps = Array.from(win.getBreakpoints());
     console.log('Breakpoints after clicking line 1 (comment):', bps);
@@ -218,7 +217,7 @@ setTimeout(async () => {
     }
 
     win.toggleBreakpoint(bps[0]); // toggle off
-    // Set breakpoint on line 6: return n * factorial(n - 1);
+    // Set breakpoint on line 6: fib[0] = 0;
     win.toggleBreakpoint(6);
     if (!win.getBreakpoints().has(6)) {
       throw new Error('Failed to set breakpoint on C line 6');
@@ -242,26 +241,22 @@ setTimeout(async () => {
 
     // 8. Test Nexys 4 MMIO Peripherals from C
     console.log('\n[8] Testing MMIO Peripheral Manipulation in C Mode...');
-    await win.loadExample('peripherals_c');
+    await win.loadExample('dip_led_c');
     await win.assembleOnly();
 
-    // Run to completion
-    for (let s = 0; s < 400; s++) {
-      win.executeOne();
-      const inst = win.fetchInstruction(win.getPc());
-      if (inst === 0x00000073) break;
-    }
+    // DIP_to_LED.c mirrors DIP (RO, 0xFFFF0064) onto LED (WO, 0xFFFF0060) in
+    // an infinite loop - set a DIP value, run a few iterations, check LED.
+    win.setDipSwitches(0xbead);
+    for (let s = 0; s < 200; s++) win.executeOne();
 
-    // Verify 7-segment display (SEVSEG = 0x12345678)
-    const sevSegMem = win.readMem(0xFFFF0080, 4);
-    console.log('7-Segment MMIO readback: 0x' + (sevSegMem >>> 0).toString(16));
-    if ((sevSegMem >>> 0) !== 0x12345678) {
-      throw new Error(`Expected SEVSEG 0x12345678, got 0x${(sevSegMem >>> 0).toString(16)}`);
-    }
-
-    // Verify LED register (LEDS = 0x55)
+    // LED[7:0] is the plain user-output byte; LED[15:9]/[8] are PC bits and
+    // a clock signal, not just whatever was last written - so only the low
+    // byte of the DIP value is expected to come back unchanged.
     const ledMem = win.readMem(0xFFFF0060, 4);
-    console.log('LED MMIO readback: 0x' + (ledMem >>> 0).toString(16));
+    console.log('LED MMIO readback (low byte mirrors DIP = 0xbead): 0x' + (ledMem >>> 0).toString(16));
+    if ((ledMem & 0xFF) !== 0xad) {
+      throw new Error(`Expected LED[7:0] to mirror DIP's low byte 0xad, got 0x${(ledMem & 0xFF).toString(16)}`);
+    }
 
     console.log('✅ MMIO Peripherals and hardware registers verified from C code execution!');
 
@@ -280,13 +275,13 @@ setTimeout(async () => {
     if (win.getLanguageMode() !== 'asm') {
       throw new Error('Failed to switch back to ASM mode');
     }
-    await win.loadExample('basic');
+    await win.loadExample('fib');
     const asmMc = win.assembleOnly();
     if (!asmMc || asmMc.length === 0) {
-      throw new Error('Failed to assemble basic assembly example after mode switch');
+      throw new Error('Failed to assemble fib assembly example after mode switch');
     }
     win.stepOnce();
-    if (win.getRegs()[1] !== 10) {
+    if (win.getRegs()[1] !== 0) {
       throw new Error('Assembly step execution failed after switching back from C');
     }
     console.log('✅ Switch back to Assembly mode confirmed 100% operational!');
@@ -341,7 +336,7 @@ setTimeout(async () => {
 
     // Switch to C mode and verify compiled CRT0 uses stackBase = 0x20400
     win.setLanguageMode('c');
-    await win.loadExample('basic_c');
+    await win.loadExample('fibonacci_c');
     await win.assembleOnly();
 
     // Step past CRT0 li sp, 0x20400 (lui + addi) -> check sp (x2)
@@ -358,7 +353,7 @@ setTimeout(async () => {
     win.document.getElementById('ms-stack').value = '0x80000';
     win.applyAndCloseSettings();
 
-    await win.loadExample('basic_c');
+    await win.loadExample('fibonacci_c');
     await win.assembleOnly();
     win.stepOnce();
     const customSp = win.getRegs()[2];

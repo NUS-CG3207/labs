@@ -83,7 +83,7 @@ setTimeout(async () => {
     // The rest of this suite steps through a program checking specific
     // register values, so it loads a known one explicitly rather than
     // assuming what boots by default stays whatever it is today.
-    await window.loadExample('basic');
+    await window.loadExample('fib');
 
     console.log('\n--- JSDOM Test 2: Assembly & Machine Code Generation ---');
     const assembleBtn = document.getElementById('btnAssemble');
@@ -98,26 +98,26 @@ setTimeout(async () => {
     const stepBtn = document.getElementById('btnStep');
     const backBtn = document.getElementById('btnBack');
     
-    // Step 1
+    // Step 1: li x1, 0 (fib(0))
     stepBtn.click();
     console.log('After Step 1: x1 =', window.regs[1], 'x4 =', window.regs[4], 'PC = 0x' + window.pc.toString(16));
     console.log('currentExecLine =', window.currentExecLine);
-    if (window.regs[1] !== 10) throw new Error(`Expected x1=10, got ${window.regs[1]}`);
+    if (window.regs[1] !== 0) throw new Error(`Expected x1=0, got ${window.regs[1]}`);
 
-    // Step 2
+    // Step 2: li x2, 1 (fib(1))
     stepBtn.click();
     console.log('After Step 2: x2 =', window.regs[2], 'PC = 0x' + window.pc.toString(16));
-    if (window.regs[2] !== 20) throw new Error(`Expected x2=20, got ${window.regs[2]}`);
+    if (window.regs[2] !== 1) throw new Error(`Expected x2=1, got ${window.regs[2]}`);
 
-    // Step 3
+    // Step 3: li x3, 10 (n)
     stepBtn.click();
     console.log('After Step 3: x3 =', window.regs[3], 'PC = 0x' + window.pc.toString(16));
-    if (window.regs[3] !== 30) throw new Error(`Expected x3=30, got ${window.regs[3]}`);
+    if (window.regs[3] !== 10) throw new Error(`Expected x3=10, got ${window.regs[3]}`);
 
-    // Step 4: add x4, x1, x2 (10 + 20 = 30)
+    // Step 4: li x4, 2 (counter)
     stepBtn.click();
     console.log('After Step 4: x4 =', window.regs[4]);
-    if (window.regs[4] !== 30) throw new Error(`Expected x4=30, got ${window.regs[4]}`);
+    if (window.regs[4] !== 2) throw new Error(`Expected x4=2, got ${window.regs[4]}`);
 
     // Step Back
     console.log('\n--- JSDOM Test 4: Step Back ---');
@@ -134,7 +134,7 @@ setTimeout(async () => {
     if (window.breakpoints.has(6)) throw new Error('Breakpoint at line 6 was not cleared');
 
     console.log('\n--- JSDOM Test 6: Example Loading & Execution ---');
-    const examples = ['fib', 'fact', 'loop', 'circle_accel', 'basic'];
+    const examples = ['dip_led', 'rars_syscalls', 'fib', 'hello_world', 'hello_jal', 'circle_accel', 'image_display_accel'];
     for (const ex of examples) {
       await window.loadExample(ex);
       window.assembleOnly();
@@ -143,18 +143,18 @@ setTimeout(async () => {
     }
 
     console.log('\n--- JSDOM Test 7: Find & Replace ---');
-    await window.loadExample('basic');
+    await window.loadExample('fib');
     window.openFindReplace(false);
     const findInput = document.getElementById('findInput');
     const replaceInput = document.getElementById('replaceInput');
-    findInput.value = 'sum';
+    findInput.value = 'result';
     window.updateFindMatches();
     console.log('Find count text:', document.getElementById('findCount').textContent);
-    
-    replaceInput.value = 'total_sum';
+
+    replaceInput.value = 'total_result';
     window.replaceAll();
-    console.log('Does editor contain total_sum:', window.editor.value.includes('total_sum'));
-    if (!window.editor.value.includes('total_sum')) throw new Error('Replace all failed');
+    console.log('Does editor contain total_result:', window.editor.value.includes('total_result'));
+    if (!window.editor.value.includes('total_result')) throw new Error('Replace all failed');
     window.closeFindReplace();
 
     console.log('\n=============================================');

@@ -618,11 +618,6 @@
       flex-shrink: 0;
     }
 
-    .panel-stack-empty-panels {
-      color: #a6adc8;
-      font-weight: 600;
-    }
-
     .panel-stack-empty b {
       color: #9399b2;
     }
@@ -1470,6 +1465,25 @@
       border-radius: 3px;
       padding: 0 4px;
       margin-left: 2px;
+    }
+
+    .disasm-cvar-tag {
+      color: #a6e3a1;
+      font-weight: 600;
+      font-size: 11.5px;
+      background: rgba(166, 227, 161, 0.12);
+      border-radius: 3px;
+      padding: 0 4px;
+      margin-left: 2px;
+      cursor: default;
+    }
+
+    .locals-row-flash {
+      animation: localsRowFlash 1.2s ease-out;
+    }
+    @keyframes localsRowFlash {
+      0% { background: rgba(166, 227, 161, 0.45); }
+      100% { background: transparent; }
     }
 
     .disasm-toolbar {
@@ -3526,6 +3540,7 @@
           <button id="panelChip-memory" type="button"><span class="tab-chip-dot"></span>Memory</button>
           <button id="panelChip-peripherals" type="button"><span class="tab-chip-dot"></span>Peripherals</button>
           <button id="panelChip-disassembly" type="button"><span class="tab-chip-dot"></span>Disassembly</button>
+          <button id="panelChip-locals" type="button"><span class="tab-chip-dot"></span>Locals</button>
         </div>
         <div class="panel-stack" id="panelStack">
         <div class="tab-content" id="tab-registers">
@@ -3541,6 +3556,21 @@
               </tr>
             </thead>
             <tbody id="regBody"></tbody>
+          </table>
+        </div>
+        <div class="tab-content" id="tab-locals">
+          <div id="localsNotice" class="hdl-reg-notice" style="display:none"></div>
+          <table class="reg-table" id="localsTable">
+            <colgroup><col><col><col><col></colgroup>
+            <thead>
+              <tr>
+                <th id="localsName" class="col-left col-name">Variable<span class="col-resizer" data-panel="locals" data-col="name" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
+                <th id="localsAddr" class="col-left col-id">Address<span class="col-resizer" data-panel="locals" data-col="addr" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
+                <th id="localsHex" class="col-left col-val">Content (Hex)<span class="col-resizer" data-panel="locals" data-col="hex" title="Drag to resize this column · double-click to reset the panel's columns"></span></th>
+                <th id="localsDec" class="col-left col-val">Content (Dec)<label class="sign-toggle" title="Signed / unsigned decimal display"><span class="sign-toggle-lbl">±</span><input type="checkbox" id="localsDecSignToggle" checked onchange="setLocalsDecSigned(this.checked)"><span class="sign-toggle-track"><span class="sign-toggle-thumb"></span></span><span class="sign-toggle-lbl">U</span></label></th>
+              </tr>
+            </thead>
+            <tbody id="localsBody"></tbody>
           </table>
         </div>
         <div class="tab-content" id="tab-memory">
@@ -3792,7 +3822,7 @@
         </div>
           <div class="panel-stack-empty">
             <span class="panel-stack-empty-icon">▤</span>
-            <span>All panels are hidden — use the buttons above to show <span class="panel-stack-empty-panels">Registers, Memory, Peripherals, or Disassembly</span>.</span>
+            <span>All panels are hidden — use the buttons above to show the various panels.</span>
           </div>
         </div>
       </div>
@@ -7089,7 +7119,53 @@
       const line = view.state.doc.lineAt(pos);
       const lineText = line.text;
       const col = pos - line.from;
-      
+
+      if (editorLanguageMode === 'c') {
+        const cCommentIdx = lineText.indexOf('//');
+        if (cCommentIdx !== -1 && col >= cCommentIdx) return null;
+        const cMatch = lineText.slice(0, col).match(/(\w+)$/);
+        const cWordStart = cMatch ? col - cMatch[1].length : col;
+        const cMatchAfter = lineText.slice(col).match(/^(\w+)/);
+        const cWordEnd = cMatchAfter ? col + cMatchAfter[1].length : col;
+        if (cWordStart === cWordEnd) return null;
+        const cWord = lineText.slice(cWordStart, cWordEnd);
+        const varInfo = getCVarAtSourceLine(line.number, cWord);
+        if (!varInfo) return null;
+        return {
+          pos: line.from + cWordStart,
+          end: line.from + cWordEnd,
+          above: true,
+          create() {
+            const dom = document.createElement('div');
+            dom.className = 'cm-hover-tooltip';
+            dom.style.cssText = 'padding:6px 10px;font-size:12px;max-width:360px;background:#1e1e2e;color:#cdd6f4;border:1px solid #45475a;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,0.4);line-height:1.45;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
+            const offsetTxt = `s0 ${varInfo.offset >= 0 ? '+' : '-'} ${Math.abs(varInfo.offset)}`;
+            let addrLine = offsetTxt;
+            let valueHtml = '';
+            const pcReady = typeof pc !== 'undefined' && (pc >>> 0) > varInfo.framePtrAddr;
+            if (typeof assembled !== 'undefined' && assembled && typeof regs !== 'undefined' && pcReady) {
+              const s0 = regs[8] >>> 0;
+              const addr = (s0 + varInfo.offset) >>> 0;
+              const uval = readMem(addr, 4, true) >>> 0;
+              const sval = readMemSigned(addr, 4, true);
+              addrLine += ` = 0x${addr.toString(16).padStart(8, '0')}`;
+              valueHtml = `<div style="font-size:11px;color:#a6adc8;border-top:1px solid #313244;padding-top:3px;margin-top:3px;">Hex 0x${uval.toString(16).padStart(8, '0')} &nbsp;·&nbsp; Dec (signed) ${sval} &nbsp;·&nbsp; Dec (unsigned) ${uval}</div>`;
+            } else if (typeof assembled !== 'undefined' && assembled && !pcReady) {
+              valueHtml = `<div style="font-size:11px;color:#a6adc8;border-top:1px solid #313244;padding-top:3px;margin-top:3px;">s0 not set up yet at the current PC</div>`;
+            }
+            dom.innerHTML = `
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                <span style="font-size:10px;padding:1px 5px;border-radius:3px;font-weight:bold;text-transform:uppercase;background:#313244;color:#89b4fa;">${varInfo.kind}</span>
+                <span style="font-weight:bold;color:#fab387;font-family:monospace;font-size:13px;">${escapeHtml(varInfo.name)}</span>
+              </div>
+              <div style="color:#cdd6f4;margin-bottom:3px;font-family:monospace;">${addrLine}</div>
+              ${valueHtml}
+            `;
+            return { dom };
+          }
+        };
+      }
+
       const commentIdx = lineText.indexOf('#');
       if (commentIdx !== -1 && col >= commentIdx) return null;
       
@@ -7545,6 +7621,7 @@
       { name: 'memory', label: 'Memory' },
       { name: 'peripherals', label: 'Peripherals' },
       { name: 'disassembly', label: 'Disassembly' },
+      { name: 'locals', label: 'Locals' },
     ];
     // Width (px) of the right-side dock while the 2×2 grid is active. When the
     // user collapses back to ≤2 docked panels, the previously saved width
@@ -7572,6 +7649,7 @@
         memory: { x: 130, y: 120, w: 540, h: 400 },
         peripherals: { x: 170, y: 150, w: 560, h: 440 },
         disassembly: { x: 210, y: 180, w: 580, h: 400 },
+        locals: { x: 250, y: 210, w: 480, h: 360 },
       };
       const def = { order: PANEL_DEFS.map(p => p.name) };
       PANEL_DEFS.forEach(({ name }, i) => {
@@ -7770,6 +7848,12 @@
         { key: 'mc',     min: 96,  fit: 116, grow: 0 },
         { key: 'native', min: 128, fit: 200, grow: 1 },
         { key: 'source', min: 128, fit: 200, grow: 1 },
+      ],
+      locals: [
+        { key: 'name', min: 60,  fit: 92,  grow: 0 },
+        { key: 'addr', min: 92,  fit: 106, grow: 0 },
+        { key: 'hex',  min: 92,  fit: 124, grow: 0 },
+        { key: 'dec',  min: 80,  fit: 96,  grow: 1 },
       ],
     };
 
@@ -7995,6 +8079,7 @@
         else if (name === 'memory') { if (typeof updateMemSubTabs === 'function') updateMemSubTabs(); updateMemoryView(); }
         else if (name === 'peripherals') initPeripherals();
         else if (name === 'disassembly') updateDisassembly();
+        else if (name === 'locals') updateLocalsView();
         // A panel that was just shown may have gone from zero width to a
         // real one, so re-run its column layout against the new size.
         if (PANEL_COLS[name]) applyPanelColLayout(name);
@@ -9142,11 +9227,100 @@ function updateRegisters() {
       // since only the <tbody> is replaced — nothing to reapply here.
       // Also update peripherals (PC LEDs, etc.) when registers are refreshed
       updatePeripherals();
+      // Locals mirrors the same "state just changed" moment as Registers -
+      // piggybacking here means every existing updateRegisters() call site
+      // (step, run, reset, edit...) keeps Locals live without touching them.
+      if (typeof updateLocalsView === 'function') updateLocalsView();
     }
 
     function setRegDecSigned(signed) {
       regDecSigned = !!signed;
       updateRegisters();
+    }
+
+    // ============================================================
+    // LOCALS (C mode: variable name <-> stack address <-> live value)
+    // ============================================================
+    let localsDecSigned = true;
+
+    function updateLocalsView() {
+      const body = document.getElementById('localsBody');
+      const notice = document.getElementById('localsNotice');
+      if (!body) return;
+      if (editorLanguageMode !== 'c' || !cFunctionLocals || cFunctionLocals.size === 0) {
+        body.innerHTML = '';
+        if (notice) {
+          notice.style.display = '';
+          notice.innerHTML = editorLanguageMode !== 'c'
+            ? 'Locals is a C-mode feature — switch to <b>C</b> to see variable-to-memory correspondence here.'
+            : 'No local C variables were resolved from this program (best-effort — see the panel header for how).';
+        }
+        return;
+      }
+      const curPc = (typeof pc !== 'undefined') ? (pc >>> 0) : 0;
+      const fn = getCurrentCFunction(curPc);
+      if (!fn || !fn.vars.length) {
+        body.innerHTML = '';
+        if (notice) {
+          notice.style.display = '';
+          notice.innerHTML = fn
+            ? `<b>${escapeHtml(fn.name)}</b> has no locals this view could resolve.`
+            : 'PC is not currently inside a function this view has a variable table for (e.g. it is in the CRT0 startup shim or the <code>__halt</code> trap).';
+        }
+        return;
+      }
+      if (curPc <= fn.framePtrAddr) {
+        body.innerHTML = '';
+        if (notice) {
+          notice.style.display = '';
+          notice.innerHTML = `Entering <b>${escapeHtml(fn.name)}</b>() — its locals will show correct addresses once execution reaches 0x${fn.framePtrAddr.toString(16).padStart(8, '0')}, where the frame pointer (<code>s0</code>) is set up.`;
+        }
+        return;
+      }
+      if (notice) notice.style.display = 'none';
+      const s0 = (typeof regs !== 'undefined') ? (regs[8] >>> 0) : 0;
+      let html = '';
+      fn.vars.forEach(v => {
+        const addr = (s0 + v.offset) >>> 0;
+        const uval = readMem(addr, 4, true) >>> 0;
+        const sval = readMemSigned(addr, 4, true);
+        const decVal = localsDecSigned ? sval : uval;
+        const kindLabel = v.kind === 'param' ? 'param' : 'local';
+        html += `<tr><td class="reg-name col-name" title="${kindLabel} of ${escapeHtml(fn.name)}() — s0 ${v.offset >= 0 ? '+' : '-'} ${Math.abs(v.offset)}">${escapeHtml(v.name)}</td>` +
+          `<td class="reg-name col-id">0x${addr.toString(16).padStart(8, '0')}</td>` +
+          `<td class="reg-val col-val">0x${uval.toString(16).padStart(8, '0')}</td>` +
+          `<td class="reg-val col-val">${decVal}</td></tr>`;
+      });
+      body.innerHTML = html || '';
+    }
+
+    function setLocalsDecSigned(signed) {
+      localsDecSigned = !!signed;
+      updateLocalsView();
+    }
+
+    // Click a variable in the C source -> bring the Locals panel forward and
+    // flash its row, so the source <-> memory correspondence is one click,
+    // not just a hover.
+    function focusLocalsVar(name) {
+      if (mobileMode()) {
+        setMobileTab('locals');
+      } else if (!isPanelVisible('locals')) {
+        setPanelVisible('locals', true);
+      }
+      updateLocalsView();
+      requestAnimationFrame(() => {
+        const rows = document.querySelectorAll('#localsBody tr');
+        for (const row of rows) {
+          const cell = row.firstElementChild;
+          if (cell && cell.textContent === name) {
+            row.scrollIntoView({ block: 'center' });
+            row.classList.add('locals-row-flash');
+            setTimeout(() => row.classList.remove('locals-row-flash'), 1200);
+            break;
+          }
+        }
+      });
     }
 
     // ============================================================
@@ -10490,6 +10664,21 @@ function updateRegisters() {
         });
       }
 
+      // C mode only: annotate a stack-relative load/store's Native cell with
+      // the C variable name it corresponds to, using the same best-effort
+      // location table the Locals panel and the source hover use.
+      function annotateCVar(nativeText, address) {
+        if (editorLanguageMode !== 'c') return '';
+        const m = /\b(?:s[bhw]|lw|lh|lhu|lb|lbu)\s+[^,]+,\s*(-?\d+)\((s0|x8|sp|x2)\)/.exec(nativeText || '');
+        if (!m) return '';
+        const fn = getCurrentCFunction(address >>> 0);
+        if (!fn) return '';
+        const offset = parseInt(m[1], 10);
+        const v = fn.vars.find(x => x.offset === offset);
+        if (!v) return '';
+        return ` <span class="disasm-cvar-tag" title="${v.kind} of ${escapeHtml(fn.name)}()">; ${escapeHtml(v.name)}</span>`;
+      }
+
       // The <colgroup> is what sizes the columns; applyPanelColLayout()
       // fills in each <col>'s width after this table is inserted.
       const colTitle = 'Drag to resize this column · double-click to reset the panel\'s columns';
@@ -10589,7 +10778,7 @@ function updateRegisters() {
           }
         }
 
-        const nativeRendered = annotateLabels(escapeHtml(native));
+        const nativeRendered = annotateLabels(escapeHtml(native)) + annotateCVar(native, item.address);
         const sourceRendered = annotateLabels(escapeHtml(source));
 
         html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>
@@ -10635,15 +10824,18 @@ function updateRegisters() {
     // still needs the network for Godbolt regardless, same as every other
     // C example, baked or not.
 
-    // The Example menu is read from examples/asm/index.md and
-    // examples/c/index.md, not written out here - adding a program is a row
-    // in one of those files plus the file itself, no HTML edit. Each row is
-    // `| key | label | file | description |`; loadExampleIndex() parses it
-    // into EXAMPLE_MENU (for the dropdown) and EXAMPLE_FILENAMES (for the
-    // fetch path and the Save filename). Until that fetch resolves - and
-    // permanently, over file://, where it never will - both fall back to
-    // just the one baked example in each language, so the dropdown is never
-    // genuinely empty.
+    // The Example menu is read from examples/asm/index.txt and
+    // examples/c/index.txt, not written out here - adding a program is a row
+    // in one of those files plus the file itself, no HTML edit. Plain .txt,
+    // not .md: static site generators that serve the repo tend to render
+    // .md through a Markdown->HTML pipeline instead of serving it verbatim,
+    // which broke this fetch when hosted that way - .txt is never touched.
+    // Each row is `| key | label | file | description |`; loadExampleIndex()
+    // parses it into EXAMPLE_MENU (for the dropdown) and EXAMPLE_FILENAMES
+    // (for the fetch path and the Save filename). Until that fetch resolves
+    // - and permanently, over file://, where it never will - both fall back
+    // to just the one baked example in each language, so the dropdown is
+    // never genuinely empty.
     let EXAMPLE_MENU = {
       asm: [['dip_led', 'DIP to LED (start here)', 'DIP to LED — the one example baked into the page, works with no server']],
       c: [['dip_led_c', 'DIP to LED (start here)', 'DIP switches mirrored to LEDs — the one C example baked into the page, works with no server']],
@@ -10676,13 +10868,13 @@ function updateRegisters() {
     async function loadExampleIndex() {
       for (const lang of ['asm', 'c']) {
         try {
-          const resp = await fetch(`examples/${lang}/index.md`);
+          const resp = await fetch(`examples/${lang}/index.txt`);
           if (!resp.ok) continue;
           const rows = parseExampleIndexMarkdown(await resp.text());
           if (!rows.length) continue;
           EXAMPLE_MENU[lang] = rows.map(([key, label, , desc]) => [key, label, desc]);
           for (const [key, , file] of rows) EXAMPLE_FILENAMES[key] = file;
-        } catch (err) { /* index.md unreachable (e.g. file://) - stay on the fallback */ }
+        } catch (err) { /* index.txt unreachable (e.g. file://) - stay on the fallback */ }
       }
       updateExampleSelectorOptions();
     }
@@ -10904,7 +11096,6 @@ STACK_INIT:	# Stack pointer can be initialised to this location - DMEM+0x200 (i.
 
 int main()
 {
-    asm volatile("li sp, %0" : : "i" (STACK_INIT)); //inline assembly to init sp. Registers cant be accessed explicitly in pure C
     volatile unsigned int* DIP_ADDR = (unsigned int*) (MMIO_BASE+DIP_OFF);
     volatile unsigned int* LED_ADDR = (unsigned int*) (MMIO_BASE+LED_OFF);
 
@@ -11553,6 +11744,7 @@ int main()
         setStatus('Error: No code', 'error');
         return null;
       }
+      cFunctionLocals = new Map();
       try {
         log('Assembling...', 'info');
         const mc = assemble(source, baseAddress);
@@ -11631,6 +11823,193 @@ int main()
     let cLineToFirstPcMap = new Map();
     let lastCompiledCSource = null;
     let lastGeneratedAsm = '';
+
+    /* ============================================================
+       C variable <-> memory location correspondence (best-effort)
+
+       Not real DWARF - Compiler Explorer's JSON response doesn't hand us a
+       parsed line/location table, and parsing the raw DWARF byte stream it
+       embeds as .byte/.uleb128 directives is a project of its own. Instead
+       this leans on how clang at -O0 always behaves: every local is spilled
+       to a fixed s0-relative stack slot, and that slot's instruction carries
+       a .loc pointing at the C source line that produced it (already parsed
+       into cLineToPcsMap above). So: find each function's C source range by
+       a light regex scan (good enough for the simple, single-line-signature
+       style every bundled example uses - not a real C parser), match each
+       local's declaration (or, if uninitialized, its first assignment) back
+       to the instruction that stores it, and read the stack offset off of
+       that instruction's own disassembly text. Parameters are found the
+       same way, from the a0.. spill sequence right at function entry.
+       ============================================================ */
+    let cFunctionLocals = new Map(); // name -> {startAddr, endAddr, startLine, endLine, vars:[{name,offset,kind,declLine}]}
+
+    function stripCCommentsAndStrings(line) {
+      let out = '';
+      let i = 0;
+      let inBlockComment = false;
+      while (i < line.length) {
+        if (inBlockComment) {
+          const end = line.indexOf('*/', i);
+          if (end === -1) { i = line.length; break; }
+          out += ' '.repeat(end + 2 - i);
+          i = end + 2;
+          inBlockComment = false;
+          continue;
+        }
+        const c = line[i];
+        if (c === '/' && line[i + 1] === '/') { out += ' '.repeat(line.length - i); break; }
+        if (c === '/' && line[i + 1] === '*') { inBlockComment = true; out += '  '; i += 2; continue; }
+        if (c === '"' || c === "'") {
+          const quote = c;
+          let j = i + 1;
+          while (j < line.length && line[j] !== quote) { if (line[j] === '\\') j++; j++; }
+          j = Math.min(j + 1, line.length);
+          out += quote + ' '.repeat(j - i - 1);
+          i = j;
+          continue;
+        }
+        out += c;
+        i++;
+      }
+      return out;
+    }
+
+    function buildCVariableLocations(sourceText, mc) {
+      cFunctionLocals = new Map();
+      if (!sourceText || !mc || !mc.length) return;
+      const rawLines = sourceText.split('\n');
+      const cleanLines = rawLines.map(stripCCommentsAndStrings);
+      const funcs = [];
+      const sigRe = /^[ \t]*(?:static\s+|inline\s+)?[A-Za-z_][\w\s\*]*?\b(\w+)\s*\(([^;{}]*)\)\s*\{?\s*$/;
+      const NOT_FUNCS = new Set(['if', 'for', 'while', 'switch', 'return', 'sizeof', 'else']);
+      for (let i = 0; i < cleanLines.length; i++) {
+        const line = cleanLines[i];
+        if (/;\s*$/.test(line)) continue; // prototype, not a definition
+        const m = line.match(sigRe);
+        if (!m || NOT_FUNCS.has(m[1])) continue;
+        let braceLine = line.includes('{') ? i : -1;
+        for (let j = i + 1; braceLine === -1 && j < Math.min(cleanLines.length, i + 3); j++) {
+          if (cleanLines[j].includes('{')) braceLine = j;
+        }
+        if (braceLine === -1) continue;
+        let depth = 0, endLine = -1;
+        for (let j = braceLine; j < cleanLines.length && endLine === -1; j++) {
+          for (const ch of cleanLines[j]) {
+            if (ch === '{') depth++;
+            else if (ch === '}') { depth--; if (depth === 0) { endLine = j; break; } }
+          }
+        }
+        if (endLine === -1) continue;
+        const params = [];
+        const paramsRaw = m[2].trim();
+        if (paramsRaw && paramsRaw !== 'void') {
+          paramsRaw.split(',').forEach(p => {
+            const pm = p.trim().match(/(\w+)\s*$/);
+            if (pm) params.push(pm[1]);
+          });
+        }
+        funcs.push({ name: m[1], startLine: braceLine + 2, endLine: endLine + 1, params, vars: [] });
+      }
+
+      const DECL_RE = /\b(?:const\s+|volatile\s+|static\s+|unsigned\s+|signed\s+)*(?:void|char|short|int|long|float|double|_Bool|[A-Za-z_]\w*_t)\b[\s\*]*(\w+)\s*(?:=|;|,|\))/;
+      funcs.forEach(fn => {
+        const seen = new Set(fn.params);
+        for (let ln = fn.startLine; ln <= fn.endLine; ln++) {
+          const text = cleanLines[ln - 1];
+          if (text === undefined) continue;
+          const dm = text.match(DECL_RE);
+          if (dm && !seen.has(dm[1])) {
+            seen.add(dm[1]);
+            fn.vars.push({ name: dm[1], declLine: ln, kind: 'local' });
+          }
+        }
+      });
+
+      // Resolve each function's address range from `labels` (set by assemble()).
+      const withAddr = funcs
+        .map(fn => ({ fn, addr: (typeof labels !== 'undefined' && labels[fn.name] !== undefined) ? labels[fn.name] >>> 0 : null }))
+        .filter(x => x.addr !== null)
+        .sort((a, b) => a.addr - b.addr);
+      const haltAddr = (typeof labels !== 'undefined' && labels['__halt'] !== undefined) ? labels['__halt'] >>> 0 : null;
+
+      withAddr.forEach((entry, idx) => {
+        const { fn, addr } = entry;
+        const endAddr = (idx + 1 < withAddr.length) ? withAddr[idx + 1].addr : (haltAddr !== null ? haltAddr : 0xFFFFFFFF);
+
+        // Parameters: scan the first ~20 instructions of the function for the
+        // a0.. spill sequence (`sw aN, OFF(s0)`), in register order. Also find
+        // where s0 itself gets set up - reading s0-relative addresses before
+        // that point (regs[8] is still whatever the previous frame left it at)
+        // produces addresses that look like garbage.
+        const paramOffsets = [];
+        let framePtrAddr = null;
+        const inRange = mc.filter(it => it.address >= addr && it.address < endAddr).slice(0, 20);
+        inRange.forEach(it => {
+          if (framePtrAddr === null && /^\s*addi\s+s0\s*,\s*sp\s*,/.test(it.text || '')) {
+            framePtrAddr = it.address;
+          }
+          const pm = /^\s*sw\s+a(\d+)\s*,\s*(-?\d+)\(s0\)/.exec(it.text || '');
+          if (pm) {
+            const argIdx = parseInt(pm[1], 10);
+            if (paramOffsets[argIdx] === undefined) paramOffsets[argIdx] = parseInt(pm[2], 10);
+          }
+        });
+
+        const vars = [];
+        fn.params.forEach((pname, i) => {
+          if (paramOffsets[i] !== undefined) vars.push({ name: pname, offset: paramOffsets[i], kind: 'param' });
+        });
+
+        const findStoreOffset = (cLine) => {
+          const pcs = cLineToPcsMap.get(cLine);
+          if (!pcs) return null;
+          for (const p of pcs) {
+            const item = mc.find(it => it.address === p);
+            if (!item || !item.text) continue;
+            const sm = /\bs[bhw]\s+[^,]+,\s*(-?\d+)\((s0|sp)\)/.exec(item.text || '');
+            if (sm) return parseInt(sm[1], 10);
+          }
+          return null;
+        };
+
+        fn.vars.forEach(v => {
+          let off = findStoreOffset(v.declLine);
+          if (off === null) {
+            // No initializer on the declaration line itself - fall back to
+            // this variable's first assignment further down in the function.
+            const assignRe = new RegExp('\\b' + v.name + '\\s*=[^=]');
+            for (let ln = v.declLine + 1; ln <= fn.endLine && off === null; ln++) {
+              const text = cleanLines[ln - 1];
+              if (text !== undefined && assignRe.test(text)) off = findStoreOffset(ln);
+            }
+          }
+          if (off !== null) vars.push({ name: v.name, offset: off, kind: v.kind });
+        });
+
+        if (vars.length) {
+          cFunctionLocals.set(fn.name, {
+            startAddr: addr, endAddr, startLine: fn.startLine - 1, endLine: fn.endLine,
+            framePtrAddr: framePtrAddr !== null ? framePtrAddr : addr, vars
+          });
+        }
+      });
+    }
+
+    function getCurrentCFunction(pcVal) {
+      for (const [name, info] of cFunctionLocals) {
+        if (pcVal >= info.startAddr && pcVal < info.endAddr) return { name, ...info };
+      }
+      return null;
+    }
+
+    function getCVarAtSourceLine(cLine, varName) {
+      for (const [, info] of cFunctionLocals) {
+        if (cLine < info.startLine || cLine > info.endLine) continue;
+        const v = info.vars.find(x => x.name === varName);
+        if (v) return { ...v, framePtrAddr: info.framePtrAddr };
+      }
+      return null;
+    }
 
     function highlightFirstCLine(mc) {
       let firstCLine = -1;
@@ -11845,20 +12224,31 @@ int main()
           `0x${effectiveStack.toString(16)}. See the console.`, 'warn');
       }
 
-      // Prepend CRT0 baremetal startup shim: sets sp = effectiveStack, calls main(), terminates with ecall (a7=10)
+      // Prepend CRT0 baremetal startup shim: sets sp = effectiveStack, jumps to main().
+      // main() is never expected to return (every example is `while (1) { ... }`), so
+      // this jumps rather than calls - no return address is set up in the usual sense.
+      // ra is still seeded with __halt's address first, so an accidental `ret` out of
+      // main lands on the trap below instead of whatever ra's reset value points at.
+      // The trap itself is appended after ALL of the compiled program (not before it,
+      // as a plain `call` fallback would sit) so PC running off the end of the real
+      // program - for any reason - lands on a defined infinite loop instead of running
+      // into unmapped memory beyond the assembled code.
       const startup = [
         { text: '.text', source: null },
         { text: '.globl _start', source: null },
         { text: '_start:', source: null },
         { text: `    li sp, 0x${(effectiveStack >>> 0).toString(16)}`, source: null },
-        { text: '    call main', source: null },
-        { text: '    li a7, 10', source: null },
-        { text: '    ecall', source: null },
+        { text: '    la ra, __halt', source: null },
+        { text: '    j main', source: null }
+      ];
+
+      const haltTrap = [
+        { text: '.text', source: null },
         { text: '__halt:', source: null },
         { text: '    j __halt', source: null }
       ];
 
-      const combinedItems = [...startup, ...godboltData.asm];
+      const combinedItems = [...startup, ...godboltData.asm, ...haltTrap];
       const asmText = combinedItems.map(item => item.text).join('\n');
       lastGeneratedAsm = asmText;
 
@@ -11912,6 +12302,7 @@ int main()
 
       lastAssembledCode = source;
       lastCompiledCSource = source;
+      buildCVariableLocations(source, mc);
 
       loadProgram(mc);
       updateMachineCode();
@@ -13154,6 +13545,28 @@ int main()
           execLineField,
           signatureHelpField,
           riscvHoverTooltip,
+          CM6.EditorView.domEventHandlers({
+            click(event, view) {
+              if (editorLanguageMode !== 'c') return false;
+              const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+              if (pos == null) return false;
+              const line = view.state.doc.lineAt(pos);
+              const col = pos - line.from;
+              const lineText = line.text;
+              const commentIdx = lineText.indexOf('//');
+              if (commentIdx !== -1 && col >= commentIdx) return false;
+              const before = lineText.slice(0, col).match(/(\w+)$/);
+              const wordStart = before ? col - before[1].length : col;
+              const after = lineText.slice(col).match(/^(\w+)/);
+              const wordEnd = after ? col + after[1].length : col;
+              if (wordStart === wordEnd) return false;
+              const word = lineText.slice(wordStart, wordEnd);
+              const varInfo = getCVarAtSourceLine(line.number, word);
+              if (!varInfo) return false;
+              focusLocalsVar(word);
+              return false; // let CM6 still place the cursor normally
+            }
+          }),
           CM6.highlightActiveLineGutter(),
           CM6.highlightActiveLine(),
           CM6.history(),
@@ -15574,6 +15987,8 @@ endmodule
     window.bumpAccelAxis = bumpAccelAxis;
     window.getHeldAxisKeys = () => heldAxisKeys;
     window.setRegDecSigned = setRegDecSigned;
+    window.setLocalsDecSigned = setLocalsDecSigned;
+    window.getCFunctionLocals = () => cFunctionLocals;
     window.getMemViewMode = () => memViewMode;
     window.setDisasmViewMode = setDisasmViewMode;
     window.getDisasmViewMode = () => disasmViewMode;

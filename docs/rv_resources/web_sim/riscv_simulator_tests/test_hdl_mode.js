@@ -129,10 +129,10 @@ setTimeout(async () => {
     console.log('\n[1] HDL setup lives in Settings, not in a panel of its own');
     check('There is no HDL panel', !doc.getElementById('tab-hdl'));
     check('There is no HDL panel chip', !doc.getElementById('panelChip-hdl'));
-    check('The panel dock is back to four panels',
-      ['registers', 'memory', 'peripherals', 'disassembly']
+    check('The panel dock is back to its five panels',
+      ['registers', 'memory', 'peripherals', 'disassembly', 'locals']
         .every(p => !!doc.getElementById('tab-' + p)) &&
-      doc.querySelectorAll('#panelStack > .tab-content').length === 4);
+      doc.querySelectorAll('#panelStack > .tab-content').length === 5);
     check('Settings has a dedicated HDL tab',
       !!doc.getElementById('settingsTabBtn-hdl') && !!doc.getElementById('settingsContent-hdl'));
     check('Engine toggle has JS and HDL buttons',
@@ -772,7 +772,7 @@ setTimeout(async () => {
         // One Step should cover every machine instruction a source line
         // expands to, in the recording exactly as in the functional model.
         console.log('\n[14] Statement Stepping moves the same distance in HDL');
-        await win.loadExample('basic');
+        await win.loadExample('rars_syscalls');
         const memB = win.hdlMemFiles(wrapperSrc);
         const outB = await icarus4.run(['+CYCLES=60', '+TRACE=2'], {
           'AA_IROM.mem': memB.files['AA_IROM.mem'],

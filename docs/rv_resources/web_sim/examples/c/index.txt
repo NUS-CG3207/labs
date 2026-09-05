@@ -14,12 +14,7 @@ too, or the two will say different things.
 | Key | Label | File | Description |
 |-----|-------|------|--------------|
 | dip_led_c | DIP to LED (start here) | DIP_to_LED.c | DIP switches mirrored to LEDs — the one C example baked into the page, works with no server |
-| basic_c | Basic Sum | basic.c | A short, complete program: sum = a + b + c |
-| factorial_c | Factorial | factorial.c | Recursive factorial |
 | fibonacci_c | Fibonacci | fibonacci.c | Fibonacci sequence |
-| loop_c | Array Search | loop_array.c | Array search and accumulation |
-| matrix_c | Matrix Multiply | matrix_multiply.c | 2x2 matrix multiplication |
-| peripherals_c | MMIO Peripherals | peripherals.c | Nexys 4 MMIO peripherals and UART |
 | hello_world_c | Hello World | HelloWorld.c | UART command echo with a greeting |
 | hello_jal_c | Hello Subroutine | HelloWorld_jal_jalr.c | UART command echo, greeting printed by a function taking a parameter |
 | circle_accel_c | Circle & Accel | Circle_delay_accel.c | Circle and delay accel |

@@ -35,7 +35,6 @@
 // HelloWorld_jal_jalr.c for the version with a real function call.
 int main()
 {
-    asm volatile("li sp, %0" : : "i" (STACK_INIT)); //inline assembly to init sp. Registers cant be accessed explicitly in pure C
     const char *greeting = "\r\nWelcome to CG3207..\r\n";
     unsigned int c;
     // 0 = still waiting for 'A' (WAIT_A); 1 = 'A' seen, waiting for Enter

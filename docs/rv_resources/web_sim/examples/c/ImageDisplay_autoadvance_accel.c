@@ -169,7 +169,6 @@ static const unsigned char Downhill[]  = {
 
 int main()
 {
-    asm volatile("li sp, %0" : : "i" (STACK_INIT)); //inline assembly to init sp. Registers cant be accessed explicitly in pure C
     volatile unsigned int* UART_TX_ready_ADDR = (unsigned int*) (MMIO_BASE+UART_TX_READY_OFF);
     volatile unsigned int* UART_TX_ADDR = (unsigned int*) (MMIO_BASE+UART_TX_OFF);
     volatile unsigned int* OLED_ROW_ADDR = (unsigned int*) (MMIO_BASE + OLED_ROW_OFF);

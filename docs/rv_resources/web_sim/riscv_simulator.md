@@ -1,7 +1,7 @@
 # RISC-V Simulator — User Guide
 
 <p align="center">
-  <a href="riscv_simulator.html" target="_blank" rel="noopener">
+  <a href="../riscv_simulator.html" target="_blank" rel="noopener">
     <img alt="Start the Simulator" src="https://img.shields.io/badge/▶%20Start%20the%20Simulator-2ea44f?style=for-the-badge">
   </a>
 </p>
@@ -82,15 +82,13 @@ back the moment you edit. Examples and opened files assemble themselves, so **Ru
 **Step** are live immediately.
 
 **Errors** appear in the console with a line number, and the offending line is marked in
-the editor. Fix and re-assemble.
+the editor. Fix and re-assemble; the message says what to write instead, and the full
+list of what gets checked is in the [reference manual](riscv_simulator_specs.md).
 
-### What the assembler will not let you do
-
-It refuses several things that a looser assembler accepts and quietly gets wrong — a
-missing operand (`add t0, t1` is not `add t0, t1, x0`), a surplus one, a shift by 32, a
-value too wide for its directive, a duplicated label, a label named after a register, and
-a store to a label without a named scratch register. Each message says what to write
-instead. The full list is in the [reference manual](riscv_simulator_specs.md).
+One is worth knowing before you hit it: `sw t0, label` — a store to a symbol with no
+third operand — is rejected. A store has no spare register to build the address in
+(unlike a load, where the destination itself can be reused), so guessing one for you
+could silently clobber a register you're using. Name it yourself: `sw t0, label, t1`.
 
 `ecall` is worth knowing about: it works here, because the simulator implements the RARS
 syscall services. It will not work on a processor with no trap support and no OS behind
@@ -392,7 +390,7 @@ both values. That is almost always where the RTL bug is.
 | [`riscv_simulator.html`](riscv_simulator.html) | The simulator |
 | [`riscv_simulator.md`](riscv_simulator.md) | This guide |
 | [`riscv_simulator_specs.md`](riscv_simulator_specs.md) | Full reference: MMIO map, ISA, syscalls, architecture, changelog |
-| `examples/` | Every example but DIP to LED, one file each, listed in `asm/index.md` / `c/index.md` — add one by adding a row and a file, no HTML edit (needs the page served over `http://`) |
+| `examples/` | Every example but DIP to LED, one file each, listed in `asm/index.txt` / `c/index.txt` — add one by adding a row and a file, no HTML edit (needs the page served over `http://`) |
 | `riscv_simulator_tests/` | The automated test suite |
 | [`vendor/`](vendor/README.md) | Local copies of CodeMirror, Icarus Verilog and Yosys, used when the CDN cannot be reached (needs the page served over `http://`) |
 

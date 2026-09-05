@@ -54,7 +54,7 @@ const dom = new JSDOM(htmlContent, {
     }
     // Installed here, inside beforeParse, so it exists before the page's
     // own top-level script runs (it calls fetch() immediately on load to
-    // populate the Example menu from examples/*/index.md) - installing it
+    // populate the Example menu from examples/*/index.txt) - installing it
     // after `new JSDOM()` returns would be too late.
     installExamplesFetch(window);
   }
@@ -96,17 +96,17 @@ setTimeout(async () => {
     console.log(`Found ${targetBadges.length} jump/branch target label annotations in disassembly.`);
     console.log('✅ Target label annotations verified!');
 
-    // 3. Verify C Mode Disassembly Labels (e.g. Factorial)
+    // 3. Verify C Mode Disassembly Labels (e.g. Fibonacci)
     win.setLanguageMode('c');
-    await win.loadExample('factorial_c');
+    await win.loadExample('fibonacci_c');
     await win.assembleOnly();
     win.switchTab('disassembly');
 
     const cLabelRows = disasm.querySelectorAll('.disasm-label-row');
     const cLabelNames = Array.from(disasm.querySelectorAll('.disasm-label-name')).map(el => el.textContent.trim());
-    console.log(`\nC Mode Factorial label rows: ${cLabelRows.length}, headers:`, cLabelNames);
-    if (cLabelRows.length === 0 || !cLabelNames.some(l => l.includes('main') || l.includes('fact'))) {
-      throw new Error(`Expected C function labels (main, fact, etc.), got: ${JSON.stringify(cLabelNames)}`);
+    console.log(`\nC Mode Fibonacci label rows: ${cLabelRows.length}, headers:`, cLabelNames);
+    if (cLabelRows.length === 0 || !cLabelNames.some(l => l.includes('main') || l.includes('fib'))) {
+      throw new Error(`Expected C function labels (main, compute_fib, etc.), got: ${JSON.stringify(cLabelNames)}`);
     }
     console.log('✅ Disassembly label headers verified in C mode!');
 

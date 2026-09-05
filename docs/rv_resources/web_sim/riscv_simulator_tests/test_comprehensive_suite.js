@@ -101,8 +101,8 @@ setTimeout(async () => {
 
     // 3. Breakpoint Snapping & Line Number Highlighting Alone
     console.log('\n[3] Testing Breakpoint Gutter, Line Number Highlight, and Snapping...');
-    await win.loadExample('basic');
-    // Basic has comment lines 1-2, .text on line 3, main: on line 4, li x1, 10 on line 5
+    await win.loadExample('fib');
+    // Fibonacci has comment lines 1-2, .text on line 3, main: on line 4, li x1, 0 on line 5
     win.toggleBreakpoint(1); // Click line 1 (comment) -> snaps to line 5
     if (!win.breakpoints.has(5) || win.breakpoints.has(1)) {
       throw new Error('Breakpoint snapping failed for line 1');
@@ -111,30 +111,31 @@ setTimeout(async () => {
     console.log('✅ Breakpoint snapping to line 5 verified!');
 
     // 4. Two-Pass Assembler & Instruction Verification
-    console.log('\n[4] Testing Assembler Execution on Basic Example...');
+    console.log('\n[4] Testing Assembler Execution on Fibonacci Example...');
     win.assembleOnly();
     if (!win.machineCode || win.machineCode.length === 0) {
       throw new Error('Assembly produced zero machine code items');
     }
     console.log(`Assembled ${win.machineCode.length} instructions successfully.`);
-    console.log('✅ Basic assembly verified!');
+    console.log('✅ Fibonacci assembly verified!');
 
     // 5. Stepping, Breakpoint Pause, and Back-Stepping
     console.log('\n[5] Testing Stepping, Execution Line Highlighting, and Step Back...');
-    win.stepOnce(); // Executes instruction 1 (line 5) -> PC advances
+    win.stepOnce(); // li x1, 0 (line 5)
+    win.stepOnce(); // li x2, 1 (line 6) -> PC advances
     const regs = win.getRegs();
-    console.log('After Step 1: x1 =', regs[1], 'PC =', '0x' + win.getPc().toString(16));
-    if (regs[1] !== 10) throw new Error(`Expected x1 = 10, got ${regs[1]}`);
+    console.log('After Step 2: x2 =', regs[2], 'PC =', '0x' + win.getPc().toString(16));
+    if (regs[2] !== 1) throw new Error(`Expected x2 = 1, got ${regs[2]}`);
     console.log('Current execution line:', win.getCurrentExecLine());
 
     win.stepBack(); // Steps back
-    console.log('After Step Back: x1 =', win.getRegs()[1], 'PC =', '0x' + win.getPc().toString(16));
-    if (win.getRegs()[1] !== 0) throw new Error(`Expected x1 = 0 after stepBack, got ${win.getRegs()[1]}`);
+    console.log('After Step Back: x2 =', win.getRegs()[2], 'PC =', '0x' + win.getPc().toString(16));
+    if (win.getRegs()[2] !== 0) throw new Error(`Expected x2 = 0 after stepBack, got ${win.getRegs()[2]}`);
     console.log('✅ Stepping and Step Back verified!');
 
     // 6. Test All Pre-Loaded Examples
     console.log('\n[6] Testing All Pre-Loaded Examples Execution...');
-    const exampleKeys = ['basic', 'fib', 'fact', 'loop', 'circle_accel'];
+    const exampleKeys = ['dip_led', 'rars_syscalls', 'fib', 'hello_world', 'hello_jal', 'circle_accel', 'image_display_accel'];
     for (const key of exampleKeys) {
       await win.loadExample(key);
       const mc = win.assembleOnly();
@@ -147,7 +148,7 @@ setTimeout(async () => {
 
     // 7. Find & Replace System
     console.log('\n[7] Testing In-Editor Find & Replace...');
-    await win.loadExample('basic');
+    await win.loadExample('fib');
     win.openFindReplace(false);
     const findInput = win.document.getElementById('findInput');
     const replaceInput = win.document.getElementById('replaceInput');
@@ -345,7 +346,7 @@ setTimeout(async () => {
 
     // The PC is on the always-visible metrics readout, not only in the
     // status message that the next message overwrites.
-    await win.loadExample('basic');
+    await win.loadExample('fib');
     win.assembleOnly();
     win.stepOnce();
     const statsEl = doc.getElementById('statsBar');
@@ -444,7 +445,7 @@ setTimeout(async () => {
 
     // ecall works here but not on the board; say so once per assemble, and
     // only for assembly (every compiled C program ends with the CRT0 shim's).
-    await win.loadExample('basic');
+    await win.loadExample('fib');
     doc.getElementById('console').innerHTML = '';
     win.assembleOnly();
     if (!/uses ecall \(2 sites\)/.test(consoleText())) {
@@ -460,9 +461,9 @@ setTimeout(async () => {
       throw new Error('ecall notice fired for a program that does not use ecall');
     }
     // And the source itself carries the warning.
-    await win.loadExample('basic');
+    await win.loadExample('fib');
     if (!/ecall is a simulator convenience/.test(win.editor.value)) {
-      throw new Error('The basic example lost its ecall note');
+      throw new Error('The fib example lost its ecall note');
     }
     console.log('ecall is flagged in the source and once per assemble');
     console.log('✅ Assembler audit findings verified!');
@@ -471,7 +472,7 @@ setTimeout(async () => {
     //     thing twice. PC and the instruction count live in the readout, so a
     //     step message says what the step DID, not what the counters show.
     console.log('\n[13] Testing status message / metrics readout de-duplication...');
-    await win.loadExample('basic');
+    await win.loadExample('fib');
     win.assembleOnly();
     const statusOf = () => doc.getElementById('statusBar').textContent;
     const statsOf  = () => doc.getElementById('statsBar').textContent;

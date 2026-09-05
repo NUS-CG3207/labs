@@ -45,7 +45,6 @@ void print_string(const char *s)
 
 int main()
 {
-    asm volatile("li sp, %0" : : "i" (STACK_INIT)); //inline assembly to init sp. Registers cant be accessed explicitly in pure C
     const char *greeting = "\r\nWelcome to CG3207..\r\n";
     unsigned int c;
     int gotA = 0;   // 0 = waiting for 'A' (WAIT_A); 1 = 'A' seen, waiting for Enter (WAIT_CRorLF)

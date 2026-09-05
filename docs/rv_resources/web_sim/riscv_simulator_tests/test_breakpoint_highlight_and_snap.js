@@ -54,15 +54,15 @@ setTimeout(async () => {
   try {
     console.log('Testing breakpoint snapping and line number highlighting...');
     
-    // Load 'basic' example
-    await win.loadExample('basic');
+    // Load 'fib' example
+    await win.loadExample('fib');
     console.log('Editor code lines:\n' + win.editor.value);
-    
-    // Line 1 is: "# Basic RISC-V — compute sum = a + b + c"
-    // Line 2 is: "# Note: Using ecall..."
+
+    // Line 1 is: "# Fibonacci — compute fib(10) = 55"
+    // Line 2 is: "# ⚠ ecall is a simulator convenience..."
     // Line 3 is: ".text"
     // Line 4 is: "main:"
-    // Line 5 is: "\tli\tx1, 10\t# a = 10"
+    // Line 5 is: "\tli\tx1, 0\t# fib(0)"
     
     console.log('\n--- Test 1: Snapping from Line 1 (Comment) ---');
     win.toggleBreakpoint(1);

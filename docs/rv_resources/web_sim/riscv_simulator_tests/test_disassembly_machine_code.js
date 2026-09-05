@@ -70,7 +70,7 @@ setTimeout(async () => {
     }
 
     win.setLanguageMode('asm');
-    await win.loadExample('basic');
+    await win.loadExample('fib');
     win.assembleOnly();
     win.setDisasmViewMode('word');
 

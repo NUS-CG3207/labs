@@ -113,7 +113,7 @@ setTimeout(async () => {
     // 7. Test running a program with custom limit
     win.maxInstructionsPerRun = 25000;
     win.setLanguageMode('asm');
-    await win.loadExample('basic');
+    await win.loadExample('fib');
     win.assembleOnly();
     win.runProgram();
 

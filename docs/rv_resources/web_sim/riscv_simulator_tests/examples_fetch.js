@@ -1,4 +1,4 @@
-// Serves examples/asm/*.asm and examples/c/*.c (and the two index.md files
+// Serves examples/asm/*.asm and examples/c/*.c (and the two index.txt files
 // that list them - see EXAMPLE_MENU in riscv_simulator.html) from local
 // disk, so the page's own fetch() calls work under jsdom, which has no
 // fetch of its own (confirmed: window.fetch is undefined there by default).
@@ -17,7 +17,7 @@
 //     }
 //   });
 //
-// The page's own top-level script calls fetch('examples/*/index.md')
+// The page's own top-level script calls fetch('examples/*/index.txt')
 // immediately as it loads - which, with runScripts: 'dangerously', happens
 // synchronously while `new JSDOM()` is still running, before any code after
 // it (including `const win = dom.window; installExamplesFetch(win);`) gets

@@ -52,9 +52,9 @@ const win = dom.window;
 
 setTimeout(async () => {
   try {
-    // Test Factorial program execution
-    console.log('Testing Factorial calculation (5! = 120)...');
-    await win.loadExample('fact');
+    // Test Fibonacci program execution
+    console.log('Testing Fibonacci calculation...');
+    await win.loadExample('fib');
     console.log('Editor value after loadExample length:', win.editor.value.length);
     const mc = win.assembleOnly();
     console.log('assembleOnly returned mc length:', mc ? mc.length : 'null');
@@ -64,26 +64,12 @@ setTimeout(async () => {
     for (let i = 0; i < 60; i++) {
       win.stepOnce();
       steps++;
-      if (win.regs[10] === 120) break;
+      if (win.regs[2] === 55) break;
     }
 
-    console.log(`Executed ${steps} steps. Factorial result in x10 (a0) =`, win.regs[10]);
-    if (win.regs[10] !== 120) {
-      throw new Error(`Expected Factorial 5! = 120, got ${win.regs[10]}`);
-    }
-
-    // Test Fibonacci program execution
-    console.log('Testing Fibonacci calculation...');
-    await win.loadExample('fib');
-    win.assembleOnly();
-    steps = 0;
-    for (let i = 0; i < 60; i++) {
-      win.stepOnce();
-      steps++;
-    }
-    console.log(`Executed ${steps} steps. Fibonacci result: x1 =`, win.regs[1], 'x2 =', win.regs[2]);
-    if (win.regs[1] === 0 && win.regs[2] === 0) {
-      throw new Error('Fibonacci did not compute values');
+    console.log(`Executed ${steps} steps. Fibonacci result in x2 =`, win.regs[2]);
+    if (win.regs[2] !== 55) {
+      throw new Error(`Expected fib(10) = 55, got ${win.regs[2]}`);
     }
 
     console.log('\n=======================================');
