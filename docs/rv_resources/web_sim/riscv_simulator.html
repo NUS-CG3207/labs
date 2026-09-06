@@ -911,21 +911,29 @@
       }
     }
 
-    /* Memory View */
+    /* Memory View
+       One flex-wrap flow, not fixed rows: Addr/subtabs/refresh, Rows/Byte-Word
+       and the legend text all pack left to right and only spill onto another
+       line when they don't fit - each group stays whole (never split
+       mid-group) so a narrow panel loses rows of vertical space, not readable
+       text, before it starts wrapping. */
     .mem-toolbar {
       display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 10px;
+      margin-bottom: 4px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #313244;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-weight: 500;
     }
 
-    .mem-toolbar-row {
-      display: flex;
-      gap: 6px;
+    .mem-tool-group {
+      display: inline-flex;
       align-items: center;
-      flex-wrap: wrap;
+      gap: 6px;
+      flex: 0 0 auto;
     }
 
     .mem-tool-label {
@@ -1224,15 +1232,14 @@
 
     .mem-legend {
       display: flex;
-      flex-wrap: wrap;
       align-items: baseline;
       gap: 2px 0;
       font-size: 11.5px;
       color: #bac2de;
       font-weight: 500;
-      padding: 5px 8px;
-      border-bottom: 1px solid #313244;
       line-height: 1.5;
+      flex: 0 0 auto;
+      white-space: nowrap;
     }
 
     .mem-legend-mode {
@@ -1274,11 +1281,11 @@
     .sign-toggle {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
+      gap: 2px;
       cursor: pointer;
       user-select: none;
       vertical-align: middle;
-      margin-left: 6px;
+      margin-left: 4px;
     }
     /* The unconditional `display` above otherwise beats the `hidden`
        attribute's own (UA-stylesheet) display:none, since author CSS wins
@@ -1291,10 +1298,14 @@
       color: #6c7086;
       font-weight: 700;
     }
+    /* Small enough that it stays on the same line as the column label it
+       belongs to (Content (DEC)) even when a docked panel narrows that
+       column - a toggle wrapped onto its own line costs a whole header row
+       for one switch. */
     .sign-toggle-track {
       position: relative;
-      width: 20px;
-      height: 11px;
+      width: 16px;
+      height: 10px;
       background: #45475a;
       border-radius: 6px;
       transition: background .15s;
@@ -1302,9 +1313,9 @@
     .sign-toggle-thumb {
       position: absolute;
       top: 1px;
-      left: 10px;
-      width: 9px;
-      height: 9px;
+      left: 7px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #cdd6f4;
       transition: left .15s;
@@ -1503,10 +1514,10 @@
       cursor: pointer;
     }
 
-    .disasm-hint {
-      font-size: 12px;
-      line-height: 1.4;
-      color: #6c7086;
+    .disasm-show-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     /* ============================================================
@@ -2374,12 +2385,51 @@
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M1 1l4.2 10.2 1.7-3.2 3.4 3.4 1.3-1.3-3.4-3.4 3.2-1.7L1 1z" fill="%23cdd6f4" stroke="%23181825" stroke-width="0.8"/><circle cx="12" cy="4" r="3.2" fill="%2389b4fa" stroke="%23181825" stroke-width="0.6"/><text x="12" y="6" font-size="5" font-weight="bold" fill="%23181825" text-anchor="middle" font-family="sans-serif">?</text></svg>') 1 1, help;
+      cursor: pointer;
+      user-select: none;
       transition: color 0.15s ease;
     }
 
     .periph-title:hover {
       color: #cdd6f4;
+    }
+
+    /* Fold/unfold: the chevron is absolutely positioned so it never
+       disturbs a title's own flex layout (several use space-between to
+       pin a badge to the right). Everything but the title itself is what
+       folds - one rule covers every section without needing a dedicated
+       wrapper around each one's body. Cycle Counter has no `data-periph`
+       and is therefore never foldable: its one line of content already
+       lives entirely inside the title, so there is no body to hide. */
+    .periph-section[data-periph] > .periph-title {
+      position: relative;
+      padding-left: 15px;
+    }
+
+    .periph-section[data-periph] > .periph-title::before {
+      content: '▾';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 9px;
+      color: #6c7086;
+      transition: transform 0.15s ease, color 0.15s ease;
+    }
+
+    .periph-section[data-periph] > .periph-title:hover::before {
+      color: #cdd6f4;
+    }
+
+    .periph-section.periph-folded > .periph-title::before {
+      transform: translateY(-50%) rotate(-90deg);
+    }
+
+    .periph-section.periph-folded > *:not(.periph-title) {
+      /* Several bodies (e.g. #pbContainer) have their own id-selector
+         display rule, higher specificity than this one - needs !important
+         to actually win. */
+      display: none !important;
     }
 
     .periph-addr {
@@ -3006,10 +3056,16 @@
         width: 44px;
       }
 
-      .mem-toolbar button,
-      .mem-view-mode-btn {
+      .mem-toolbar button {
         padding: 2px 6px;
         font-size: 11px;
+      }
+
+      /* The base rule marks these !important (to beat the generic button
+         reset), so the override needs it too or this loses the cascade. */
+      .mem-view-mode-btn {
+        padding: 2px 8px !important;
+        font-size: 11px !important;
       }
 
       .mem-view {
@@ -3022,6 +3078,29 @@
       .mem-legend {
         font-size: 10.5px;
         line-height: 1.3;
+      }
+
+      .disasm-toolbar {
+        gap: 4px;
+        font-size: 11px;
+      }
+
+      .disasm-toolbar label {
+        gap: 3px;
+      }
+
+      .disasm-show-group {
+        gap: 5px;
+      }
+
+      .disasm-order-hint {
+        font-size: 10px;
+        letter-spacing: 0;
+      }
+
+      .mem-view-toggle {
+        padding: 1px;
+        gap: 1px;
       }
 
       .periph-board {
@@ -3575,33 +3654,33 @@
         </div>
         <div class="tab-content" id="tab-memory">
           <div class="mem-toolbar">
-            <div class="mem-toolbar-row">
+            <div class="mem-tool-group">
               <label class="mem-tool-label" for="memAddr">Addr</label>
               <input type="text" id="memAddr" value="0x400000" onchange="updateMemoryView()"
                 onkeydown="if(event.key==='Enter')updateMemoryView()">
-              <div class="mem-subtabs" role="group" aria-label="Memory region">
-                <button class="mem-subtab-btn active" id="memTabBtn-code" onclick="memGo('code')" title="Program / text segment">Text</button>
-                <button class="mem-subtab-btn" id="memTabBtn-data" onclick="memGo('data')" title="Data / static segment (writes land here)">Data</button>
-                <button class="mem-subtab-btn" id="memTabBtn-stack" onclick="memGo('stack')" title="Stack region near the stack pointer">Stack</button>
-                <button class="mem-subtab-btn" id="memTabBtn-mmio" onclick="memGo('mmio')" title="Memory-mapped I/O region">MMIO</button>
-              </div>
-              <button class="mem-refresh-btn" onclick="updateMemoryView()" title="Refresh memory view">&#x21bb;</button>
             </div>
-            <div class="mem-toolbar-row">
+            <div class="mem-subtabs" role="group" aria-label="Memory region">
+              <button class="mem-subtab-btn active" id="memTabBtn-code" onclick="memGo('code')" title="Program / text segment">Text</button>
+              <button class="mem-subtab-btn" id="memTabBtn-data" onclick="memGo('data')" title="Data / static segment (writes land here)">Data</button>
+              <button class="mem-subtab-btn" id="memTabBtn-stack" onclick="memGo('stack')" title="Stack region near the stack pointer">Stack</button>
+              <button class="mem-subtab-btn" id="memTabBtn-mmio" onclick="memGo('mmio')" title="Memory-mapped I/O region">MMIO</button>
+            </div>
+            <button class="mem-refresh-btn" onclick="updateMemoryView()" title="Refresh memory view">&#x21bb;</button>
+            <div class="mem-tool-group">
               <label class="mem-tool-label" for="memRows">Rows</label>
               <input type="number" id="memRows" value="64" min="1" max="128" onchange="updateMemoryView()">
-              <div class="mem-view-toggle" role="group" aria-label="Display mode">
-                <button type="button" id="memViewModeBytes" class="mem-view-mode-btn"
-                  title="Show separate editable bytes (groups of 4 bytes = one 32-bit little-endian word)" onclick="setMemViewMode('bytes')">Byte</button>
-                <button type="button" id="memViewModeWord" class="mem-view-mode-btn active"
-                  title="Show one whole 32-bit little-endian word per 4-byte group" onclick="setMemViewMode('word')">Word</button>
-              </div>
             </div>
-          </div>
-          <div class="mem-legend">
-            <span id="memLegendText" class="mem-legend-mode">each row = one <span class="mem-legend-endian">32-bit word</span> &nbsp;·&nbsp; <span class="mem-legend-endian">Full word (LSB to the right)</span></span>
-            <span class="mem-legend-sep">&nbsp;·&nbsp;</span>
-            <span><span class="mem-legend-editable">Data/Stack/MMIO: editable</span> (Text: read-only)</span>
+            <div class="mem-view-toggle" role="group" aria-label="Display mode">
+              <button type="button" id="memViewModeBytes" class="mem-view-mode-btn"
+                title="Show separate editable bytes (groups of 4 bytes = one 32-bit little-endian word)" onclick="setMemViewMode('bytes')">Byte</button>
+              <button type="button" id="memViewModeWord" class="mem-view-mode-btn active"
+                title="Show one whole 32-bit little-endian word per 4-byte group" onclick="setMemViewMode('word')">Word</button>
+            </div>
+            <div class="mem-legend">
+              <span id="memLegendText" class="mem-legend-mode"><span class="mem-legend-endian">Full word (LSB to the right)</span></span>
+              <span class="mem-legend-sep">&nbsp;·&nbsp;</span>
+              <span id="memLegendEditable"><span class="mem-legend-editable">Editable</span></span>
+            </div>
           </div>
           <div class="mem-col-header" id="memColHeader">
             <span class="mem-col-h" data-mem-col="addr">Addr<span class="col-resizer" data-panel="memory" data-col="addr" title="Drag to resize this column · double-click to reset the panel's columns"></span></span>
@@ -3613,8 +3692,8 @@
         <div class="tab-content" id="tab-peripherals">
           <div class="peripherals-grid">
             <!-- LEDs & DIP Switches Section (Top) -->
-            <div class="periph-section">
-              <div class="periph-title"
+            <div class="periph-section" data-periph="ledDip">
+              <div class="periph-title" onclick="togglePeriphFold('ledDip')"
                 title="LED[15:9] = PC[8:2], LED[8] = Clock, LED[7:0] = User Output (0xFFFF0060 WO). DIP[15:0] = Switches (0xFFFF0064 RO).">
                 LEDs (LED[15:0]) &amp; DIP Switches (SW[15:0])
               </div>
@@ -3633,8 +3712,8 @@
 
             <!-- Push Buttons & 7-Segment Display Section -->
             <div class="periph-pair">
-              <div class="periph-section">
-                <div class="periph-title"
+              <div class="periph-section" data-periph="pb">
+                <div class="periph-title" onclick="togglePeriphFold('pb')"
                   title="Push Buttons: Read at 0xFFFF0068 RO [Bit 0: BTNL, Bit 1: BTNC, Bit 2: BTNR]. Click to toggle or use arrow keys (← ↓ →).">
                   Push Buttons <span class="periph-addr">0xFFFF0068 RO</span>
                 </div>
@@ -3643,8 +3722,8 @@
                   BTNL | BTNC | BTNR — click to toggle or use arrow keys (← ↓ →)
                 </div>
               </div>
-              <div class="periph-section">
-                <div class="periph-title" title="7-Segment Display: 8-digit 32-bit hex display at 0xFFFF0080 WO.">
+              <div class="periph-section" data-periph="sevseg">
+                <div class="periph-title" onclick="togglePeriphFold('sevseg')" title="7-Segment Display: 8-digit 32-bit hex display at 0xFFFF0080 WO.">
                   7-Segment Display <span class="periph-addr">0xFFFF0080 WO</span>
                 </div>
                 <div class="sevseg-container" id="sevsegContainer"></div>
@@ -3665,8 +3744,8 @@
             </div>
 
             <!-- UART Serial Console Section -->
-            <div class="periph-section" id="uartSection">
-              <div class="periph-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"
+            <div class="periph-section" id="uartSection" data-periph="uart">
+              <div class="periph-title" onclick="togglePeriphFold('uart')" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"
                 title="UART 16550 Serial Console (115200 8N1): 0xFFFF0000 RX_VALID (RO), 0xFFFF0004 RX (RO), 0xFFFF0008 TX_READY (RO), 0xFFFF000C TX (WO).">
                 <span>UART Serial Console (115200 8N1) &nbsp;<span class="periph-addr"
                     style="margin-left:4px;">0xFFFF0000–0xFFFF000C</span></span>
@@ -3717,8 +3796,8 @@
             </div>
 
             <!-- 3-Axis Accelerometer & Temp Sensor Section -->
-            <div class="periph-section" id="accelSection">
-              <div class="periph-title"
+            <div class="periph-section" id="accelSection" data-periph="accel">
+              <div class="periph-title" onclick="togglePeriphFold('accel')"
                 style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;"
                 title="3-Axis Accelerometer &amp; Temp: 0xFFFF0040 ACCEL_DATA RO ([31:24] Temp, [23:16] Z, [15:8] Y, [7:0] X), 0xFFFF0044 ACCEL_DREADY RO (Bit 0). Hold X/Y/Z/T, then ← / → to adjust that axis.">
                 <span>3-Axis Accelerometer &amp; Temp &nbsp;<span class="periph-addr"
@@ -3772,13 +3851,13 @@
             </div>
 
             <!-- OLED 96x64 Pixel Display Section (Absolute Bottom) -->
-            <div class="periph-section" id="oledSection">
-              <div class="periph-title"
+            <div class="periph-section" id="oledSection" data-periph="oled">
+              <div class="periph-title" onclick="togglePeriphFold('oled')"
                 style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;"
                 title="OLED 96x64 Display: 0xFFFF0020 OLED_COL WO (0-95), 0xFFFF0024 OLED_ROW WO (0-63), 0xFFFF0028 OLED_DATA WO, 0xFFFF002C OLED_CTRL WO.">
                 <span>OLED 96x64 Pixel Display &nbsp;<span class="periph-addr"
                     style="margin-left:4px;">0xFFFF0020–0xFFFF002C</span></span>
-                <button onclick="clearOledDisplay()" title="Clear OLED Frame Buffer"
+                <button onclick="clearOledDisplay(); event.stopPropagation();" title="Clear OLED Frame Buffer"
                   style="font-size:10px;padding:2px 8px;">Clear Display</button>
               </div>
               <!-- The register read-out sits beside the display when there is room
@@ -3806,8 +3885,10 @@
           </div>
         <div class="tab-content" id="tab-disassembly">
           <div class="disasm-toolbar">
-            <label><input type="checkbox" id="showHex" checked onchange="updateDisassembly()"> Show Hex</label>
-            <label><input type="checkbox" id="showBinary" onchange="updateDisassembly()"> Show Binary</label>
+            <div class="disasm-show-group">
+              <label><input type="checkbox" id="showHex" checked onchange="handleDisasmShowToggle(this)"> Hex</label>
+              <label><input type="checkbox" id="showBinary" onchange="handleDisasmShowToggle(this)"> Binary</label>
+            </div>
             <div class="mem-view-toggle" role="group" aria-label="Machine code display mode">
               <button type="button" id="disasmViewModeBytes" class="mem-view-mode-btn"
                 title="Show separate hex bytes of the machine code (groups of 4 bytes = one 32-bit word). In binary mode the 8 binary digits of each byte stay together; bytes are separated by spaces." onclick="setDisasmViewMode('bytes')">Byte</button>
@@ -3815,8 +3896,6 @@
                 title="Show one whole 32-bit little-endian hex word per 4-byte group (in binary mode its 8-bit bytes are separated by underscores)" onclick="setDisasmViewMode('word')">Word</button>
             </div>
             <span class="disasm-order-hint" id="disasmOrderHint">LSB to the right</span>
-            <span class="disasm-hint">Native stream after pseudo-instruction expansion. Blue row = instruction at
-              current PC.</span>
           </div>
           <div id="disassemblyDisplay"></div>
         </div>
@@ -5731,6 +5810,7 @@
 
     function handleMMIOWrite(addr, val, size) {
       const u = addr >>> 0;
+      markPeripheralReferenced(u);
 
       // UART_TX (0xFFFF000C .. 0xFFFF000F) -> Write byte to UART TX terminal
       const txBase = UART_TX >>> 0;
@@ -5849,6 +5929,7 @@
 
     function handleMMIORead(addr, size, peekOnly = false) {
       const u = addr >>> 0;
+      if (!peekOnly) markPeripheralReferenced(u);
 
       // UART_RX_VALID (0xFFFF0000 .. 0xFFFF0003) -> Bit 0 = 1 if RX queue has data
       const rxValidBase = UART_RX_VALID >>> 0;
@@ -7838,10 +7919,11 @@
       memory: [
         { key: 'addr',  min: 92,  fit: 106, grow: 0 },
         { key: 'hex',   min: 108, fit: 140, grow: 0 },
-        // `fit` here is set by the "CONTENT (ASCII)" header rather than the
-        // 8 monospace characters under it, so the label sits on one line at
-        // the panel's natural width.
-        { key: 'ascii', min: 88,  fit: 122, grow: 1 },
+        // `fit` here is set by "CONTENT (DEC)" plus its sign-toggle switch
+        // (the longer combination, wider than "CONTENT (ASCII)" alone),
+        // so the whole header sits on one line at the panel's natural width
+        // instead of wrapping the toggle onto a row of its own.
+        { key: 'ascii', min: 88,  fit: 145, grow: 1 },
       ],
       disassembly: [
         { key: 'addr',   min: 84,  fit: 94,  grow: 0 },
@@ -8551,6 +8633,7 @@
       });
       applyPanelDock();
       panelDock.order.forEach(name => { if (isPanelVisible(name)) refreshPanel(name); });
+      updateLocalsPanelAvailability();
       // Wire up the intra-panel column-resize separators (Registers /
       // Memory / Disassembly) and apply any persisted per-panel widths.
       initPanelColResizers();
@@ -9327,7 +9410,75 @@ function updateRegisters() {
     // PERIPHERALS
     // ============================================================
 
+    // Fold/unfold state, per section: `folded` is the current visual
+    // state; `userFolded` is set only when the *user* is the one who
+    // folded it, and suppresses auto-unfold-on-reference for that section
+    // until the next program load resets everything. Cycle Counter has no
+    // key here - it has nothing to fold (see the CSS comment by
+    // `[data-periph]`).
+    const PERIPH_FOLD_KEYS = ['ledDip', 'pb', 'sevseg', 'uart', 'accel', 'oled'];
+    const PERIPH_DEFAULT_EXPANDED = new Set(['ledDip']);
+    let periphFoldState = {};
+
+    function resetPeriphFoldState() {
+      periphFoldState = {};
+      PERIPH_FOLD_KEYS.forEach(k => {
+        periphFoldState[k] = { folded: !PERIPH_DEFAULT_EXPANDED.has(k), userFolded: false };
+      });
+      PERIPH_FOLD_KEYS.forEach(applyPeriphFoldOne);
+    }
+
+    function applyPeriphFoldOne(key) {
+      const el = document.querySelector(`.periph-section[data-periph="${key}"]`);
+      const st = periphFoldState[key];
+      if (!el || !st) return;
+      el.classList.toggle('periph-folded', st.folded);
+    }
+
+    function togglePeriphFold(key) {
+      const st = periphFoldState[key];
+      if (!st) return;
+      st.folded = !st.folded;
+      // Only folding it is a decision worth protecting from the next
+      // auto-unfold; expanding it manually needs no protection since
+      // nothing here ever auto-folds a section back up.
+      st.userFolded = st.folded;
+      applyPeriphFoldOne(key);
+    }
+
+    // Called from the real (non-peek) MMIO read/write path - a program
+    // reading or writing a peripheral's registers is "using" it, so bring
+    // it into view unless the user has deliberately folded it back since
+    // the program was last (re)loaded.
+    function markPeripheralReferenced(addr) {
+      const u = addr >>> 0;
+      const inRange = (base) => u >= (base >>> 0) && u < ((base >>> 0) + 4);
+      let key = null;
+      if (inRange(PERIPH_LED) || inRange(PERIPH_DIP)) key = 'ledDip';
+      else if (inRange(PERIPH_PB)) key = 'pb';
+      else if (inRange(PERIPH_SEVENSEG)) key = 'sevseg';
+      else if (inRange(UART_RX_VALID) || inRange(UART_RX) || inRange(UART_TX_READY) || inRange(UART_TX)) key = 'uart';
+      else if (inRange(ACCEL_DATA) || inRange(ACCEL_DREADY)) key = 'accel';
+      else if (inRange(OLED_COL) || inRange(OLED_ROW) || inRange(OLED_DATA) || inRange(OLED_CTRL)) key = 'oled';
+      if (!key) return;
+      const st = periphFoldState[key];
+      if (st && st.folded && !st.userFolded) {
+        st.folded = false;
+        applyPeriphFoldOne(key);
+      }
+    }
+
+    // initPeripherals() re-runs every time the panel refreshes; the fold
+    // state itself must not reset on every one of those, only once at
+    // boot (before the very first assemble) and again on every actual
+    // program load (handled by resetPeriphFoldState() calls elsewhere).
+    let periphFoldBooted = false;
+
     function initPeripherals() {
+      if (!periphFoldBooted) {
+        periphFoldBooted = true;
+        resetPeriphFoldState();
+      }
       const ledRow = document.getElementById('ledRow');
       if (ledRow) {
         let ledHtml = '';
@@ -9977,16 +10128,15 @@ function updateRegisters() {
       const legendEl = document.getElementById('memLegendText');
       if (legendEl) {
         legendEl.innerHTML = wordMode
-          ? 'each row = one <span class="mem-legend-endian">32-bit word</span> &nbsp;·&nbsp; <span class="mem-legend-endian">Full word (LSB to the right)</span>'
-          : 'each row = one 32-bit word, <span class="mem-legend-endian">little endian (LSB to the left)</span>';
+          ? '<span class="mem-legend-endian">Full word (LSB to the right)</span>'
+          : '<span class="mem-legend-endian">Little endian (LSB to the left)</span>';
       }
 
       // One 32-bit word per row - each row's Hex and Content cells are the
       // one word at that address, so wrapping (a narrow panel) drops the
       // Content cell to its own line below the Hex cell but never splits a
       // word's hex from its own ASCII/DEC, and never has a second word's
-      // data to be confused with. Previously a row held two words, and a
-      // wrap there interleaved word 1's content with word 2's hex.
+      // data to be confused with.
       let html = '';
       for (let r = 0; r < rows; r++) {
         if (isStackView && addr < r * 4) break;
@@ -10604,6 +10754,14 @@ function updateRegisters() {
       const wordBtn = document.getElementById('memViewModeWord');
       if (bytesBtn) bytesBtn.classList.toggle('active', memViewMode === 'bytes');
       if (wordBtn) wordBtn.classList.toggle('active', memViewMode === 'word');
+
+      const editableEl = document.getElementById('memLegendEditable');
+      if (editableEl) {
+        const text = currentMemSegment === 'code' ? 'Read only'
+          : currentMemSegment === 'mmio' ? 'Editable except RO'
+          : 'Editable';
+        editableEl.innerHTML = `<span class="mem-legend-editable">${text}</span>`;
+      }
     }
 
     function updateMachineCode() {
@@ -10622,6 +10780,15 @@ function updateRegisters() {
       updateDisasmViewButtons();
       updateDisassembly();
       setStatus(disasmViewMode === 'word' ? 'Disassembly: 32-bit word machine-code display' : 'Disassembly: separate byte machine-code display', 'info');
+    }
+
+    function handleDisasmShowToggle(checkbox) {
+      const showHexEl = document.getElementById('showHex');
+      const showBinaryEl = document.getElementById('showBinary');
+      if (showHexEl && showBinaryEl && !showHexEl.checked && !showBinaryEl.checked) {
+        checkbox.checked = true;
+      }
+      updateDisassembly();
     }
 
     function updateDisassembly() {
@@ -10893,9 +11060,22 @@ function updateRegisters() {
       ).join('');
     }
 
+    // Locals only has anything to show in C mode - the chip (and the panel
+    // itself, if it happened to be open) disappears in ASM mode rather than
+    // sitting there just to explain that it's not applicable.
+    function updateLocalsPanelAvailability() {
+      const chip = document.getElementById('panelChip-locals');
+      const isC = editorLanguageMode === 'c';
+      if (chip) chip.style.display = isC ? '' : 'none';
+      if (!isC && panelDock && panelDock.locals && panelDock.locals.visible) {
+        setPanelVisible('locals', false);
+      }
+    }
+
     function setLanguageMode(mode) {
       if (editorLanguageMode === mode) return;
       editorLanguageMode = mode;
+      updateLocalsPanelAvailability();
 
       const btnAsm = document.getElementById('langBtnAsm');
       const btnC = document.getElementById('langBtnC');
@@ -12314,6 +12494,7 @@ int main()
 
       assembled = true;
       programFinished = false;
+      resetPeriphFoldState();
       const nInstr = mc.filter(i => !i.error && i.bytes).length;
       log(`Compiled and loaded ${nInstr} RV32 instructions from C source.`, 'success');
       setStatus(`Compiled & Assembled (${nInstr} instructions). Ready to step/run.`, 'success');
@@ -12345,6 +12526,7 @@ int main()
       highlightFirstLine(mc);
       assembled = true;
       programFinished = false;
+      resetPeriphFoldState();
       if (lastCodeOverflowWords > 0) {
         setStatus(`Assembled ${nInstr} instructions — ${lastCodeOverflowWords} too many ` +
           `for the Code segment. See the console.`, 'warn');

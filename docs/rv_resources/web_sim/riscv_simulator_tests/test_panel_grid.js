@@ -676,7 +676,7 @@ setTimeout(() => {
         memColHeader.style.getPropertyValue('--mem-addr-w') === '136px');
       check('Header and rows share one min-width so they scroll together',
         memView.style.minWidth === memColHeader.style.minWidth &&
-        parseFloat(memView.style.minWidth) === 136 + 140 + 122);
+        parseFloat(memView.style.minWidth) === 136 + 140 + 145);
       const savedMem = JSON.parse(win.localStorage.getItem('rvsim.panelColW.memory') || 'null');
       check('Memory Addr width persisted to localStorage', !!savedMem && savedMem.addr === 136);
 
