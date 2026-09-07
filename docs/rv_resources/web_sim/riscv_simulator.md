@@ -1,7 +1,7 @@
 # RISC-V Simulator User Guide
 
 <p align="center">
-  <a href="riscv_simulator.html" target="_blank" rel="noopener">
+  <a href="../riscv_simulator.html" target="_blank" rel="noopener">
     <img alt="Start the Simulator" src="https://img.shields.io/badge/▶%20Start%20the%20Simulator-2ea44f?style=for-the-badge">
   </a>
 </p>
@@ -13,15 +13,12 @@ and Peripherals panels (LEDs, DIP switches, push buttons, 7-segment display, OLE
 UART, accelerometer) update live as it executes.
 
 Click the button above, or open [`riscv_simulator.html`](riscv_simulator.html)
-yourself: nothing to install. **DIP to LED (start here)** works either way, in both
-languages; every other example needs the page served over `http://` ([§10](#10-running-it-locally)).
-
+yourself: nothing to install.
 ---
 
 ## 1. Your first five minutes
 
-1. Pick something from **Example:**. **DIP to LED (start here)** loads regardless of
-   how you opened the page; every other example needs `http://` ([§10](#10-running-it-locally)).
+1. Pick something from **Example:**. **DIP to LED (start here)**.
 2. It assembles automatically. Press **▶ Run**.
 3. Watch the **Registers** panel fill in, and the status bar report what happened.
 
