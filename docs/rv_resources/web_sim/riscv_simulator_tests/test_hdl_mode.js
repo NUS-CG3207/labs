@@ -427,8 +427,16 @@ setTimeout(async () => {
     win.setDipSwitches(0xBEAD);
     const tb = win.hdlBuildTestbench({});
 
-    check('Instantiates Wrapper with the fixed port order',
-      /Wrapper dut\(DIP, PB, LED_OUT, LED_PC, SEVENSEGHEX, UART_TX, UART_TX_ready,/.test(tb));
+    // Named association, so a Wrapper whose ports are ordered differently - or
+    // which lacks the optional double-buffering pair - still binds correctly.
+    check('Instantiates Wrapper by name, not by position',
+      /Wrapper dut\(/.test(tb) && /\.DIP\(DIP\)/.test(tb) && /\.CLK\(CLK\)/.test(tb) &&
+      !/Wrapper dut\(DIP,/.test(tb));
+    check('Every Wrapper port is bound', [
+      'DIP', 'PB', 'LED_OUT', 'LED_PC', 'SEVENSEGHEX', 'UART_TX', 'UART_TX_ready',
+      'UART_TX_valid', 'UART_RX', 'UART_RX_valid', 'UART_RX_ack', 'OLED_Write',
+      'OLED_Col', 'OLED_Row', 'OLED_Data', 'ACCEL_Data', 'ACCEL_DReady', 'RESET', 'CLK'
+    ].every(n => tb.includes('.' + n + '(' + n + ')')));
     check('Does not redefine or modify the Wrapper module', !/module\s+Wrapper\b/.test(tb));
     check('Reads the cycle budget at run time', /\$value\$plusargs\("CYCLES=%d"/.test(tb));
     check('Reads the trace level at run time', /\$value\$plusargs\("TRACE=%d"/.test(tb));
@@ -649,7 +657,10 @@ setTimeout(async () => {
       const icarus3 = await makeIcarus(tb);
       check('The same testbench serves a completely different program', icarus3.ok);
       if (icarus3.ok) {
-        win.hdlSetRx([{ cycle: 0, byte: 0x41 }, { cycle: 0, byte: 0x0D }]);
+        // A character time apart, as a terminal sends them. Both at cycle 0
+        // would now overrun the one-byte holding register and lose the CR,
+        // which is what the board does too.
+        win.hdlSetRx([{ cycle: 0, byte: 0x41 }, { cycle: 200, byte: 0x0D }]);
         const rxFile = win.hdlRxFile();
         win.hdlSetRx([]);
         const out = await icarus3.run(['+CYCLES=40000', '+NRX=2'], {
@@ -740,7 +751,7 @@ setTimeout(async () => {
         console.log('\n[13] UART RX_VALID follows the hardware');
         await win.loadExample('hello_world');
         const memH = win.hdlMemFiles(wrapperSrc);
-        win.hdlSetRx([{ cycle: 0, byte: 0x41 }, { cycle: 0, byte: 0x0D }]);
+        win.hdlSetRx([{ cycle: 0, byte: 0x41 }, { cycle: 200, byte: 0x0D }]);
         const rxTxt = win.hdlRxFile();
         const outH = await icarus4.run(['+CYCLES=40000', '+NRX=2', '+TRACE=2'], {
           'AA_IROM.mem': memH.files['AA_IROM.mem'],
@@ -753,19 +764,24 @@ setTimeout(async () => {
         check('Both RX bytes were acknowledged by the hardware (' + acks.length + ')',
           acks.length === 2);
         win.hdlLoadTrace(outH, 40000);
-        win.hdlSetRx([{ cycle: 0, byte: 0x41 }, { cycle: 0, byte: 0x0D }]);
+        win.hdlSetRx([{ cycle: 0, byte: 0x41 }, { cycle: 200, byte: 0x0D }]);
+        // The hardware holds one byte; the rest is still on the PC's side.
+        const rx = () => win.getUartRxState();
         win.hdlSeek(acks[0]);
-        check('Before the read, both bytes are still queued and RX_VALID is 1',
-          win.getUartRxQueue().length === 2);
+        check('Before the read, the first byte is held and RX_VALID is 1',
+          rx().full === true && rx().byte === 0x41);
         win.hdlSeek(acks[0] + 1);
-        check('The byte leaves the queue on the instruction that reads it',
-          win.getUartRxQueue().join(',') === '13');
+        check('The register empties on the instruction that reads it',
+          rx().full === false);
+        win.hdlSeek(acks[1]);
+        check('The second byte is held once its arrival cycle has passed',
+          rx().full === true && rx().byte === 0x0D);
         win.hdlSeek(acks[1] + 1);
         check('RX_VALID falls back to 0 once every byte has been read',
-          win.getUartRxQueue().length === 0);
+          rx().full === false);
         win.hdlSeek(acks[0]);
         check('Stepping back over the read puts the byte back',
-          win.getUartRxQueue().length === 2);
+          rx().full === true && rx().byte === 0x41);
         win.hdlSetRx([]);
 
         // --- 14. Statement Stepping applies to both engines -----------

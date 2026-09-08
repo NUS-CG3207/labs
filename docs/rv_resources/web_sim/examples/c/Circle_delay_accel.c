@@ -13,7 +13,9 @@
 #define OLED_COL_OFF 		0x20 //WO
 #define OLED_ROW_OFF 		0x24 //WO
 #define OLED_DATA_OFF 		0x28 //WO
-#define OLED_CTRL_OFF 		0x2C //WO 
+#define OLED_CTRL_OFF 		0x2C //WO
+#define OLED_STATUS_OFF 	0x30 //RO, status bit
+#define OLED_SWAP 			0x08 //write this to OLED_CTRL to present the drawn frame
 #define ACCEL_DATA_OFF 		0x40 //RO
 #define ACCEL_DREADY_OFF 	0x44 //RO, status bit
 #define LED_OFF 			0x60 //WO
@@ -35,6 +37,8 @@ int main()
     volatile unsigned int* UART_TX_ready_ADDR = (unsigned int*) (MMIO_BASE+UART_TX_READY_OFF);
     volatile unsigned int* UART_TX_ADDR = (unsigned int*) (MMIO_BASE+UART_TX_OFF);
     volatile unsigned int* SEVENSEG_ADDR = (unsigned int*) (MMIO_BASE+SEVENSEG_OFF);
+    volatile unsigned int* OLED_CTRL_ADDR = (unsigned int*) (MMIO_BASE+OLED_CTRL_OFF);
+    volatile unsigned int* OLED_STATUS_ADDR = (unsigned int*) (MMIO_BASE+OLED_STATUS_OFF);
     const char *msg = "Tilt in various directions to see the colour change\r\n";
     for (int k = 0; msg[k] != '\0'; k++) {
         while (!(*UART_TX_ready_ADDR)); // wait for UART to be ready
@@ -64,6 +68,14 @@ int main()
 
         // using accel value directly. 2g+-2g range, so multiply mag by 2 (<<1) to have full brightness at 1g
         drawFilledMidpointCircleSinglePixelVisit(48, 32, 28, accel_reading_mag << 1); 
+
+        // Present the frame we just drew. Without this the circle is redrawn
+        // into the page the display is scanning out, and you see it half
+        // updated. The wait is what makes the exchange land between frames;
+        // the controller copies the presented page back afterwards, which is
+        // why only the circle needs redrawing and not the whole screen.
+        *OLED_CTRL_ADDR = OLED_SWAP;
+        while (*OLED_STATUS_ADDR & 1);
         
         // Original hardware delay: 1,000,000 cycles (~10ms at 100MHz)
         // delay(1000000);

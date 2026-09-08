@@ -16,6 +16,7 @@
 #define OLED_ROW_OFF 		0x24 //WO
 #define OLED_DATA_OFF 		0x28 //WO
 #define OLED_CTRL_OFF 		0x2C //WO
+#define OLED_STATUS_OFF 	0x30 //RO, status bit
 #define ACCEL_DATA_OFF 		0x40 //RO
 #define ACCEL_DREADY_OFF 	0x44 //RO, status bit
 #define LED_OFF 			0x60 //WO

@@ -718,6 +718,52 @@
       color: #cdd6f4;
     }
 
+    .panel-hdr-btn.active {
+      background: #45475a;
+      color: #cba6f7;
+    }
+
+    /* Row filter, one per panel, directly under that panel's header */
+    .panel-find[hidden] {
+      /* A class selector outranks the UA's [hidden] rule, so the closed state
+         has to be spelled out or the bar shows through its own display:flex. */
+      display: none;
+    }
+
+    .panel-find {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 6px;
+      background: #181825;
+      border-bottom: 1px solid #313244;
+      flex-shrink: 0;
+    }
+
+    .panel-find input {
+      flex: 1;
+      min-width: 0;
+      background: #1e1e2e;
+      border: 1px solid #45475a;
+      color: #cdd6f4;
+      padding: 2px 6px;
+      font-size: 11px;
+      border-radius: 3px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      outline: none;
+    }
+
+    .panel-find input:focus {
+      border-color: #cba6f7;
+    }
+
+    .panel-find-count {
+      font-size: 10px;
+      color: #a6adc8;
+      font-family: monospace;
+      white-space: nowrap;
+    }
+
     .panel-body {
       flex: 1;
       overflow: auto;
@@ -1851,6 +1897,278 @@
     .console-resizer:hover::after,
     .console-resizer.dragging::after { background: #89b4fa; }
 
+    /* ---- Waveform strip (HDL mode) ------------------------------------- */
+    /* Both the strip and its grab bar are absent until the dock is opened,
+       so nothing about the page changes for anyone not using it. */
+    .wave-resizer {
+      height: 6px;
+      flex: 0 0 6px;
+      cursor: ns-resize;
+      background: #181825;
+      border-top: 1px solid #313244;
+      position: relative;
+      display: none;
+    }
+
+    .wave-resizer::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 2px;
+      width: 28px;
+      height: 2px;
+      margin-left: -14px;
+      border-radius: 1px;
+      background: #45475a;
+    }
+
+    .wave-resizer:hover::after,
+    .wave-resizer.dragging::after { background: #89b4fa; }
+
+    body.wave-open .wave-resizer { display: block; }
+
+    .wave-dock {
+      display: none;
+      flex-direction: column;
+      flex: 0 0 240px;
+      min-height: 0;
+      background: #1e1e2e;
+      border-top: 1px solid #313244;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body.wave-open .wave-dock { display: flex; }
+
+    .wave-hdr {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 3px 4px 3px 10px;
+      background: #181825;
+      border-bottom: 1px solid #313244;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .wave-hdr-title {
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #9399b2;
+    }
+
+    /* Sits above the name gutter, so the control that changes the names is
+       over the names rather than beside the button that closes the strip. */
+    .wave-add-btn {
+      flex-shrink: 0;
+      font-size: 11px;
+      padding: 3px 7px;
+    }
+
+    .wave-hdr-info {
+      font-size: 11px;
+      color: #6c7086;
+      font-family: 'Consolas', 'Courier New', monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+
+    /* The first thing to go when the header runs out of room: it is a
+       reminder, not a control. */
+    .wave-hdr-hint {
+      font-size: 10.5px;
+      color: #45475a;
+      white-space: nowrap;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .wave-hdr-actions {
+      margin-left: auto;
+      display: inline-flex;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .wave-notice {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #a6adc8;
+      line-height: 1.5;
+    }
+
+    .wave-dock.wave-empty .wave-notice { display: flex; }
+    .wave-dock.wave-empty .wave-body { display: none; }
+
+    .wave-notice button {
+      background: #cba6f7;
+      border: none;
+      color: #1e1e2e;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 650;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .wave-notice button:hover { background: #d7bcfa; }
+
+    /* Scrolls as one, so more signals than fit the strip's height are
+       reachable without the labels sliding out of step with their traces. */
+    .wave-body {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* The name gutter is a sibling of the canvas, not a scroller of its own:
+       both are given the same natural height, so a signal's label always sits
+       on the same line as its trace. */
+    .wave-names {
+      flex: 0 0 165px;
+      position: sticky;
+      left: 0;
+      background: #181825;
+      border-right: 1px solid #313244;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11px;
+    }
+
+    .wave-name {
+      height: 22px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      color: #cdd6f4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-bottom: 1px solid rgba(49, 50, 68, 0.45);
+    }
+
+    .wave-names-axis {
+      height: 20px;
+      border-bottom: 1px solid #313244;
+    }
+
+    #waveCanvas {
+      flex: 1;
+      min-width: 0;
+      display: block;
+      cursor: crosshair;
+      /* Height is set in script to the rows' natural height, so .wave-body
+         scrolls when there are more signals than the strip is tall. */
+    }
+
+    #waveCanvas.wave-panning { cursor: grabbing; }
+
+    .wave-name {
+      justify-content: space-between;
+    }
+
+    .wave-name-remove {
+      background: none;
+      border: none;
+      color: #6c7086;
+      cursor: pointer;
+      font-size: 11px;
+      line-height: 1;
+      padding: 2px 3px;
+      border-radius: 3px;
+      /* Held out of the layout until hover so eight labels do not read as
+         eight buttons; the row keeps its width either way. */
+      visibility: hidden;
+      flex-shrink: 0;
+    }
+
+    .wave-name:hover .wave-name-remove { visibility: visible; }
+    .wave-name-remove:hover { background: #45475a; color: #f38ba8; }
+
+    .wave-picker[hidden] { display: none; }
+
+    /* Overlaid rather than stacked: a dropdown that reflowed the strip would
+       squeeze the waves it exists to add to. */
+    .wave-picker {
+      position: absolute;
+      top: 26px;
+      left: 6px;
+      z-index: 20;
+      width: min(460px, calc(100% - 12px));
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px 8px;
+      background: #181825;
+      border: 1px solid #45475a;
+      border-radius: 6px;
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.75);
+    }
+
+    .wave-picker-hdr {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: #9399b2;
+    }
+
+    .wave-picker-hdr button { font-size: 11px; padding: 2px 7px; }
+    .wave-picker-hdr button:first-of-type { margin-left: auto; }
+    .wave-picker-hdr button:last-of-type { color: #cba6f7; }
+
+    .wave-picker input {
+      background: #1e1e2e;
+      border: 1px solid #45475a;
+      color: #cdd6f4;
+      padding: 3px 6px;
+      font-size: 11px;
+      border-radius: 3px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      outline: none;
+    }
+
+    .wave-picker input:focus { border-color: #cba6f7; }
+
+    .wave-picker-list {
+      max-height: 132px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .wave-picker-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 4px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11px;
+      color: #cdd6f4;
+      cursor: pointer;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    .wave-picker-item:hover { background: #313244; }
+    .wave-picker-item.on { color: #a6e3a1; }
+    .wave-picker-item .wave-picker-w { color: #6c7086; margin-left: auto; padding-left: 10px; }
+    .wave-picker-empty { padding: 6px 4px; font-size: 11px; color: #6c7086; }
+
     .console .error {
       color: #f38ba8;
     }
@@ -2951,6 +3269,20 @@
         display: none !important;
       }
 
+      /* Same reasoning for the waveform strip's handle, and its height is
+         fixed shorter here so it does not swallow the whole viewport. */
+      .wave-resizer {
+        display: none !important;
+      }
+
+      body.wave-open .wave-dock {
+        flex: 0 0 190px !important;
+      }
+
+      .wave-names {
+        flex-basis: 120px;
+      }
+
       .tab-bar {
         flex-wrap: nowrap;
         overflow-x: auto;
@@ -3023,9 +3355,15 @@
       }
 
       /* In the tabbed mobile view the header's float/hide actions are not
-         needed — the chip strip is the navigation. */
+         needed — the chip strip is the navigation. The filter is the
+         exception: a short viewport is exactly where narrowing a long list
+         pays off most. */
       .panel-hdr-btn {
         display: none;
+      }
+
+      .panel-hdr-btn[data-panel-act="find"] {
+        display: inline-flex;
       }
 
       /* A bounded, independently-scrollable body — instead of growing to
@@ -3563,6 +3901,8 @@
             <div class="toolbar-btn-group toolbar-group-config-stats">
               <button id="btnDumpTxt" onclick="dumpTextSegment()" title="Dump code (text) memory to AA_IROM.mem">💾 Dump Text</button>
               <button id="btnDumpData" onclick="dumpDataSegment()" title="Dump data memory to AA_DMEM.mem">💾 Dump Data</button>
+              <button id="waveDockBtn" style="display:none;" onclick="toggleWaveDock()"
+                title="Show the waveform strip at the bottom of the page">📈 Waves</button>
               <button id="hdlVcdBtn" style="display:none;" onclick="hdlDownloadVcd()"
                 title="Download the waveform recorded by the last HDL run">⭳ VCD</button>
               <button id="btnSettings" onclick="openSettingsModal()" title="Configure Compiler, Linker segments, and Simulator settings" class="gear">⚙ Settings…</button>
@@ -3678,7 +4018,7 @@
             </div>
             <div class="mem-legend">
               <span id="memLegendText" class="mem-legend-mode"><span class="mem-legend-endian">Full word (LSB to the right)</span></span>
-              <span class="mem-legend-sep">&nbsp;·&nbsp;</span>
+              <span class="mem-legend-sep" id="memLegendSep">&nbsp;·&nbsp;</span>
               <span id="memLegendEditable"><span class="mem-legend-editable">Editable</span></span>
             </div>
           </div>
@@ -3770,19 +4110,23 @@
               <div class="uart-controls"
                 style="margin-top:4px;display:flex;align-items:center;gap:6px 10px;font-size:11px;flex-wrap:wrap;">
                 <div style="display:inline-flex;align-items:center;gap:6px;">
-                  <label
-                    style="font-size:11px;color:#cba6f7;display:inline-flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;font-weight:600;"
-                    title="Buffer sequence and send automatically with instruction delay between bytes">
-                    <input type="checkbox" id="uartAutoSendCheck"
-                      style="margin:0;cursor:pointer;flex:0 0 auto;width:auto;">Buffer
-                  </label>
+                  <label style="font-size:11px;color:#cba6f7;font-weight:600;white-space:nowrap;"
+                    for="uartSendMode"
+                    title="How fast the characters arrive. The board holds one byte at a time, so anything the program does not read before the next arrives is lost.">Arrival</label>
+                  <select id="uartSendMode" onchange="setUartSendMode(this.value)"
+                    style="height:24px;padding:1px 4px;font-size:11px;box-sizing:border-box;border-radius:3px;border:1px solid #45475a;background:#313244;color:#cdd6f4;flex:0 0 auto;"
+                    title="Paste: back-to-back at 115200 baud, what pressing Send in a terminal does. Typed: at human speed. Forgiving: waits for your program, so nothing is ever lost - not how the board behaves.">
+                    <option value="paste" selected>Paste (baud rate)</option>
+                    <option value="typed">Typed (slow)</option>
+                    <option value="forgiving">Forgiving (never drops)</option>
+                  </select>
                   <span style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">
-                    <input type="number" id="uartAutoSeqDelay" value="10" min="1" max="99999"
-                      style="width:48px;height:24px;padding:2px 4px;font-size:11px;box-sizing:border-box;border-radius:3px;border:1px solid #45475a;background:#313244;color:#cdd6f4;text-align:center;flex:0 0 auto;"
-                      title="Number of RISC-V instructions executed between sending each character in the buffered sequence">
+                    <input type="number" id="uartCharInstr" value="135" min="1" max="999999"
+                      style="width:56px;height:24px;padding:2px 4px;font-size:11px;box-sizing:border-box;border-radius:3px;border:1px solid #45475a;background:#313244;color:#cdd6f4;text-align:center;flex:0 0 auto;"
+                      onchange="setUartCharInstr(this.value)"
+                      title="Instructions between characters. 135 is one character at 115200 baud with the default clock divider: 10 bit-times x 864 clocks / 64. Lower CLK_DIV_BITS and this gets smaller.">
                     <span style="color:#a6adc8;"
-                      title="Number of RISC-V instructions executed between sending each character in the buffered sequence">instr
-                      delay</span>
+                      title="Instructions between characters at the chosen arrival rate">instr/char</span>
                   </span>
                 </div>
                 <div class="uart-queue-info" id="uartQueueInfo"
@@ -3854,9 +4198,12 @@
             <div class="periph-section" id="oledSection" data-periph="oled">
               <div class="periph-title" onclick="togglePeriphFold('oled')"
                 style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;"
-                title="OLED 96x64 Display: 0xFFFF0020 OLED_COL WO (0-95), 0xFFFF0024 OLED_ROW WO (0-63), 0xFFFF0028 OLED_DATA WO, 0xFFFF002C OLED_CTRL WO.">
+                title="OLED 96x64 Display: 0xFFFF0020 OLED_COL WO (0-95), 0xFFFF0024 OLED_ROW WO (0-63), 0xFFFF0028 OLED_DATA WO, 0xFFFF002C OLED_CTRL WO, 0xFFFF0030 OLED_STATUS RO (bit 0 = swap pending).">
                 <span>OLED 96x64 Pixel Display &nbsp;<span class="periph-addr"
-                    style="margin-left:4px;">0xFFFF0020–0xFFFF002C</span></span>
+                    style="margin-left:4px;">0xFFFF0020–0xFFFF0030</span></span>
+                <span style="font-size:10px;color:#a6adc8;margin-left:auto;">
+                  SWAP PENDING: <span id="badgeOledSwap" style="color:#a6e3a1;font-weight:bold;">0</span>
+                </span>
                 <button onclick="clearOledDisplay(); event.stopPropagation();" title="Clear OLED Frame Buffer"
                   style="font-size:10px;padding:2px 8px;">Clear Display</button>
               </div>
@@ -3879,10 +4226,14 @@
                   <div style="font-size:10px;color:#6c7086;margin-top:3px;" id="oledModeDesc">
                     Mode: vary_pixel_data_mode &nbsp;·&nbsp; Format: 8-bit (3R-3G-2B)
                   </div>
+                  <div style="font-size:10px;color:#6c7086;" id="oledBufDesc">
+                    Single buffered &nbsp;·&nbsp; writes appear at once
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
         <div class="tab-content" id="tab-disassembly">
           <div class="disasm-toolbar">
             <div class="disasm-show-group">
@@ -3904,6 +4255,43 @@
             <span>All panels are hidden — use the buttons above to show the various panels.</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Waveform strip. Spans the full window width rather than sitting with
+         the side panels: how many cycles fit across is what limits a waveform,
+         so this is the only place with enough of it. -->
+    <div class="wave-resizer" id="waveResizer" title="Drag to resize · double-click to reset"></div>
+    <div class="wave-dock" id="waveDock">
+      <div class="wave-hdr">
+        <span class="wave-hdr-title">Waveforms</span>
+        <button class="panel-hdr-btn wave-add-btn" type="button" id="waveAddBtn" onclick="toggleWavePicker()"
+          title="Choose which signals to show, from anywhere in the hierarchy">+ Signal</button>
+        <span class="wave-hdr-info" id="waveInfo"></span>
+        <span class="wave-hdr-hint">ctrl+scroll zooms · shift+scroll pans · click a wave to go there</span>
+        <span class="wave-hdr-actions">
+          <button class="panel-hdr-btn" type="button" onclick="waveZoom(2)" title="Zoom out (show more cycles)">−</button>
+          <button class="panel-hdr-btn" type="button" onclick="waveZoom(0.5)" title="Zoom in">+</button>
+          <button class="panel-hdr-btn" type="button" onclick="waveFit()" title="Fit the whole run">Fit</button>
+          <button class="panel-hdr-btn" type="button" onclick="toggleWaveDock()" title="Hide the waveform strip">✕</button>
+        </span>
+      </div>
+      <div class="wave-picker" id="wavePicker" hidden>
+        <div class="wave-picker-hdr">
+          <span>Signals to show</span>
+          <button class="panel-hdr-btn" type="button" onclick="waveResetSignals()"
+            title="Back to the default set">Reset</button>
+          <button class="panel-hdr-btn" type="button" onclick="toggleWavePicker()"
+            title="Close this list (Esc)">Done</button>
+        </div>
+        <input type="text" id="wavePickerFilter" spellcheck="false"
+          placeholder="Filter by name or path, e.g. alu, t0, RV1.Instr">
+        <div class="wave-picker-list" id="wavePickerList"></div>
+      </div>
+      <div class="wave-notice" id="waveNotice"></div>
+      <div class="wave-body" id="waveBody">
+        <div class="wave-names" id="waveNames"></div>
+        <canvas id="waveCanvas" title="Click to move the simulation to that cycle · wheel to zoom · drag to pan"></canvas>
       </div>
     </div>
 
@@ -4271,7 +4659,8 @@
     let OLED_COL = 0xFFFF0020; // WO: OLED pixel column index (0..95)
     let OLED_ROW = 0xFFFF0024; // WO: OLED pixel row index (0..63)
     let OLED_DATA = 0xFFFF0028; // WO: OLED color data word (triggers write)
-    let OLED_CTRL = 0xFFFF002C; // WO: OLED control register (bits [3:0] trigger mode, bits [7:4] color format)
+    let OLED_CTRL = 0xFFFF002C; // WO: OLED control register (bits [2:0] trigger mode, bit [3] present, bits [7:4] color format)
+    let OLED_STATUS = 0xFFFF0030; // RO: bit 0 set while a requested page swap has not completed
 
     // Accelerometer & Cycle Count MMIO Registers
     let ACCEL_DATA = 0xFFFF0040; // RO: 32-bit packed [31:24] Temp, [23:16] Z, [15:8] Y, [7:0] X
@@ -4282,7 +4671,18 @@
     let oledRow = 0;
     let oledCtrl = 0;
     let oledDataVal = 0;
-    let oledBuffer = new Uint8Array(96 * 64 * 4); // 96x64 RGBA Canvas Frame Buffer
+    // The Wrapper's autoadvance_col / autoadvance_row flags: set by the first
+    // write in that mode, cleared by a write that triggers in any other, and
+    // what makes the first auto-advanced pixel land where it was addressed.
+    let oledAdvCol = false;
+    let oledAdvRow = false;
+    // Two frame pages, as the OLED controller has. Both start as page 0, so a
+    // program that never presents sees a single buffer; the first present
+    // splits them.
+    let oledPages = [new Uint8Array(96 * 64 * 4), new Uint8Array(96 * 64 * 4)];
+    let oledFrontPage = 0;   // what the panel scans out
+    let oledBackPage = 0;    // what writes land in
+    let oledBuffer = oledPages[0]; // alias for the back page, kept in step below
 
     let accelX = 0;      // 8-bit signed (-128..+127), 0g = 0x00
     let accelY = 0;      // 8-bit signed (-128..+127), 0g = 0x00
@@ -4315,6 +4715,7 @@
       { addr: OLED_ROW, name: 'OLED ROW', access: 'WO' },
       { addr: OLED_DATA, name: 'OLED DATA', access: 'WO' },
       { addr: OLED_CTRL, name: 'OLED CTRL', access: 'WO' },
+      { addr: OLED_STATUS, name: 'OLED STATUS', access: 'RO' },
       { addr: ACCEL_DATA, name: 'ACCEL DATA', access: 'RO' },
       { addr: ACCEL_DREADY, name: 'ACCEL DREADY', access: 'RO' },
       { addr: PERIPH_LED, name: 'LED', access: 'WO' },
@@ -4333,18 +4734,36 @@
     }
 
     // UART & Console State
-    let uartRxQueue = [];            // Queue of byte values (numbers 0..255) waiting to be read
+    //
+    // The receive path has two sides, as the board does. `uartPending` is the
+    // PC's serial buffer: whatever you typed into the console, waiting to be
+    // clocked onto the wire. `uartRxByte`/`uartRxFull` is the FPGA's single
+    // holding register - TOP_Nexys.vhd keeps exactly one byte, and a character
+    // arriving while it is still full is discarded with the older one kept and
+    // no flag raised. Modelling that is the point: a queue here would make a
+    // too-slow polling loop look correct and then drop characters on hardware.
+    let uartPending = [];            // PC side: bytes still to be sent, in order
+    let uartRxByte = 0;              // FPGA side: the one byte being held
+    let uartRxFull = false;          // FPGA side: UART_RX_VALID
+    let uartRxDropped = 0;           // characters lost to overrun, not yet reported
+    let uartRxDroppedTotal = 0;      // ...and since the last reset, for the panel
     let uartTxBuffer = '';           // Display terminal output string for UART_TX
     let uartTxBytes = [];            // Raw byte values received via UART_TX (for hex re-render)
     let ioInputBuffer = '';
     let ioOutputBuffer = '';
 
-    // Automated Delayed Sequence State
-    let autoSeqPending = false;      // true when an automated sequence is active
-    let autoSeqQueue = [];            // array of byte values to be sent automatically
-    let autoSeqDelayInstr = 10;      // default instructions delay between bytes
-    let autoSeqNextTargetInstr = 0;  // instructionCount threshold for sending next byte
-    let autoSeqTotalBytes = 0;       // initial total bytes in sequence for progress tracking
+    // Delivery pacing. One character on the wire is 10 bit-times; at 115200
+    // baud that is 86.4 us, and at the default CLK_DIV_BITS the CPU runs at
+    // 1.5625 MHz, so a character is 135 single-cycle instructions. That is both
+    // the gap a terminal produces when it dumps a line and the budget a polling
+    // loop has to read one before the next arrives. Settable, because it moves
+    // with the clock divider.
+    const UART_CHAR_INSTR_DEFAULT = 135;
+    let uartCharInstr = UART_CHAR_INSTR_DEFAULT;
+    let uartSendMode = 'paste';      // 'paste' | 'typed' | 'forgiving'
+    let uartTypedInstr = 20000;      // gap for 'typed', a stand-in for human speed
+    let uartNextDeliveryInstr = 0;   // instructionCount at which the next byte lands
+    let uartSendTotal = 0;           // bytes in the current send, for progress
 
     // Peripheral state
     let ledState = 0;                // current LED display value
@@ -5625,8 +6044,9 @@
       oledRow = 0;
       oledCtrl = 0;
       oledDataVal = 0;
-      oledBuffer = new Uint8Array(96 * 64 * 4);
-      for (let i = 3; i < oledBuffer.length; i += 4) oledBuffer[i] = 255;
+      oledAdvCol = false;
+      oledAdvRow = false;
+      oledResetPages();
       updateOledCanvas();
     }
 
@@ -5775,37 +6195,170 @@
 
     let lastOledWriteCycle = 0;
 
-    function writeOledPixel(val) {
-      const colorMode = (oledCtrl >> 4) & 0x0F;
-      let r = 0, g = 0, b = 0;
+    function oledBlankPage(buf) {
+      buf.fill(0);
+      for (let i = 3; i < buf.length; i += 4) buf[i] = 255;
+    }
 
-      if (colorMode === 0x0) { // 8-bit color mode: 3R-3G-2B
-        const r3 = (val >> 5) & 0x07;
-        const g3 = (val >> 2) & 0x07;
-        const b2 = val & 0x03;
-        r = (r3 * 255 / 7) | 0;
-        g = (g3 * 255 / 7) | 0;
-        b = (b2 * 255 / 3) | 0;
-      } else if (colorMode === 0x1) { // 16-bit color mode: 5R-6G-5B
-        const r5 = (val >> 11) & 0x1F;
-        const g6 = (val >> 5) & 0x3F;
-        const b5 = val & 0x1F;
-        r = (r5 * 255 / 31) | 0;
-        g = (g6 * 255 / 63) | 0;
-        b = (b5 * 255 / 31) | 0;
-      } else { // 24-bit color mode: [23:16] = X Accel (Red), [15:8] = Y Accel (Green), [7:0] = Z Accel (Blue)
-        r = (val >>> 16) & 0xFF;
-        g = (val >>> 8) & 0xFF;
-        b = val & 0xFF;
+    // Back to a single blank page, which is where a reset leaves the panel.
+    function oledResetPages() {
+      oledPages = [new Uint8Array(96 * 64 * 4), new Uint8Array(96 * 64 * 4)];
+      oledPages.forEach(oledBlankPage);
+      oledFrontPage = 0;
+      oledBackPage = 0;
+      oledBuffer = oledPages[0];
+    }
+
+    // Present the page just drawn. The controller copies it into the new back
+    // page, so a program can go on updating only the pixels it cares about.
+    // On hardware the copy sits inside the window OLED_SwapPending covers;
+    // here there is no scanout to wait for, so it happens at once.
+    function oledPresent() {
+      if (oledFrontPage === oledBackPage) {
+        // First present: split the pages, leaving the drawn frame on screen.
+        oledBackPage = 1 - oledFrontPage;
+      } else {
+        const t = oledFrontPage;
+        oledFrontPage = oledBackPage;
+        oledBackPage = t;
       }
+      oledPages[oledBackPage].set(oledPages[oledFrontPage]);
+      oledBuffer = oledPages[oledBackPage];
+      updateOledCanvas();
+    }
 
-      const c = (oledCol < 0) ? 0 : (oledCol > 95 ? 95 : oledCol);
-      const rIdx = (oledRow < 0) ? 0 : (oledRow > 63 ? 63 : oledRow);
+    // OLED_Col is a 7-bit register, so software can set a column the 96-wide
+    // panel does not have. The panel does not wrap it: PmodOLEDrgb_bitmap
+    // addresses with (col[6] and not col[5]) & col[5:0], which folds 96..127
+    // back onto 32..63 and leaves everything below 96 alone. Kept as a
+    // separate step from the register itself because the Wrapper's
+    // auto-advance arithmetic works on the raw 7-bit value, not the folded one.
+    function oledPanelCol(col) {
+      const c = col & 0x7F;
+      return ((c & 0x40) && !(c & 0x20)) ? (64 + (c & 0x3F)) : (c & 0x3F);
+    }
+
+    // Resolves a write to OLED_DATA into the Wrapper's 24-bit OLED_Data
+    // register. Two things this has to copy exactly, because the HDL engine
+    // paints the Wrapper's own OLED_Data and the two engines must agree:
+    //
+    //  - Narrow components are LEFT-ALIGNED and zero-filled, not scaled to
+    //    full range. 3-bit red 0b111 is 0xE0, not 0xFF.
+    //  - Each colour mode has its own byte-enable rule. 8-bit needs the low
+    //    byte, 16-bit needs the low two, and 24-bit takes whichever lanes
+    //    the access covers, leaving the rest of the register alone.
+    //
+    // Returns false when the access does not satisfy the mode's rule, in
+    // which case the register keeps its previous value - the pixel is still
+    // painted (the Wrapper triggers on the access, not on the update), just
+    // with the colour that was already there.
+    function oledStoreData(offset, val, size) {
+      let be = 0;
+      for (let i = 0; i < size; i++) be |= 1 << ((offset + i) & 3);
+      // The bus presents the data on the lanes the address selects.
+      const wd = (((val >>> 0) << (8 * (offset & 3))) >>> 0);
+      const colorMode = (oledCtrl >> 4) & 0x0F;
+
+      if (colorMode === 0x1) {          // 16-bit 5R-6G-5B
+        if ((be & 0x3) !== 0x3) return false;
+        oledDataVal = ((((wd >>> 11) & 0x1F) << 19) |
+                       (((wd >>> 5) & 0x3F) << 10) |
+                       ((wd & 0x1F) << 3)) >>> 0;
+      } else if (colorMode === 0x2) {   // 24-bit, one byte lane at a time
+        if (!(be & 0x7)) return false;
+        let v = oledDataVal >>> 0;
+        if (be & 0x4) v = (v & ~0xFF0000) | (wd & 0xFF0000);
+        if (be & 0x2) v = (v & ~0x00FF00) | (wd & 0x00FF00);
+        if (be & 0x1) v = (v & ~0x0000FF) | (wd & 0x0000FF);
+        oledDataVal = v >>> 0;
+      } else {                          // 8-bit 3R-3G-2B
+        if (!(be & 0x1)) return false;
+        oledDataVal = ((((wd >>> 5) & 0x7) << 21) |
+                       (((wd >>> 2) & 0x7) << 13) |
+                       ((wd & 0x3) << 6)) >>> 0;
+      }
+      return true;
+    }
+
+    function writeOledPixel(val) {
+      // `val` is already the resolved 24-bit OLED_Data register.
+      const r = (val >>> 16) & 0xFF;
+      const g = (val >>> 8) & 0xFF;
+      const b = val & 0xFF;
+
+      const c = oledPanelCol(oledCol);
+      const rIdx = oledRow & 0x3F;
       const pixelIdx = (rIdx * 96 + c) * 4;
       oledBuffer[pixelIdx] = r;
       oledBuffer[pixelIdx + 1] = g;
       oledBuffer[pixelIdx + 2] = b;
       oledBuffer[pixelIdx + 3] = 255;
+    }
+
+    function setUartSendMode(mode) {
+      uartSendMode = (mode === 'typed' || mode === 'forgiving') ? mode : 'paste';
+      // Keep the control in step when the mode is set from anywhere but the
+      // control itself.
+      const sel = document.getElementById('uartSendMode');
+      if (sel && sel.value !== uartSendMode) sel.value = uartSendMode;
+      const el = document.getElementById('uartCharInstr');
+      // The instr/char box drives whichever rate the mode uses, so it follows
+      // the mode rather than sitting there meaning nothing.
+      if (el) {
+        el.value = uartSendMode === 'typed' ? uartTypedInstr : uartCharInstr;
+        el.disabled = (uartSendMode === 'forgiving');
+        el.style.opacity = el.disabled ? '0.5' : '';
+      }
+      updatePeripherals();
+    }
+
+    function setUartCharInstr(v) {
+      const n = parseInt(v, 10);
+      if (!Number.isFinite(n) || n < 1) return;
+      if (uartSendMode === 'typed') uartTypedInstr = n; else uartCharInstr = n;
+      updatePeripherals();
+    }
+
+    function uartGapInstr() {
+      return uartSendMode === 'typed' ? Math.max(1, uartTypedInstr)
+           : Math.max(1, uartCharInstr);
+    }
+
+    // Hand one byte to the FPGA's holding register. If the program has not
+    // taken the previous one, the new byte is lost and the old one kept -
+    // TOP_Nexys.vhd acks the UART to release it but leaves UART_RX alone, and
+    // raises no flag. Counted here only so the console can say what happened.
+    function uartDeliverByte(b) {
+      if (uartRxFull) { uartRxDropped++; uartRxDroppedTotal++; return false; }
+      uartRxByte = b & 0xFF;
+      uartRxFull = true;
+      return true;
+    }
+
+    function uartReportDrops() {
+      if (!uartRxDropped || uartPending.length) return;
+      log(`UART RX: ${uartRxDropped} byte${uartRxDropped > 1 ? 's' : ''} lost - ` +
+          `the program did not read UART_RX before the next character arrived ` +
+          `(${uartGapInstr()} instructions apart). The hardware holds one byte and ` +
+          `discards the rest without any flag, so this would be silent on the board.`, 'warning');
+      uartRxDropped = 0;
+    }
+
+    // Called once per executed instruction. Moves bytes from the PC's buffer
+    // into the holding register as their time comes.
+    function uartTickDelivery() {
+      if (!uartPending.length) return;
+      if (uartSendMode === 'forgiving') {
+        // Hand over only once the program has taken the previous byte, so
+        // nothing is ever lost. The wire does not do this; see the guide.
+        if (!uartRxFull) uartDeliverByte(uartPending.shift());
+        return;
+      }
+      while (uartPending.length && instructionCount >= uartNextDeliveryInstr) {
+        uartDeliverByte(uartPending.shift());
+        uartNextDeliveryInstr = instructionCount + uartGapInstr();
+      }
+      uartReportDrops();
     }
 
     function handleMMIOWrite(addr, val, size) {
@@ -5826,7 +6379,8 @@
       const rxBase = UART_RX >>> 0;
       if (u >= rxBase && u < rxBase + 4) {
         const b = val & 0xFF;
-        uartRxQueue.push(b);
+        uartPending.push(b);
+        uartNextDeliveryInstr = instructionCount;
         const rxValidEl = document.getElementById('badgeRxValid');
         if (rxValidEl) {
           rxValidEl.innerText = '1';
@@ -5838,9 +6392,12 @@
       // OLED_COL (0xFFFF0020 .. 0xFFFF0023)
       const oledColBase = OLED_COL >>> 0;
       if (u >= oledColBase && u < oledColBase + 4) {
-        oledCol = (val & 0xFF) % 96;
+        // Truncated to the register's 7 bits, not wrapped at 96: the panel,
+        // not the Wrapper, decides where an out-of-range column lands.
+        oledCol = val & 0x7F;
         const triggerMode = oledCtrl & 0x0F;
         if (triggerMode === 0x1) { // vary_col_mode (x): writing column triggers pixel draw
+          oledAdvCol = oledAdvRow = false;
           writeOledPixel(oledDataVal);
         }
         return;
@@ -5849,9 +6406,10 @@
       // OLED_ROW (0xFFFF0024 .. 0xFFFF0027)
       const oledRowBase = OLED_ROW >>> 0;
       if (u >= oledRowBase && u < oledRowBase + 4) {
-        oledRow = (val & 0xFF) % 64;
+        oledRow = val & 0x3F;
         const triggerMode = oledCtrl & 0x0F;
         if (triggerMode === 0x2) { // vary_row_mode (y): writing row triggers pixel draw
+          oledAdvCol = oledAdvRow = false;
           writeOledPixel(oledDataVal);
         }
         return;
@@ -5860,33 +6418,66 @@
       // OLED_CTRL (0xFFFF002C .. 0xFFFF002F)
       const oledCtrlBase = OLED_CTRL >>> 0;
       if (u >= oledCtrlBase && u < oledCtrlBase + 4) {
-        oledCtrl = val & 0xFF;
+        // The Wrapper gates this on MemWrite_out[0], so only an access that
+        // covers the low byte lane lands.
+        if (u !== oledCtrlBase) return;
+        // Bit 3 makes the write a present; the other bits are ignored, so
+        // software need not know the mode it set to present a frame.
+        if (val & 0x08) oledPresent();
+        else oledCtrl = val & 0xFF;
         return;
       }
 
       // OLED_DATA (0xFFFF0028 .. 0xFFFF002B) -> Stores color data & triggers pixel write if trigger mode is data/autoadvance
       const oledDataBase = OLED_DATA >>> 0;
       if (u >= oledDataBase && u < oledDataBase + 4) {
-        oledDataVal = val >>> 0;
+        // The colour mode is resolved here, on the write, not when the pixel
+        // is painted: a later mode change must not retint a stored colour,
+        // and vary_col/vary_row paint this register some writes afterwards.
+        oledStoreData(u - oledDataBase, val, size);
         const triggerMode = oledCtrl & 0x0F;
-        if (triggerMode === 0x0 || triggerMode === 0x4 || triggerMode === 0x5) {
-          writeOledPixel(oledDataVal);
-          if (triggerMode === 0x4) { // autoadvance_col (row major)
-            oledCol++;
-            if (oledCol >= 96) {
+
+        // Auto-advance steps BEFORE painting, and only once the mode has
+        // already seen a write: the Wrapper arms a flag on the first write and
+        // gates the increment on its previous value. That ordering is what
+        // puts the first pixel on the column you set, and leaves the register
+        // on the last pixel drawn rather than one past it.
+        if (triggerMode === 0x4) {          // autoadvance_col (row major)
+          if (oledAdvCol) {
+            if (oledCol >= 95) {
               oledCol = 0;
-              oledRow = (oledRow + 1) % 64;
-            }
-          } else if (triggerMode === 0x5) { // autoadvance_row (column major)
-            oledRow++;
-            if (oledRow >= 64) {
-              oledRow = 0;
-              oledCol = (oledCol + 1) % 96;
+              oledRow = (oledRow + 1) & 0x3F;
+            } else {
+              oledCol++;
             }
           }
+          oledAdvCol = true;
+          oledAdvRow = false;
+          writeOledPixel(oledDataVal);
+        } else if (triggerMode === 0x5) {   // autoadvance_row (column major)
+          if (oledAdvRow) {
+            if (oledRow >= 63) {
+              oledRow = 0;
+              oledCol = (oledCol >= 95) ? 0 : oledCol + 1;
+            } else {
+              oledRow++;
+            }
+          }
+          oledAdvRow = true;
+          oledAdvCol = false;
+          writeOledPixel(oledDataVal);
+        } else if (triggerMode === 0x0) {   // vary_pixel_data
+          oledAdvCol = oledAdvRow = false;
+          writeOledPixel(oledDataVal);
         }
         return;
       }
+
+      // OLED_STATUS (0xFFFF0030 .. 0xFFFF0033) - read-only, like DIP and PB:
+      // real hardware ignores writes, so a program (or a memory-view edit)
+      // writing here has no effect.
+      const oledStatusBase = OLED_STATUS >>> 0;
+      if (u >= oledStatusBase && u < oledStatusBase + 4) return;
 
       // Peripherals: LED Output (0xFFFF0060 .. 0xFFFF0063)
       const ledBase = PERIPH_LED >>> 0;
@@ -5934,7 +6525,7 @@
       // UART_RX_VALID (0xFFFF0000 .. 0xFFFF0003) -> Bit 0 = 1 if RX queue has data
       const rxValidBase = UART_RX_VALID >>> 0;
       if (u >= rxValidBase && u < rxValidBase + 4) {
-        const isVal = uartRxQueue.length > 0 ? 1 : 0;
+        const isVal = uartRxFull ? 1 : 0;
         const offset = u - rxValidBase;
         return (offset === 0) ? isVal : 0;
       }
@@ -5944,21 +6535,17 @@
       if (u >= rxBase && u < rxBase + 4) {
         const offset = u - rxBase;
         if (offset === 0) {
-          if (uartRxQueue.length > 0) {
-            if (peekOnly) {
-              return (uartRxQueue[0] & 0xFF);
-            } else {
-              const b = uartRxQueue.shift() & 0xFF;
-              const rxValidEl = document.getElementById('badgeRxValid');
-              if (rxValidEl) {
-                const isValid = uartRxQueue.length > 0;
-                rxValidEl.innerText = isValid ? '1' : '0';
-                rxValidEl.style.color = isValid ? '#a6e3a1' : '#f9e2af';
-              }
-              return b;
-            }
+          // A read with nothing waiting returns 0 and consumes nothing, which
+          // is what the Wrapper's read mux now does too.
+          if (!uartRxFull) return 0;
+          if (peekOnly) return uartRxByte & 0xFF;
+          uartRxFull = false;
+          const rxValidEl = document.getElementById('badgeRxValid');
+          if (rxValidEl) {
+            rxValidEl.innerText = '0';
+            rxValidEl.style.color = '#f9e2af';
           }
-          return 0;
+          return uartRxByte & 0xFF;
         }
         return 0;
       }
@@ -6003,10 +6590,18 @@
       // OLED_CTRL (0xFFFF002C .. 0xFFFF002F)
       const oledCtrlBase = OLED_CTRL >>> 0;
       if (u >= oledCtrlBase && u < oledCtrlBase + 4) {
+        // Write-only on hardware; echoed back here so the Memory view has
+        // something to show.
         if (size === 4) return oledCtrl >>> 0;
-        const offset = u - oledCtrlBase;
-        return (oledCtrl >> (offset * 8)) & 0xFF;
+        return (oledCtrl >> ((u - oledCtrlBase) * 8)) & 0xFF;
       }
+
+      // OLED_STATUS (0xFFFF0030 .. 0xFFFF0033) - bit 0 is the swap-pending
+      // flag. Always clear here: with no scanout modelled a present has
+      // already landed by the time software looks, so a polling loop passes
+      // straight through. On hardware it would spin until the next frame.
+      const oledStatusBase = OLED_STATUS >>> 0;
+      if (u >= oledStatusBase && u < oledStatusBase + 4) return 0;
 
       // LED Output (0xFFFF0060 .. 0xFFFF0063)
       const ledBase = PERIPH_LED >>> 0;
@@ -8168,6 +8763,92 @@
       } catch (e) { /* dependent state not ready yet */ }
     }
 
+    // ---- Panel row filter -------------------------------------------------
+    // Peripherals is absent because it has controls, not rows.
+    const PANEL_FIND = new Set(['registers', 'memory', 'disassembly', 'locals']);
+
+    // Placeholders say what the filter reaches, which differs for Memory: it
+    // narrows the rows the address window is already showing, not the segment.
+    const PANEL_FIND_PLACEHOLDER = {
+      registers: 'Filter registers',
+      memory: 'Filter the rows shown',
+      disassembly: 'Filter instructions',
+      locals: 'Filter locals'
+    };
+
+    // Not persisted: a filter that silently survived a reload would look like
+    // missing data rather than a filter.
+    const panelFindText = {};
+
+    function buildPanelFindBar(name) {
+      const bar = document.createElement('div');
+      bar.className = 'panel-find';
+      bar.id = 'panelFind-' + name;
+      bar.hidden = true;
+      bar.innerHTML =
+        '<input type="text" spellcheck="false" placeholder="' + PANEL_FIND_PLACEHOLDER[name] + '">' +
+        '<span class="panel-find-count"></span>' +
+        '<button class="find-btn find-close" type="button" title="Clear (Esc)">&times;</button>';
+
+      const input = bar.querySelector('input');
+      input.addEventListener('input', () => setPanelFind(name, input.value));
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.stopPropagation(); closePanelFind(name); }
+      });
+      bar.querySelector('button').addEventListener('click', () => closePanelFind(name));
+      return bar;
+    }
+
+    function panelFindBar(name) { return document.getElementById('panelFind-' + name); }
+
+    function panelFindBtn(name) {
+      const el = panelEl(name);
+      return el && el.querySelector(':scope > .panel-hdr [data-panel-act="find"]');
+    }
+
+    function setPanelFind(name, text) {
+      panelFindText[name] = text || '';
+      const btn = panelFindBtn(name);
+      if (btn) btn.classList.toggle('active', !!panelFindText[name]);
+      refreshPanel(name);
+    }
+
+    function togglePanelFind(name) {
+      const bar = panelFindBar(name);
+      if (!bar) return;
+      if (bar.hidden) {
+        bar.hidden = false;
+        bar.querySelector('input').focus();
+      } else {
+        closePanelFind(name);
+      }
+    }
+
+    function closePanelFind(name) {
+      const bar = panelFindBar(name);
+      if (!bar) return;
+      bar.hidden = true;
+      const input = bar.querySelector('input');
+      if (input) input.value = '';
+      setPanelFind(name, '');
+    }
+
+    // True when there is no filter, so callers can guard a row unconditionally.
+    function panelFindMatch(name, haystack) {
+      const q = panelFindText[name];
+      if (!q) return true;
+      return String(haystack).toLowerCase().includes(q.toLowerCase());
+    }
+
+    function panelFindActive(name) { return !!panelFindText[name]; }
+
+    function setPanelFindCount(name, shown, total) {
+      const bar = panelFindBar(name);
+      if (!bar) return;
+      const el = bar.querySelector('.panel-find-count');
+      if (el) el.textContent = panelFindText[name] ? shown + ' of ' + total : '';
+    }
+
     // Wrap each panel's existing content in a scrollable body and prepend a header bar.
     function ensurePanelChrome() {
       PANEL_DEFS.forEach(({ name, label }) => {
@@ -8178,16 +8859,21 @@
         body.className = 'panel-body';
         while (el.firstChild) body.appendChild(el.firstChild);
 
+        const findable = PANEL_FIND.has(name);
         const hdr = document.createElement('div');
         hdr.className = 'panel-hdr';
         hdr.innerHTML =
           '<span class="panel-hdr-title">' + label + '</span>' +
           '<span class="panel-hdr-actions">' +
+          (findable
+            ? '<button class="panel-hdr-btn" type="button" data-panel-act="find" title="Filter rows">🔍</button>'
+            : '') +
           '<button class="panel-hdr-btn" type="button" data-panel-act="float">⧉</button>' +
           '<button class="panel-hdr-btn" type="button" data-panel-act="hide" title="Hide this panel">✕</button>' +
           '</span>';
 
         el.appendChild(hdr);
+        if (findable) el.appendChild(buildPanelFindBar(name));
         el.appendChild(body);
 
         hdr.addEventListener('pointerdown', (e) => onFloatDragStart(e, name));
@@ -8199,6 +8885,12 @@
           e.stopPropagation();
           setPanelVisible(name, false);
         });
+        if (findable) {
+          hdr.querySelector('[data-panel-act="find"]').addEventListener('click', (e) => {
+            e.stopPropagation();
+            togglePanelFind(name);
+          });
+        }
 
         observeFloatResize(name);
       });
@@ -9292,20 +9984,47 @@
     }
 
     
-function updateRegisters() {
+// In HDL mode the visible state is reconstructed by replaying the recording
+    // from reset on every seek, so an edit to a register or a memory word is
+    // discarded by the next Step. vvp cannot be paused and resumed from an
+    // altered state, so there is nothing to write an edit into: the honest
+    // thing is to show these read-only rather than accept a change that
+    // silently reverts. Inputs still work - they go through the Peripherals
+    // panel, which re-simulates the run with the new value.
+    const REPLAYED_STATE_TITLE =
+      'Read-only in HDL mode: state is replayed from the recording, so an edit ' +
+      'would be discarded on the next Step. Change inputs in the Peripherals panel.';
+    const TEXT_RO_TITLE =
+      'Text segment is read-only in Memory View (edit in Code Editor and Assemble)';
+
+    function stateIsReplayed() { return simEngineMode === 'hdl'; }
+
+    function updateRegisters() {
       let html = '';
+      let shown = 0;
       for (let i = 0; i < 32; i++) {
         const name = ABI_NAMES[i];
         const val = regs[i];
         const uval = val >>> 0;
         const decVal = regDecSigned ? val : uval;
+        if (!panelFindMatch('registers',
+          `x${i} ${name} ${uval.toString(16).padStart(8, '0')} ${decVal}`)) continue;
+        shown++;
         const isChanged = i === lastChangedReg;
         const valClass = 'reg-val' + (isChanged ? ' reg-changed' : '');
+        const hexTxt = uval.toString(16).padStart(8, '0');
+        if (stateIsReplayed()) {
+          html += `<tr><td class="reg-name col-id">x${i}</td><td class="reg-name col-name">${name}</td>
+      <td class="${valClass} readonly-code col-val" title="${REPLAYED_STATE_TITLE}">${hexTxt}</td>
+      <td class="${valClass} readonly-code col-val" title="${REPLAYED_STATE_TITLE}">${decVal}</td></tr>`;
+          continue;
+        }
         html += `<tr><td class="reg-name col-id">x${i}</td><td class="reg-name col-name">${name}</td>
-      <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${uval.toString(16).padStart(8, '0')}" data-type="hex" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">${uval.toString(16).padStart(8, '0')}</td>
+      <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${hexTxt}" data-type="hex" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">${hexTxt}</td>
       <td class="${valClass} reg-editable col-val" data-idx="${i}" data-val="${decVal.toString().padStart(11, ' ')}" data-type="dec" onclick="startRegEdit(this)" ondblclick="popRegEditModal(event,this)" onblur="commitRegEdit(this)" onkeydown="handleRegEditKey(event,this)" title="Single-click: edit inline | Double-click: open edit window">${decVal}</td></tr>`;
       }
       regBody.innerHTML = html;
+      setPanelFindCount('registers', shown, 32);
       // The <thead> (and its column widths) survives this rebuild untouched
       // since only the <tbody> is replaced — nothing to reapply here.
       // Also update peripherals (PC LEDs, etc.) when registers are refreshed
@@ -9330,6 +10049,9 @@ function updateRegisters() {
       const body = document.getElementById('localsBody');
       const notice = document.getElementById('localsNotice');
       if (!body) return;
+      // Seeded here so the several early returns below all leave an honest
+      // count behind; the tail of the function overwrites it with the real one.
+      setPanelFindCount('locals', 0, 0);
       if (editorLanguageMode !== 'c' || !cFunctionLocals || cFunctionLocals.size === 0) {
         body.innerHTML = '';
         if (notice) {
@@ -9363,11 +10085,15 @@ function updateRegisters() {
       if (notice) notice.style.display = 'none';
       const s0 = (typeof regs !== 'undefined') ? (regs[8] >>> 0) : 0;
       let html = '';
+      let shown = 0;
       fn.vars.forEach(v => {
         const addr = (s0 + v.offset) >>> 0;
         const uval = readMem(addr, 4, true) >>> 0;
         const sval = readMemSigned(addr, 4, true);
         const decVal = localsDecSigned ? sval : uval;
+        if (!panelFindMatch('locals',
+          `${v.name} 0x${addr.toString(16).padStart(8, '0')} 0x${uval.toString(16).padStart(8, '0')} ${decVal}`)) return;
+        shown++;
         const kindLabel = v.kind === 'param' ? 'param' : 'local';
         html += `<tr><td class="reg-name col-name" title="${kindLabel} of ${escapeHtml(fn.name)}() — s0 ${v.offset >= 0 ? '+' : '-'} ${Math.abs(v.offset)}">${escapeHtml(v.name)}</td>` +
           `<td class="reg-name col-id">0x${addr.toString(16).padStart(8, '0')}</td>` +
@@ -9375,6 +10101,7 @@ function updateRegisters() {
           `<td class="reg-val col-val">${decVal}</td></tr>`;
       });
       body.innerHTML = html || '';
+      setPanelFindCount('locals', shown, fn.vars.length);
     }
 
     function setLocalsDecSigned(signed) {
@@ -9594,26 +10321,30 @@ function updateRegisters() {
       const previewEl = document.getElementById('uartQueuePreview');
       const termEl = document.getElementById('uartTerminal');
 
+      const asChar = (b) => (b >= 32 && b <= 126)
+        ? `'${String.fromCharCode(b)}'` : '0x' + b.toString(16).padStart(2, '0');
+
       if (rxValidEl) {
-        const isValid = uartRxQueue.length > 0;
-        rxValidEl.innerText = isValid ? '1' : '0';
-        rxValidEl.style.color = isValid ? '#a6e3a1' : '#f9e2af';
+        rxValidEl.innerText = uartRxFull ? '1' : '0';
+        rxValidEl.style.color = uartRxFull ? '#a6e3a1' : '#f9e2af';
       }
       if (txReadyEl) {
         txReadyEl.innerText = '1';
       }
+      // The count is what the PC still has to send, not a receive FIFO - the
+      // hardware holds one byte, and that is shown separately below.
       if (countEl) {
-        countEl.innerText = uartRxQueue.length + (uartRxQueue.length === 1 ? ' byte' : ' bytes');
+        countEl.innerText = uartPending.length +
+          (uartPending.length === 1 ? ' byte to send' : ' bytes to send');
       }
       if (previewEl) {
-        if (uartRxQueue.length > 0) {
-          const previewStr = uartRxQueue.slice(0, 10).map(b => {
-            return (b >= 32 && b <= 126) ? `'${String.fromCharCode(b)}'` : '0x' + b.toString(16).padStart(2, '0');
-          }).join(', ');
-          previewEl.innerText = `[${previewStr}${uartRxQueue.length > 10 ? '...' : ''}]`;
-        } else {
-          previewEl.innerText = '(empty)';
-        }
+        const held = uartRxFull ? `UART_RX holds ${asChar(uartRxByte)}` : 'UART_RX empty';
+        const queued = uartPending.length
+          ? ' · queued [' + uartPending.slice(0, 10).map(asChar).join(', ') +
+            (uartPending.length > 10 ? '...' : '') + ']'
+          : '';
+        const lost = uartRxDroppedTotal ? ` · ${uartRxDroppedTotal} lost to overrun` : '';
+        previewEl.innerText = held + queued + lost;
       }
       if (termEl) {
         renderUartTerminal();
@@ -9622,9 +10353,11 @@ function updateRegisters() {
       const autoStatusEl = document.getElementById('uartAutoSendStatus');
       const btnEl = document.getElementById('uartSendBtn');
       if (autoStatusEl) {
-        if (autoSeqPending) {
-          const sentCount = autoSeqTotalBytes - autoSeqQueue.length;
-          autoStatusEl.innerText = `Buffering: ${sentCount}/${autoSeqTotalBytes} (${autoSeqDelayInstr} instr delay)`;
+        if (uartPending.length) {
+          const sentCount = Math.max(0, uartSendTotal - uartPending.length);
+          autoStatusEl.innerText = uartSendMode === 'forgiving'
+            ? `Sending: ${sentCount}/${uartSendTotal} (waiting for the program)`
+            : `Sending: ${sentCount}/${uartSendTotal} (${uartGapInstr()} instr apart)`;
         } else {
           if (btnEl && btnEl.innerText === 'Cancel') {
             btnEl.innerText = 'Send';
@@ -9642,6 +10375,19 @@ function updateRegisters() {
       if (oledColEl) oledColEl.innerText = oledCol;
       if (oledRowEl) oledRowEl.innerText = oledRow;
       if (oledCtrlEl) oledCtrlEl.innerText = '0x' + (oledCtrl & 0xFF).toString(16).padStart(2, '0').toUpperCase();
+
+      // Bit 0 of OLED_STATUS, shown the way DREADY and RX VALID are. Always 0
+      // here: with no scanout to wait for, a present has landed by the time
+      // anything can look. Which page the panel is on does change, so that is
+      // spelled out below.
+      const oledSwapEl = document.getElementById('badgeOledSwap');
+      if (oledSwapEl) oledSwapEl.innerText = '0';
+      const oledBufEl = document.getElementById('oledBufDesc');
+      if (oledBufEl) {
+        oledBufEl.innerText = (oledFrontPage === oledBackPage)
+          ? 'Single buffered · writes appear at once'
+          : `Double buffered · showing page ${oledFrontPage}, drawing into page ${oledBackPage}`;
+      }
 
       if (oledDescEl) {
         const triggerMode = oledCtrl & 0x0F;
@@ -9756,13 +10502,12 @@ function updateRegisters() {
       if (!oledImageData || oledImageData.width !== 96 || oledImageData.height !== 64) {
         oledImageData = ctx.createImageData(96, 64);
       }
-      oledImageData.data.set(oledBuffer.subarray(0, 96 * 64 * 4));
+      oledImageData.data.set(oledPages[oledFrontPage].subarray(0, 96 * 64 * 4));
       ctx.putImageData(oledImageData, 0, 0);
     }
 
     function clearOledDisplay() {
-      oledBuffer.fill(0);
-      for (let i = 3; i < oledBuffer.length; i += 4) oledBuffer[i] = 255;
+      oledPages.forEach(oledBlankPage);
       updateOledCanvas();
       updatePeripherals();
     }
@@ -9828,20 +10573,17 @@ function updateRegisters() {
     function sendUartInput() {
       const modeEl = document.getElementById('uartInputMode');
       const textEl = document.getElementById('uartInputText');
-      const checkEl = document.getElementById('uartAutoSendCheck');
-      const delayEl = document.getElementById('uartAutoSeqDelay');
       const btnEl = document.getElementById('uartSendBtn');
       const statusEl = document.getElementById('uartAutoSendStatus');
       if (!modeEl || !textEl) return;
 
-      if (autoSeqPending) {
-        autoSeqPending = false;
-        autoSeqQueue = [];
+      if (uartPending.length) {
+        uartPending = [];
         if (btnEl) {
           btnEl.innerText = 'Send';
           btnEl.style.background = '';
         }
-        if (statusEl) statusEl.innerText = '(Buffer cancelled)';
+        if (statusEl) statusEl.innerText = '(send cancelled)';
         updatePeripherals();
         return;
       }
@@ -9872,28 +10614,20 @@ function updateRegisters() {
 
       if (bytes.length === 0) return;
 
-      const isBufferMode = checkEl && checkEl.checked;
-      if (isBufferMode) {
-        // Put the first byte immediately into the UART RX FIFO queue, and schedule the rest
-        uartRxQueue = [bytes[0]];
-        autoSeqQueue = bytes.slice(1);
-        autoSeqTotalBytes = bytes.length;
-        autoSeqDelayInstr = Math.max(1, parseInt(delayEl ? delayEl.value : 10, 10) || 10);
-        autoSeqPending = autoSeqQueue.length > 0;
-        autoSeqNextTargetInstr = instructionCount + autoSeqDelayInstr;
-        textEl.value = '';
-        if (btnEl && autoSeqPending) {
-          btnEl.innerText = 'Cancel';
-          btnEl.style.background = '#f38ba8';
-        }
-        if (statusEl) statusEl.innerText = autoSeqPending ? `Buffering: 1/${autoSeqTotalBytes} (${autoSeqDelayInstr} instr delay)` : '';
-      } else {
-        // Direct send: push all bytes into the FIFO queue (first byte immediately available at 0xFFFF0004)
-        for (const b of bytes) {
-          uartRxQueue.push(b);
-        }
-        textEl.value = '';
-        if (statusEl) statusEl.innerText = '';
+      // The bytes join the PC's buffer; delivery clocks them onto the wire one
+      // character time apart, the way a serial port does.
+      for (const b of bytes) uartPending.push(b);
+      uartSendTotal = uartPending.length;
+      uartNextDeliveryInstr = instructionCount;
+      uartTickDelivery();
+      textEl.value = '';
+      if (btnEl && uartPending.length) {
+        btnEl.innerText = 'Cancel';
+        btnEl.style.background = '#f38ba8';
+      }
+      if (statusEl) {
+        statusEl.innerText = uartPending.length
+          ? `Sending: ${uartSendTotal - uartPending.length}/${uartSendTotal}` : '';
       }
 
       updatePeripherals();
@@ -9925,9 +10659,11 @@ function updateRegisters() {
     function clearUartTx() {
       uartTxBuffer = '';
       uartTxBytes = [];
-      uartRxQueue = [];
-      autoSeqPending = false;
-      autoSeqQueue = [];
+      uartPending = [];
+      uartRxFull = false;
+      uartRxByte = 0;
+      uartRxDropped = 0;
+      uartRxDroppedTotal = 0;
       const btnEl = document.getElementById('uartSendBtn');
       if (btnEl) {
         btnEl.innerText = 'Send';
@@ -10138,6 +10874,35 @@ function updateRegisters() {
       // word's hex from its own ASCII/DEC, and never has a second word's
       // data to be confused with.
       let html = '';
+      let built = 0, shown = 0;
+      // The names a row displays above its word - user labels, or an MMIO
+      // register's own name. Searching for `main` or `UART` is at least as
+      // likely as searching for an address, so they join the row's text.
+      const memRowNames = (rowStart) => {
+        const names = [];
+        for (let c = 0; c < 4; c++) {
+          const offset = isStackView ? ((rowStart - c) >>> 0) : ((rowStart + c) >>> 0);
+          for (const n of (labelsByAddr[offset] || [])) if (!names.includes(n)) names.push(n);
+        }
+        const reg = typeof mmioRegisterAt === 'function' ? mmioRegisterAt(rowStart) : null;
+        if (reg && reg.name) names.push(reg.name);
+        return names.join(' ');
+      };
+
+      // A byte can be read-only for either reason, and the tooltip should say
+      // which; HDL replay wins because it applies to every segment.
+      const roByteTitle = (offset) => stateIsReplayed()
+        ? REPLAYED_STATE_TITLE
+        : (isCodeSegmentAddress(offset) ? TEXT_RO_TITLE : '');
+
+      // Every branch below emits the same row shape, so they share one exit
+      // point - which is also where the panel's row filter gets applied.
+      const emitMemRow = (rowStart, hexVals, contentVals, text) => {
+        built++;
+        if (!panelFindMatch('memory', text + ' ' + memRowNames(rowStart))) return;
+        shown++;
+        html += `<div><span class="addr" data-col="addr">0x${rowStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
+      };
       for (let r = 0; r < rows; r++) {
         if (isStackView && addr < r * 4) break;
         // Stack grows downwards -> rows step downwards by 4 bytes; all other regions step upwards
@@ -10148,8 +10913,10 @@ function updateRegisters() {
 
         if (isMMIO || hasPeriph) {
           const reg = mmioRegisterAt(wordStart);
-          const editable = !reg || reg.editable; // unmapped MMIO space is plain scratch memory
-          const roTitle = reg ? `title="${escapeHtml(reg.name)} (${reg.access}) is read-only"` : '';
+          // Replayed HDL state is read-only throughout; see REPLAYED_STATE_TITLE.
+          const editable = !stateIsReplayed() && (!reg || reg.editable); // unmapped MMIO space is plain scratch memory
+          const roTitle = stateIsReplayed() ? `title="${REPLAYED_STATE_TITLE}"`
+            : (reg ? `title="${escapeHtml(reg.name)} (${reg.access}) is read-only"` : '');
 
           if (wordMode) {
             let wordVal = 0;
@@ -10171,16 +10938,21 @@ function updateRegisters() {
             const contentVals = editable
               ? `<span class="val-dec${cls}" onclick="startMemWordCellEdit(event,${wordStart})" title="Click to edit 32-bit word">${decText}</span>`
               : `<span class="val-dec${cls} readonly-code" ${roTitle}>${decText}</span>`;
-            html += `<div><span class="addr" data-col="addr">0x${wordStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
+            emitMemRow(wordStart, hexVals, contentVals,
+              `0x${wordStart.toString(16).padStart(8, '0')} ${wordHex} ${decText}`);
             continue;
           }
 
           // Byte view: one 4-byte group, so a label can be anchored above it
           let groupBytes = '';
           let groupAscii = '';
+          // Hex and ASCII are kept apart so a search for "dead" matches the
+          // hex run and a search for "Hell" matches the characters.
+          let hexText = '', asciiText = '';
           for (let i = 0; i < 4; i++) {
             const offset = (wordStart + i) >>> 0;
             const val = readMem(offset, 1, true) & 0xFF;
+            hexText += val.toString(16).padStart(2, '0');
             const isChanged = lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size);
             const cls = isChanged ? ' changed' : '';
             if (editable) {
@@ -10190,6 +10962,7 @@ function updateRegisters() {
             }
 
             const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
+            asciiText += ch;
             const asciiAttrs = editable
               ? `onclick="focusMemByte(${offset})" title="Click matching hex byte to edit"`
               : `title="${escapeHtml(reg.name)} (${reg.access}) is read-only"`;
@@ -10197,49 +10970,57 @@ function updateRegisters() {
           }
           const hexVals = mmioLabelAnnotationHtml(wordStart, '<span class="mem-row-bytes">' + groupBytes + '</span>');
           const contentVals = '<span class="mem-ascii-group">' + groupAscii + '</span>';
-          html += `<div><span class="addr" data-col="addr">0x${wordStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
+          emitMemRow(wordStart, hexVals, contentVals,
+            `0x${wordStart.toString(16).padStart(8, '0')} ${hexText} ${asciiText}`);
         } else if (wordMode) {
           // Word view: the one 32-bit word at this row (little-endian)
           const offsets = [];
           let wordVal = 0;
           let isChanged = false;
           let allReadonly = true;
+          const replayed = stateIsReplayed();
+          // Two different reasons to be read-only, so two different tooltips.
+          const roWordTitle = replayed ? REPLAYED_STATE_TITLE : TEXT_RO_TITLE;
           for (let c = 0; c < 4; c++) {
             const offset = isStackView ? ((wordStart - c) >>> 0) : ((wordStart + c) >>> 0);
             offsets.push(offset);
             const bv = getMemByte(offset);
             wordVal |= bv << (c * 8);
             if (lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size)) isChanged = true;
-            if (!isCodeSegmentAddress(offset)) allReadonly = false;
+            if (!replayed && !isCodeSegmentAddress(offset)) allReadonly = false;
           }
           const cls = isChanged ? ' changed' : '';
           const rowAddr = offsets[0];
           const wordHex = (wordVal >>> 0).toString(16).padStart(8, '0');
           const cell = allReadonly
-            ? `<span class="val word-cell${cls} readonly-code" data-addr="${rowAddr}" data-size="4" title="Text segment is read-only in Memory View (edit in Code Editor and Assemble)">${wordHex}</span>`
+            ? `<span class="val word-cell${cls} readonly-code" data-addr="${rowAddr}" data-size="4" title="${roWordTitle}">${wordHex}</span>`
             : `<span class="val word-cell${cls}" data-addr="${rowAddr}" data-size="4" onclick="startMemWordCellEdit(event,${rowAddr})" title="Click to edit 32-bit word (little-endian)">${wordHex}</span>`;
           const hexVals = labelAnnotationHtml(rowAddr, cell);
 
           const decText = (memDecSigned ? (wordVal | 0) : (wordVal >>> 0)).toString();
           const contentVals = allReadonly
-            ? `<span class="val-dec${cls} readonly-code" title="Text segment is read-only in Memory View (edit in Code Editor and Assemble)">${decText}</span>`
+            ? `<span class="val-dec${cls} readonly-code" title="${roWordTitle}">${decText}</span>`
             : `<span class="val-dec${cls}" onclick="startMemWordCellEdit(event,${rowAddr})" title="Click to edit 32-bit word">${decText}</span>`;
-          html += `<div><span class="addr" data-col="addr">0x${wordStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
+          emitMemRow(wordStart, hexVals, contentVals,
+            `0x${wordStart.toString(16).padStart(8, '0')} ${wordHex} ${decText}`);
         } else {
           // Byte view: the one 4-byte group at this row, so a label can be anchored above it
           let groupBytes = '';
           let groupAscii = '';
+          let hexText = '', asciiText = '';
           for (let i = 0; i < 4; i++) {
             const offset = isStackView ? ((wordStart - i) >>> 0) : ((wordStart + i) >>> 0);
             const val = getMemByte(offset);
+            hexText += val.toString(16).padStart(2, '0');
+            asciiText += (val >= 32 && val <= 126) ? String.fromCharCode(val) : '.';
             const isChanged = lastChangedMem.some(m => offset >= m.addr && offset < m.addr + m.size);
             const cls = isChanged ? ' changed' : '';
-            const isCodeSegment = isCodeSegmentAddress(offset);
+            const isCodeSegment = stateIsReplayed() || isCodeSegmentAddress(offset);
 
             if (isCodeSegment) {
-              groupBytes += `<span class="val${cls} readonly-code" data-addr="${offset}" data-size="1" style="cursor:default;opacity:0.88;" title="Text segment is read-only in Memory View (edit in Code Editor and Assemble)">${val.toString(16).padStart(2, '0')}</span>`;
+              groupBytes += `<span class="val${cls} readonly-code" data-addr="${offset}" data-size="1" style="cursor:default;opacity:0.88;" title="${roByteTitle(offset)}">${val.toString(16).padStart(2, '0')}</span>`;
               const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
-              groupAscii += `<span class="ascii${cls}" title="Text segment byte (read-only)">${escapeHtml(ch)}</span>`;
+              groupAscii += `<span class="ascii${cls}" title="${roByteTitle(offset)}">${escapeHtml(ch)}</span>`;
             } else {
               groupBytes += `<span class="val${cls}" contenteditable="true" spellcheck="false" data-addr="${offset}" data-size="1" data-old="${val.toString(16).padStart(2, '0')}" onfocus="startMemByteEdit(this)" ondblclick="startMemWordEdit(event,${offset})" onkeydown="handleMemByteEditKey(event,this)" onblur="commitMemByteEdit(this)" title="Single-click: edit byte (00-ff) | Double-click: edit word (Enter commits, Esc cancels)">${val.toString(16).padStart(2, '0')}</span>`;
               const ch = val >= 32 && val <= 126 ? String.fromCharCode(val) : '.';
@@ -10249,10 +11030,12 @@ function updateRegisters() {
           }
           const hexVals = labelAnnotationHtml(wordStart, '<span class="mem-row-bytes">' + groupBytes + '</span>');
           const contentVals = '<span class="mem-ascii-group">' + groupAscii + '</span>';
-          html += `<div><span class="addr" data-col="addr">0x${wordStart.toString(16).padStart(8, '0')}</span><span class="mem-hex-block">${hexVals}</span><span class="mem-ascii-block">${contentVals}</span></div>`;
+          emitMemRow(wordStart, hexVals, contentVals,
+            `0x${wordStart.toString(16).padStart(8, '0')} ${hexText} ${asciiText}`);
         }
       }
       memView.innerHTML = html;
+      setPanelFindCount('memory', shown, built);
       // Re-measure the hex data's natural width (it changes with the
       // Byte/Word mode) so the Hex column's drag floor stays honest, then
       // re-run the layout against it.
@@ -10288,6 +11071,11 @@ function updateRegisters() {
     }
 
     function startMemByteEdit(el) {
+      // Belt and braces: the markup offers no editable cell in HDL mode, but
+      // a stray shortcut or a stale row must not write state that a replay
+      // will silently discard.
+      if (stateIsReplayed()) { setStatus(REPLAYED_STATE_TITLE, 'warning'); return; }
+
       const addr = parseInt(el.dataset.addr, 10);
       if (isCodeSegmentAddress(addr)) {
         el.blur();
@@ -10372,6 +11160,11 @@ function updateRegisters() {
     // ---- Word-level editing (4 bytes at a time) ----
 
     function startMemWordEdit(event, wordStartAddr) {
+      // Belt and braces: the markup offers no editable cell in HDL mode, but
+      // a stray shortcut or a stale row must not write state that a replay
+      // will silently discard.
+      if (stateIsReplayed()) { setStatus(REPLAYED_STATE_TITLE, 'warning'); return; }
+
       event.preventDefault();
       event.stopPropagation();
       if (isCodeSegmentAddress(wordStartAddr)) {
@@ -10396,6 +11189,11 @@ function updateRegisters() {
 
     // Word-cell click handler for the "word view" memory display mode.
     function startMemWordCellEdit(event, wordStartAddr) {
+      // Belt and braces: the markup offers no editable cell in HDL mode, but
+      // a stray shortcut or a stale row must not write state that a replay
+      // will silently discard.
+      if (stateIsReplayed()) { setStatus(REPLAYED_STATE_TITLE, 'warning'); return; }
+
       event.preventDefault();
       event.stopPropagation();
       if (isCodeSegmentAddress(wordStartAddr)) {
@@ -10558,6 +11356,11 @@ function updateRegisters() {
     }
 
     function startRegEdit(el) {
+      // Belt and braces: the markup offers no editable cell in HDL mode, but
+      // a stray shortcut or a stale row must not write state that a replay
+      // will silently discard.
+      if (stateIsReplayed()) { setStatus(REPLAYED_STATE_TITLE, 'warning'); return; }
+
       if (!el) return;
       el.contentEditable = "true";
       el.classList.add('editing');
@@ -10636,6 +11439,11 @@ function updateRegisters() {
     }
 
     function popRegEditModal(event, el) {
+      // Belt and braces: the markup offers no editable cell in HDL mode, but
+      // a stray shortcut or a stale row must not write state that a replay
+      // will silently discard.
+      if (stateIsReplayed()) { setStatus(REPLAYED_STATE_TITLE, 'warning'); return; }
+
       if (event) { event.preventDefault(); event.stopPropagation(); }
       if (!el) return;
       const idx = parseInt(el.dataset.idx, 10);
@@ -10757,10 +11565,16 @@ function updateRegisters() {
 
       const editableEl = document.getElementById('memLegendEditable');
       if (editableEl) {
-        const text = currentMemSegment === 'code' ? 'Read only'
+        // Nothing is editable while HDL state is replayed, so the whole
+        // editability note goes rather than reading "Editable" over cells
+        // that are not.
+        const text = stateIsReplayed() ? ''
+          : currentMemSegment === 'code' ? 'Read only'
           : currentMemSegment === 'mmio' ? 'Editable except RO'
           : 'Editable';
-        editableEl.innerHTML = `<span class="mem-legend-editable">${text}</span>`;
+        editableEl.innerHTML = text ? `<span class="mem-legend-editable">${text}</span>` : '';
+        const sep = document.getElementById('memLegendSep');
+        if (sep) sep.hidden = !text;
       }
     }
 
@@ -10859,10 +11673,26 @@ function updateRegisters() {
         `<th>Native instruction<span class="col-resizer" data-panel="disassembly" data-col="native" title="${colTitle}"></span></th>` +
         '<th>Original source</th>' +
         '</tr></thead>';
+      let built = 0, shown = 0;
+      const filtering = panelFindActive('disassembly');
+      // Instructions carry the label of the block they are in, not just one at
+      // their own address: searching a label is really asking to see the code
+      // under it, and only the first instruction sits exactly on it.
+      let blockLabels = '';
       for (const item of machineCode) {
         if (!item.bytes || item.error) continue;
 
         const uaddr = item.address >>> 0;
+        if (addrToLabels[uaddr]) blockLabels = addrToLabels[uaddr].join(' ');
+
+        built++;
+        if (filtering && !panelFindMatch('disassembly',
+          `0x${item.address.toString(16).padStart(8, '0')} ${item.native || ''} ` +
+          `${item.text || item.asmLine || ''} ${blockLabels}`)) continue;
+        shown++;
+
+        // A heading is kept when its own row survived the filter, so a search
+        // for a label shows the label as well as the code under it.
         if (addrToLabels[uaddr]) {
           for (const lbl of addrToLabels[uaddr]) {
             html += `<tr class="disasm-label-row">
@@ -10957,6 +11787,7 @@ function updateRegisters() {
       }
       html += '</table>';
       disassemblyDisplay.innerHTML = html;
+      setPanelFindCount('disassembly', shown, built);
       // The table (and its <colgroup>) is brand new, so size its columns.
       applyPanelColLayout('disassembly');
 
@@ -11264,6 +12095,7 @@ STACK_INIT:	# Stack pointer can be initialised to this location - DMEM+0x200 (i.
 #define OLED_ROW_OFF 		0x24 //WO
 #define OLED_DATA_OFF 		0x28 //WO
 #define OLED_CTRL_OFF 		0x2C //WO 
+#define OLED_STATUS_OFF 	0x30 //RO, status bit
 #define ACCEL_DATA_OFF 		0x40 //RO
 #define ACCEL_DREADY_OFF 	0x44 //RO, status bit
 #define LED_OFF 			0x60 //WO
@@ -11961,22 +12793,19 @@ int main()
       pc = decodeAndExecute(instr32, addr);
       lastChangedReg = lastExecutedRd;
 
-      // Process automated delayed sequence sending if active
-      if (autoSeqPending && autoSeqQueue.length > 0) {
-        if (instructionCount >= autoSeqNextTargetInstr) {
-          const nextByte = autoSeqQueue.shift();
-          uartRxQueue.push(nextByte);
-          if (autoSeqQueue.length > 0) {
-            autoSeqNextTargetInstr = instructionCount + autoSeqDelayInstr;
-          } else {
-            autoSeqPending = false;
+      // Clock pending UART input onto the wire as each character's time comes.
+      if (uartPending.length) {
+        const before = uartPending.length;
+        uartTickDelivery();
+        if (uartPending.length !== before) {
+          if (!uartPending.length) {
             const btn = document.getElementById('uartSendBtn');
             const statusEl = document.getElementById('uartAutoSendStatus');
             if (btn) {
               btn.innerText = 'Send';
               btn.style.background = '';
             }
-            if (statusEl) statusEl.innerText = 'Buffered send complete!';
+            if (statusEl) statusEl.innerText = 'Send complete';
           }
           updatePeripherals();
           updateMemoryView();
@@ -12770,7 +13599,7 @@ int main()
       // 5. Reset button: active only after starting to Run or Step, or if state is dirty
       const resetBtn = document.getElementById('btnReset');
       if (resetBtn) {
-        const isDirty = (instructionCount > 0 || (execHistory && execHistory.length > 0) || running || programFinished || pc !== baseAddress || (typeof ledState !== 'undefined' && ledState !== 0) || (typeof sevsegState !== 'undefined' && parseInt(sevsegState, 16) !== 0) || (typeof uartTxBuffer !== 'undefined' && uartTxBuffer !== '') || (typeof uartRxQueue !== 'undefined' && uartRxQueue.length > 0));
+        const isDirty = (instructionCount > 0 || (execHistory && execHistory.length > 0) || running || programFinished || pc !== baseAddress || (typeof ledState !== 'undefined' && ledState !== 0) || (typeof sevsegState !== 'undefined' && parseInt(sevsegState, 16) !== 0) || (typeof uartTxBuffer !== 'undefined' && uartTxBuffer !== '') || (typeof uartPending !== 'undefined' && (uartPending.length > 0 || uartRxFull)));
         resetBtn.disabled = !isDirty;
         resetBtn.classList.toggle('inactive', !isDirty);
         resetBtn.title = isDirty ? 'Reset CPU state, registers, memory, and peripherals to initial conditions' : 'Reset becomes active once execution begins (Run or Step)';
@@ -13022,9 +13851,11 @@ int main()
       // Reset UART Terminal display & RX queue
       uartTxBuffer = '';
       uartTxBytes = [];
-      uartRxQueue = [];
-      autoSeqPending = false;
-      autoSeqQueue = [];
+      uartPending = [];
+      uartRxFull = false;
+      uartRxByte = 0;
+      uartRxDropped = 0;
+      uartRxDroppedTotal = 0;
       const btnEl = document.getElementById('uartSendBtn');
       if (btnEl) {
         btnEl.innerText = 'Send';
@@ -13035,6 +13866,8 @@ int main()
       oledCol = 0;
       oledRow = 0;
       oledCtrl = 0;
+      oledAdvCol = false;
+      oledAdvRow = false;
       clearOledDisplay();
       accelX = 0;
       accelY = 0;
@@ -14444,9 +15277,32 @@ int main()
     //
     // Emitted events are tagged `@@<kind>` so they can be told apart from
     // whatever the student's own $display statements print.
+    // Double buffering is optional: it needs two extra Wrapper ports, and a
+    // Wrapper that predates them has to keep working. Both must be present -
+    // half the pair is a mistake, not a configuration.
+    function hdlHasDoubleBuffer(src) {
+      const w = (src === undefined) ? (hdlFindWrapper() || {}).src : src;
+      if (!w) return false;
+      const head = hdlModuleBody(w, 'Wrapper') || w;
+      return /\bOLED_Swap\b/.test(head) && /\bOLED_SwapPending\b/.test(head);
+    }
+
     function hdlBuildTestbench(opts) {
       opts = opts || {};
       const rb = ('regBankPath' in opts) ? opts.regBankPath : hdlRegBankPath();
+      const dbuf = ('doubleBuffer' in opts) ? opts.doubleBuffer : hdlHasDoubleBuffer();
+      // OLED_SwapPending is tied low: the VHDL that would hold it high across a
+      // scanout is not simulated here, so a polling program never blocks -
+      // the same model the JS engine uses.
+      const dbufDecl = dbuf
+        ? "  wire        OLED_Swap;\n  reg         OLED_Swap_d   = 1'b0;\n  wire        OLED_SwapPending = 1'b0;\n"
+        : '';
+      const dbufPorts = dbuf
+        ? '    .OLED_Swap(OLED_Swap), .OLED_SwapPending(OLED_SwapPending),\n'
+        : '';
+      const dbufReport = dbuf
+        ? '      if (OLED_Swap && !OLED_Swap_d) $display("@@B %0d", cyc - 1);\n      OLED_Swap_d <= OLED_Swap;'
+        : '';
       const arch = rb
         ? `  // Architectural register file, reached by hierarchical reference.
   // Writes are found by comparing against a shadow copy rather than by
@@ -14462,7 +15318,13 @@ int main()
           rf_shadow[j] = ${rb}[j];
         end
     end
-  end`
+  end
+
+  // Named aliases for the architectural registers. $dumpvars does not
+  // write Verilog arrays, so without these the register file would be
+  // missing from every waveform. Named x<n>_<abi> so either spelling
+  // finds them.
+${ABI_NAMES.map((n, i) => `  wire [31:0] x${i}_${n} = ${rb}[${i}];`).join('\n')}`
         : `  // No 32 x 32-bit register array could be located in the uploaded
   // sources, so the architectural register view is unavailable. Name the
   // path explicitly under Settings > HDL to enable it.`;
@@ -14522,7 +15384,7 @@ module cg3207_hdl_tb;
   wire [6:0]  OLED_Col;
   wire [5:0]  OLED_Row;
   wire [23:0] OLED_Data;
-  reg  [31:0] ACCEL_Data    = 32'h19000040;
+${dbufDecl}  reg  [31:0] ACCEL_Data    = 32'h19000040;
   reg         ACCEL_DReady  = 1'b1;
   reg         RESET         = 1'b1;
   reg         CLK           = 1'b0;
@@ -14530,10 +15392,17 @@ module cg3207_hdl_tb;
   integer cyc = 0;
   reg [31:0] argv = 32'h0;
 
-  // Port order is fixed by Wrapper.v and must not be reordered.
-  Wrapper dut(DIP, PB, LED_OUT, LED_PC, SEVENSEGHEX, UART_TX, UART_TX_ready,
-              UART_TX_valid, UART_RX, UART_RX_valid, UART_RX_ack, OLED_Write,
-              OLED_Col, OLED_Row, OLED_Data, ACCEL_Data, ACCEL_DReady, RESET, CLK);
+  // Named association, so a Wrapper whose ports are ordered differently - or
+  // which lacks the optional double-buffering pair - still binds correctly.
+  Wrapper dut(
+    .DIP(DIP), .PB(PB), .LED_OUT(LED_OUT), .LED_PC(LED_PC),
+    .SEVENSEGHEX(SEVENSEGHEX),
+    .UART_TX(UART_TX), .UART_TX_ready(UART_TX_ready), .UART_TX_valid(UART_TX_valid),
+    .UART_RX(UART_RX), .UART_RX_valid(UART_RX_valid), .UART_RX_ack(UART_RX_ack),
+    .OLED_Write(OLED_Write), .OLED_Col(OLED_Col), .OLED_Row(OLED_Row),
+    .OLED_Data(OLED_Data),
+${dbufPorts}    .ACCEL_Data(ACCEL_Data), .ACCEL_DReady(ACCEL_DReady),
+    .RESET(RESET), .CLK(CLK));
 
   always #5 CLK = ~CLK;
 
@@ -14582,22 +15451,29 @@ module cg3207_hdl_tb;
   end
 
   //------------------------------------------------------------------
-  // UART receive feed - mirrors the handshake the Wrapper expects: hold
-  // a byte with UART_RX_valid until UART_RX_ack pulses. A byte is only
-  // offered once its timestamp is reached, so characters typed part-way
-  // through a run arrive at the point they were typed.
+  // UART receive feed - stands in for the holding register in TOP_Nexys.vhd,
+  // and follows it rather than being kind. A byte arrives when its timestamp
+  // says so, whether or not the program has read the previous one; if it has
+  // not, the arriving byte is DISCARDED and the older one kept, with nothing
+  // to tell software it happened. Waiting for UART_RX_ack before offering the
+  // next byte would be back-pressure, which a wire cannot apply.
   //------------------------------------------------------------------
   integer rx_i = 0;
   always @(posedge CLK) begin
     if (RESET) begin
       rx_i          <= 0;
       UART_RX_valid <= 1'b0;
-    end else if (UART_RX_ack) begin
-      UART_RX_valid <= 1'b0;
-      rx_i          <= rx_i + 1;
-    end else if (!UART_RX_valid && rx_i < nrx && rx_mem[2*rx_i] <= cyc + 1) begin
-      UART_RX       <= rx_mem[2*rx_i+1][7:0];
-      UART_RX_valid <= 1'b1;
+    end else begin
+      if (UART_RX_ack)
+        UART_RX_valid <= 1'b0;
+      if (rx_i < nrx && rx_mem[2*rx_i] <= cyc + 1) begin
+        rx_i <= rx_i + 1;                       // consumed from the wire either way
+        if (!UART_RX_valid || UART_RX_ack) begin
+          UART_RX       <= rx_mem[2*rx_i+1][7:0];
+          UART_RX_valid <= 1'b1;
+        end
+        // else: overrun, the byte is lost and the held one survives
+      end
     end
   end
 
@@ -14650,6 +15526,7 @@ ${arch}
       end
       if (UART_TX_valid) $display("@@T %0d %0h", cyc - 1, UART_TX);
       if (OLED_Write)    $display("@@O %0d %0d %0d %0h", cyc - 1, OLED_Col, OLED_Row, OLED_Data);
+${dbufReport}
       // The processor has taken the pending RX byte, so the byte leaves the
       // console's queue. Without this the UI could never clear RX_VALID.
       if (UART_RX_ack)   $display("@@A %0d", cyc - 1);
@@ -14707,13 +15584,19 @@ endmodule
              (hdlRx.length ? '\n' : '');
     }
 
-    // Anything already sitting in the console's RX FIFO when a run starts is
-    // offered to the hardware from the first cycle. Bytes typed later are
-    // appended by the send hook with the cycle they were typed at, and
-    // hdlSeek rebuilds the visible FIFO from this list - which is why this
-    // one, not uartRxQueue, is the master record.
+    // Anything waiting when a run starts is put on the timeline the testbench
+    // reads: the byte already in the holding register at cycle 0, then the
+    // PC's remaining bytes one character time apart, as they would actually
+    // arrive. Bytes typed later are appended by the send hook with the cycle
+    // they were typed at, and hdlSeek rebuilds both sides from this list -
+    // which is why this, not the live state, is the master record.
     function hdlSyncRx() {
-      hdlRx = uartRxQueue.map(b => ({ cycle: 0, byte: b & 0xFF }));
+      const gap = uartGapInstr();
+      hdlRx = [];
+      if (uartRxFull) hdlRx.push({ cycle: 0, byte: uartRxByte & 0xFF });
+      uartPending.forEach((b, i) => {
+        hdlRx.push({ cycle: (i + (uartRxFull ? 1 : 0)) * gap, byte: b & 0xFF });
+      });
     }
 
     function hdlHash(s) {
@@ -14998,7 +15881,7 @@ endmodule
       const userLines = [];
       let cur = null, final = null, next = null, preAcks = 0;
       for (const line of String(stdout || '').split('\n')) {
-        const m = /^@@([ILSTOMWFNA])\s+(.*)$/.exec(line);
+        const m = /^@@([ILSTOMWFNAB])\s+(.*)$/.exec(line);
         if (!m) { if (line.trim()) userLines.push(line); continue; }
         const k = m[1];
         const f = m[2].trim().split(/\s+/);
@@ -15138,8 +16021,7 @@ endmodule
       sevsegState = '00000000';
       uartTxBuffer = '';
       uartTxBytes = [];
-      oledBuffer.fill(0);
-      for (let i = 3; i < oledBuffer.length; i += 4) oledBuffer[i] = 255;
+      oledPages.forEach(oledBlankPage);
     }
 
     function hdlApplyPer(kind, f) {
@@ -15151,12 +16033,20 @@ endmodule
         const ch = parseInt(f[1], 16) & 0xFF;
         uartTxBytes.push(ch);
         uartTxBuffer += String.fromCharCode(ch);
+      } else if (kind === 'B') {
+        // The Wrapper asked for a present. The VHDL that would align it to a
+        // scanout boundary is not simulated, so apply it now - the same model
+        // the JS engine uses, which keeps the two engines in step.
+        oledPresent();
       } else if (kind === 'O') {
         // The Wrapper has already resolved the colour mode into a 24-bit
-        // value on OLED_Data, so paint straight into the frame buffer.
-        const col = parseInt(f[1], 10), row = parseInt(f[2], 10);
+        // value on OLED_Data, so paint straight into the frame buffer. The
+        // column still needs the panel's fold, since OLED_Col is 7 bits and
+        // the Wrapper passes an out-of-range one straight through.
+        const col = oledPanelCol(parseInt(f[1], 10));
+        const row = parseInt(f[2], 10) & 0x3F;
         const rgb = parseInt(f[3], 16) >>> 0;
-        if (col >= 0 && col < 96 && row >= 0 && row < 64) {
+        if (Number.isFinite(rgb)) {
           const idx = (row * 96 + col) * 4;
           oledBuffer[idx] = (rgb >>> 16) & 0xFF;
           oledBuffer[idx + 1] = (rgb >>> 8) & 0xFF;
@@ -15215,11 +16105,16 @@ endmodule
       totalCycles = hdlCurrentCycle();
       currentExecLine = sourceLineForPc(pc);
 
-      // The console's RX FIFO holds what has been typed but not yet taken by
-      // the hardware. Rebuilding it here is what makes RX_VALID fall back to
-      // 0 once the program has read a byte - and what makes it come back
-      // when you step backwards over that read.
-      uartRxQueue = hdlRx.filter(e => e.cycle <= totalCycles).slice(acks).map(e => e.byte & 0xFF);
+      // Rebuild both sides of the receive path from the recording: what has
+      // arrived by this cycle, minus what the program has already taken. The
+      // hardware holds one byte, so the first un-acked arrival is the held
+      // one and the rest are still on the PC's side. This is what makes
+      // RX_VALID fall back to 0 once a byte is read, and come back when you
+      // step backwards over that read.
+      const arrived = hdlRx.filter(e => e.cycle <= totalCycles).slice(acks);
+      uartRxFull = arrived.length > 0;
+      uartRxByte = uartRxFull ? (arrived[0].byte & 0xFF) : 0;
+      uartPending = arrived.slice(1).map(e => e.byte & 0xFF);
 
       highlightCurrentLine();
       updateRegisters();
@@ -15231,6 +16126,9 @@ endmodule
       updatePeripherals();
       if (typeof updateOledCanvas === 'function') updateOledCanvas();
       updateToolbarButtonStates();
+      // Every Step, Back, Run and Resume lands here, so this one call is what
+      // keeps the waveform cursor in lockstep with the rest of the UI.
+      updateWaveView();
     }
 
     // ================================================================
@@ -15256,6 +16154,13 @@ endmodule
       hdlIdx = 0;
       hdlStim = [];
       hdlRx = [];
+      // The VCD belongs to the run being discarded, so it goes with it -
+      // otherwise the download button and the waveform both keep offering
+      // the previous run's data as if it were current.
+      hdlLastVcd = null;
+      const dl = document.getElementById('hdlVcdBtn');
+      if (dl) dl.style.display = 'none';
+      updateWaveView();
     }
 
     function hdlCaptureBaseInputs() {
@@ -15584,6 +16489,811 @@ endmodule
       hdlSaveText(hdlLastVcd, 'cg3207_hdl.vcd');
     }
 
+    // ================================================================
+    // Waveforms
+    // ================================================================
+    // The testbench already dumps a VCD of the whole hierarchy behind its
+    // +VCD plusarg, and `hdlTrace.steps[i].cyc` is the same cycle count the
+    // VCD timestamps, so the strip below is a viewer over data the run has
+    // already produced - no second simulation, and a cursor that is simply
+    // hdlCurrentCycle().
+    const WAVE_H_KEY = 'rvsim.waveHeight.v1';
+    const WAVE_OPEN_KEY = 'rvsim.waveOpen.v1';
+    const WAVE_SIG_KEY = 'rvsim.waveSignals.v1';
+    const WAVE_H_DEFAULT = 240;
+    const WAVE_ROW_H = 22;      // must match .wave-name's height
+    const WAVE_AXIS_H = 20;     // must match .wave-names-axis's height
+    const WAVE_DEFAULT_SPAN = 40;   // cycles across, before zoom exists
+
+    // Resolved against the parsed VCD by name, so a Wrapper that renames or
+    // omits one of these simply shows fewer rows rather than failing.
+    const WAVE_DEFAULT_SIGNALS = [
+      'CLK', 'RESET', 'dut.PC', 'dut.Instr', 'dut.MemWrite_out',
+      'LED_OUT', 'SEVENSEGHEX', 'UART_TX'
+    ];
+
+    let waveOpen = false;
+    let waveParsed = null;       // parseVcd() result
+    let waveParsedFrom = null;   // the hdlLastVcd string it was parsed from
+    let waveSignals = [];        // full dotted paths, in display order
+    let waveStart = 0;           // leftmost cycle on screen
+    let waveSpan = WAVE_DEFAULT_SPAN;
+    let waveDropped = 0;         // chosen signals the current VCD no longer has
+
+    // ---- VCD parsing ------------------------------------------------------
+    // Narrow by design: this reads Icarus output from a testbench this file
+    // generates, not arbitrary VCD.
+    function parseVcd(text) {
+      const vars = [];                // {id, ref, path, width}
+      const byPath = new Map();
+      const changes = new Map();      // id -> {times: [], values: []}
+      const root = { name: '', children: new Map(), vars: [] };
+      const scopeStack = [];
+      let node = root;
+      let timescale = '';
+      let endTime = 0;
+      let t = 0;
+
+      // The header is parsed as tokens rather than lines: Icarus wraps
+      // $timescale and can wrap $var, so a line-at-a-time reader would miss
+      // declarations depending only on how long a signal's name happened to be.
+      const endDefs = text.indexOf('$enddefinitions');
+      const header = endDefs >= 0 ? text.slice(0, endDefs) : text;
+      const tok = header.split(/\s+/).filter(Boolean);
+      for (let i = 0; i < tok.length; i++) {
+        const cmd = tok[i];
+        if (cmd === '$timescale') {
+          const parts = [];
+          while (++i < tok.length && tok[i] !== '$end') parts.push(tok[i]);
+          timescale = parts.join('');
+        } else if (cmd === '$scope') {
+          const nm = tok[i + 2] || '?';
+          let child = node.children.get(nm);
+          if (!child) { child = { name: nm, children: new Map(), vars: [] }; node.children.set(nm, child); }
+          scopeStack.push(node);
+          node = child;
+          while (++i < tok.length && tok[i] !== '$end') { /* skip to $end */ }
+        } else if (cmd === '$upscope') {
+          node = scopeStack.pop() || root;
+          while (++i < tok.length && tok[i] !== '$end') { /* skip to $end */ }
+        } else if (cmd === '$var') {
+          // $var <type> <width> <id> <ref> [<bit range>] $end
+          const width = parseInt(tok[i + 2], 10);
+          const id = tok[i + 3];
+          const name = tok[i + 4];
+          const range = (tok[i + 5] && tok[i + 5] !== '$end') ? tok[i + 5] : '';
+          if (id && name) {
+            const scopePath = [];
+            for (const s of scopeStack) if (s.name) scopePath.push(s.name);
+            if (node.name) scopePath.push(node.name);
+            const path = scopePath.concat(name).join('.');
+            const v = { id, ref: name + range, path, width: Number.isFinite(width) ? width : 1, name };
+            vars.push(v);
+            node.vars.push(v);
+            // A path carries several ids only in pathological files; first wins.
+            if (!byPath.has(path)) byPath.set(path, v);
+          }
+          while (++i < tok.length && tok[i] !== '$end') { /* skip to $end */ }
+        }
+      }
+
+      const record = (id, value) => {
+        let c = changes.get(id);
+        if (!c) { c = { times: [], values: [] }; changes.set(id, c); }
+        // Icarus can emit the same value twice at one timestamp; keeping only
+        // real transitions keeps the binary search below honest.
+        const n = c.times.length;
+        if (n && c.times[n - 1] === t) { c.values[n - 1] = value; return; }
+        if (n && c.values[n - 1] === value) return;
+        c.times.push(t);
+        c.values.push(value);
+      };
+
+      // Value changes: one per line, which is what every VCD writer emits.
+      const body = endDefs >= 0 ? text.slice(text.indexOf('$end', endDefs) + 4) : '';
+      const lines = body.split('\n');
+      for (let li = 0; li < lines.length; li++) {
+        const line = lines[li].trim();
+        if (!line) continue;
+
+        const c0 = line[0];
+        if (c0 === '#') {
+          const nt = parseInt(line.slice(1), 10);
+          if (Number.isFinite(nt)) { t = nt; if (t > endTime) endTime = t; }
+          continue;
+        }
+        if (c0 === '$') continue;   // $dumpvars / $end / $dumpoff wrappers
+        if (c0 === 'b' || c0 === 'B' || c0 === 'r' || c0 === 'R') {
+          const sp = line.indexOf(' ');
+          if (sp > 0) record(line.slice(sp + 1).trim(), line.slice(0, sp));
+          continue;
+        }
+        // Scalar: one value character immediately followed by the id.
+        record(line.slice(1).trim(), c0);
+      }
+
+      return { timescale, vars, byPath, changes, root, endTime };
+    }
+
+    // Time in the VCD is whatever the testbench's timescale makes it; what
+    // the UI counts in is cycles. Derive the ratio from CLK's own edges
+    // rather than assuming the stock testbench's 10, so an edited clock
+    // cannot silently slide the cursor off the instruction it marks.
+    function waveTicksPerCycle(p) {
+      const clk = p && (p.byPath.get('cg3207_hdl_tb.CLK') ||
+        p.vars.find(v => v.name === 'CLK' || v.name === 'clk'));
+      const c = clk && p.changes.get(clk.id);
+      if (!c || c.times.length < 3) return 10;
+      // Two transitions make a full period.
+      const period = c.times[2] - c.times[0];
+      return period > 0 ? period : 10;
+    }
+
+    function waveEnsureParsed() {
+      if (!hdlLastVcd) { waveParsed = null; waveParsedFrom = null; return null; }
+      if (waveParsed && waveParsedFrom === hdlLastVcd) return waveParsed;
+      waveParsed = parseVcd(hdlLastVcd);
+      waveParsedFrom = hdlLastVcd;
+      waveApplySignalChoice(waveParsed);
+      return waveParsed;
+    }
+
+    // A chosen set survives a re-run, and a re-run over edited Verilog can
+    // legitimately no longer have a signal. Drop those, but count them, so a
+    // shrinking list is reported rather than silent.
+    function waveApplySignalChoice(p) {
+      const chosen = waveLoadSignals();
+      if (chosen && chosen.length) {
+        const kept = chosen.filter(path => p.byPath.has(path));
+        waveDropped = chosen.length - kept.length;
+        if (kept.length) { waveSignals = kept; return; }
+      }
+      waveDropped = 0;
+      waveSignals = waveResolveDefaults(p);
+    }
+
+    function waveResolveDefaults(p) {
+      const out = [];
+      for (const want of WAVE_DEFAULT_SIGNALS) {
+        // Match on the tail of the path so 'dut.PC' finds it under whatever
+        // the top-level testbench scope happens to be called.
+        const hit = p.vars.find(v => v.path === want || v.path.endsWith('.' + want));
+        if (hit && !out.includes(hit.path)) out.push(hit.path);
+      }
+      return out;
+    }
+
+    function waveLoadSignals() {
+      try { return JSON.parse(localStorage.getItem(WAVE_SIG_KEY) || 'null'); }
+      catch (e) { return null; }
+    }
+
+    function waveSaveSignals() {
+      try { localStorage.setItem(WAVE_SIG_KEY, JSON.stringify(waveSignals)); }
+      catch (e) { /* private mode */ }
+    }
+
+    function waveAddSignal(path) {
+      if (!waveParsed || !waveParsed.byPath.has(path) || waveSignals.includes(path)) return;
+      waveSignals.push(path);
+      waveSaveSignals();
+      updateWaveView();
+      renderWavePicker();
+    }
+
+    function waveRemoveSignal(path) {
+      const i = waveSignals.indexOf(path);
+      if (i < 0) return;
+      waveSignals.splice(i, 1);
+      waveSaveSignals();
+      updateWaveView();
+      renderWavePicker();
+    }
+
+    function waveToggleSignal(path) {
+      if (waveSignals.includes(path)) waveRemoveSignal(path); else waveAddSignal(path);
+    }
+
+    // Back to the defaults, which is the way out of an empty or unhelpful set.
+    function waveResetSignals() {
+      try { localStorage.removeItem(WAVE_SIG_KEY); } catch (e) { /* private mode */ }
+      if (waveParsed) { waveDropped = 0; waveSignals = waveResolveDefaults(waveParsed); }
+      updateWaveView();
+      renderWavePicker();
+    }
+
+    // Last value at or before `time`; null before the signal's first change.
+    function waveValueAt(p, id, time) {
+      const c = p.changes.get(id);
+      if (!c || !c.times.length) return null;
+      let lo = 0, hi = c.times.length - 1, ans = -1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (c.times[mid] <= time) { ans = mid; lo = mid + 1; } else { hi = mid - 1; }
+      }
+      return ans < 0 ? null : c.values[ans];
+    }
+
+    // 'b1010' -> 'a'; 'x'/'z' runs stay symbolic rather than lying with a 0.
+    function waveFormatValue(raw, width) {
+      if (raw === null || raw === undefined) return '';
+      if (raw.length === 1) return raw;
+      const bits = raw.slice(1);
+      if (/[xX]/.test(bits)) return 'x';
+      if (/[zZ]/.test(bits)) return 'z';
+      if (raw[0] === 'r' || raw[0] === 'R') return bits;
+      const padded = bits.padStart(width || bits.length, bits[0] === '1' ? '0' : bits[0]);
+      let hex = '';
+      for (let i = padded.length; i > 0; i -= 4) {
+        const chunk = padded.slice(Math.max(0, i - 4), i);
+        hex = parseInt(chunk, 2).toString(16) + hex;
+      }
+      return hex || '0';
+    }
+
+    // ---- The dock ---------------------------------------------------------
+    function waveDockEl() { return document.getElementById('waveDock'); }
+
+    function setWaveHeight(px, persist) {
+      const dock = waveDockEl();
+      if (!dock) return;
+      const max = Math.max(120, window.innerHeight - 220);
+      const h = Math.max(120, Math.min(px, max));
+      dock.style.flex = '0 0 ' + h + 'px';
+      if (persist) { try { localStorage.setItem(WAVE_H_KEY, String(h)); } catch (e) { /* private mode */ } }
+    }
+
+    function initWaveResizer() {
+      const bar = document.getElementById('waveResizer');
+      const el = waveDockEl();
+      if (!bar || !el) return;
+      let saved = null;
+      try { saved = parseInt(localStorage.getItem(WAVE_H_KEY) || '', 10); } catch (e) { saved = null; }
+      setWaveHeight(Number.isFinite(saved) ? saved : WAVE_H_DEFAULT, false);
+
+      let startY = 0, startH = 0;
+      const move = e => {
+        // The strip grows upwards, so dragging up makes it taller.
+        setWaveHeight(startH + (startY - e.clientY), false);
+        drawWaveforms();
+      };
+      const up = () => {
+        bar.classList.remove('dragging');
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        setWaveHeight(el.getBoundingClientRect().height, true);
+        drawWaveforms();
+      };
+      bar.addEventListener('pointerdown', e => {
+        startY = e.clientY;
+        startH = el.getBoundingClientRect().height;
+        bar.classList.add('dragging');
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        e.preventDefault();
+      });
+      bar.addEventListener('dblclick', () => { setWaveHeight(WAVE_H_DEFAULT, true); drawWaveforms(); });
+
+      if (window.ResizeObserver) {
+        new ResizeObserver(() => { if (waveOpen) drawWaveforms(); }).observe(el);
+      }
+
+      try { waveOpen = localStorage.getItem(WAVE_OPEN_KEY) === '1'; } catch (e) { waveOpen = false; }
+      applyWaveOpen();
+    }
+
+    function applyWaveOpen() {
+      // Only ever open in HDL mode: there are no waveforms to show otherwise.
+      const on = waveOpen && simEngineMode === 'hdl';
+      document.body.classList.toggle('wave-open', on);
+      const btn = document.getElementById('waveDockBtn');
+      if (btn) btn.classList.toggle('active', on);
+      if (on) updateWaveView();
+    }
+
+    function toggleWaveDock() {
+      waveOpen = !waveOpen;
+      try { localStorage.setItem(WAVE_OPEN_KEY, waveOpen ? '1' : '0'); } catch (e) { /* private mode */ }
+      applyWaveOpen();
+      // On mobile the whole page scrolls and the strip lands past the panels,
+      // so opening it would otherwise look like nothing happened.
+      if (waveOpen && mobileMode()) {
+        const el = waveDockEl();
+        if (el && el.scrollIntoView) el.scrollIntoView({ block: 'end', behavior: 'smooth' });
+      }
+    }
+
+    // The button belongs to HDL mode, the way Locals belongs to C mode.
+    function updateWaveAvailability() {
+      const btn = document.getElementById('waveDockBtn');
+      const isHdl = simEngineMode === 'hdl';
+      if (btn) btn.style.display = isHdl ? '' : 'none';
+      applyWaveOpen();
+    }
+
+    // Turning the dump on mid-session needs the run replayed to produce one.
+    function waveEnableVcdAndRerun() {
+      setHdlDumpVcd(true);
+      const cb = document.getElementById('hdlVcd');
+      if (cb) cb.checked = true;
+      if (typeof hdlResimulate === 'function') hdlResimulate();
+    }
+
+    function updateWaveView() {
+      const dock = waveDockEl();
+      if (!dock || !document.body.classList.contains('wave-open')) return;
+      const notice = document.getElementById('waveNotice');
+      const info = document.getElementById('waveInfo');
+
+      const say = (html) => {
+        dock.classList.add('wave-empty');
+        if (notice) notice.innerHTML = html;
+        if (info) info.textContent = '';
+      };
+
+      if (!hdlDumpVcd) {
+        say('Waveforms come from the VCD dump, which is off. ' +
+          '<button type="button" onclick="waveEnableVcdAndRerun()">Turn it on and re-run</button>');
+        return;
+      }
+      const p = waveEnsureParsed();
+      if (!p) { say('Run the program to record a waveform.'); return; }
+      if (!waveSignals.length) {
+        say('No signals selected. Use <b>+ Signal</b> to pick some, ' +
+          'or <button type="button" onclick="waveResetSignals()">go back to the defaults</button>.');
+        return;
+      }
+
+      dock.classList.remove('wave-empty');
+      const cursor = Math.min(hdlCurrentCycle(), waveActiveEndCycle());
+
+      // Follow the cursor: only move the window when it walks off the edge,
+      // so stepping within view does not scroll under the reader.
+      if (cursor < waveStart || cursor >= waveStart + waveSpan) {
+        waveStart = Math.max(0, cursor - Math.floor(waveSpan / 2));
+      }
+      waveClampStart();
+      updateWaveHeaderAndDraw();
+      renderWavePicker();
+    }
+
+    // ---- Signal picker ----------------------------------------------------
+    // A flat filtered list rather than an expandable tree: at seven levels
+    // deep, typing "alu" beats clicking down four scopes, and the full path
+    // on every row keeps two instances of a module distinguishable.
+    const WAVE_PICKER_LIMIT = 200;
+
+    function toggleWavePicker() {
+      const el = document.getElementById('wavePicker');
+      if (!el) return;
+      el.hidden = !el.hidden;
+      const btn = document.getElementById('waveAddBtn');
+      if (btn) btn.classList.toggle('active', !el.hidden);
+      if (!el.hidden) {
+        renderWavePicker();
+        const f = document.getElementById('wavePickerFilter');
+        if (f) f.focus();
+      }
+    }
+
+    function renderWavePicker() {
+      const list = document.getElementById('wavePickerList');
+      const picker = document.getElementById('wavePicker');
+      if (!list || !picker || picker.hidden) return;
+      if (!waveParsed) {
+        list.innerHTML = '<div class="wave-picker-empty">Run with the VCD dump on to see the signal list.</div>';
+        return;
+      }
+      const f = document.getElementById('wavePickerFilter');
+      const q = (f && f.value || '').toLowerCase();
+      const hits = waveParsed.vars.filter(v => !q || v.path.toLowerCase().includes(q));
+      if (!hits.length) {
+        list.innerHTML = '<div class="wave-picker-empty">No signal matches.</div>';
+        return;
+      }
+      const shown = hits.slice(0, WAVE_PICKER_LIMIT);
+      let html = '';
+      for (const v of shown) {
+        const on = waveSignals.includes(v.path);
+        html += `<div class="wave-picker-item${on ? ' on' : ''}" data-path="${escapeHtml(v.path)}">` +
+          `<span>${on ? '✓' : ' '}</span><span>${escapeHtml(v.path)}</span>` +
+          `<span class="wave-picker-w">${v.width > 1 ? '[' + (v.width - 1) + ':0]' : '1'}</span></div>`;
+      }
+      if (hits.length > shown.length) {
+        html += `<div class="wave-picker-empty">${hits.length - shown.length} more — narrow the filter.</div>`;
+      }
+      list.innerHTML = html;
+    }
+
+    function initWavePicker() {
+      const f = document.getElementById('wavePickerFilter');
+      if (f) {
+        f.addEventListener('input', renderWavePicker);
+        f.addEventListener('keydown', e => { if (e.key === 'Escape') toggleWavePicker(); });
+      }
+      const list = document.getElementById('wavePickerList');
+      if (list) {
+        list.addEventListener('click', e => {
+          const item = e.target.closest('.wave-picker-item');
+          if (item) waveToggleSignal(item.getAttribute('data-path'));
+        });
+      }
+      const names = document.getElementById('waveNames');
+      if (names) {
+        names.addEventListener('click', e => {
+          const btn = e.target.closest('.wave-name-remove');
+          if (btn) waveRemoveSignal(btn.getAttribute('data-path'));
+        });
+      }
+      // Clicking away closes it, the way any dropdown behaves - otherwise the
+      // only way out is a button, and the nearest button is easy to miss.
+      document.addEventListener('pointerdown', e => {
+        const el = document.getElementById('wavePicker');
+        if (!el || el.hidden) return;
+        if (e.target.closest('#wavePicker') || e.target.closest('#waveAddBtn')) return;
+        toggleWavePicker();
+      });
+    }
+
+    // ---- Zoom, pan and click-to-seek --------------------------------------
+    function waveSetSpan(n, anchorCycle) {
+      const p = waveParsed;
+      if (!p) return;
+      const last = waveActiveEndCycle();
+      const span = Math.max(2, Math.min(Math.round(n), Math.max(2, last + 1)));
+      // Keep whatever cycle the user pointed at under the pointer, so zooming
+      // stays about the thing being looked at rather than the left edge.
+      const anchor = (anchorCycle === undefined) ? hdlCurrentCycle() : anchorCycle;
+      const frac = waveSpan ? (anchor - waveStart) / waveSpan : 0.5;
+      waveSpan = span;
+      waveStart = Math.round(anchor - frac * span);
+      waveClampStart();
+      updateWaveHeaderAndDraw();
+    }
+
+    // Where the waveform stops being worth showing. The recording runs to the
+    // cycle budget, but once the PC stops advancing - a halt, or a self-loop -
+    // the trace records nothing more, and the cycles after that are the same
+    // instruction spinning. Drawing them suggests there is something left to
+    // step to, so they are marked off instead.
+    function waveActiveEndCycle() {
+      const p = waveParsed;
+      if (!p) return 0;
+      const recorded = Math.floor(p.endTime / waveTicksPerCycle(p));
+      const t = hdlTrace;
+      if (!t || !t.steps.length) return recorded;
+      // +1 so the last instruction's own cycle is fully drawn.
+      const lastStep = t.steps[t.steps.length - 1].cyc + 1;
+      return Math.max(1, Math.min(recorded, lastStep));
+    }
+
+    // Clamps the whole viewport, span included: a re-run can shrink the active
+    // region (a program that now halts sooner), and a span left wider than
+    // what is left to show would read as "showing 0-39 of 7".
+    function waveClampStart() {
+      const p = waveParsed;
+      if (!p) return;
+      const last = waveActiveEndCycle();
+      waveSpan = Math.max(2, Math.min(waveSpan, last + 1));
+      waveStart = Math.max(0, Math.min(waveStart, Math.max(0, last - waveSpan + 1)));
+    }
+
+    function waveZoom(factor) { waveSetSpan(waveSpan * factor); }
+
+    function waveFit() {
+      if (!waveParsed) return;
+      waveSpan = Math.max(2, waveActiveEndCycle() + 1);
+      waveStart = 0;
+      updateWaveHeaderAndDraw();
+    }
+
+    // The window is placed by the caller here, so unlike updateWaveView() this
+    // does not snap back to following the cursor.
+    function updateWaveHeaderAndDraw() {
+      const p = waveParsed;
+      if (!p) return;
+      const info = document.getElementById('waveInfo');
+      if (info) {
+        const last = waveActiveEndCycle();
+        const cyc = hdlCurrentCycle();
+        // Once the PC stops, the hardware keeps counting cycles while the
+        // waveform stops; saying only "cycle 200 ... of 7" would look wrong.
+        const where = cyc > last
+          ? `cycle ${cyc}, PC last advanced at ${last - 1}`
+          : `cycle ${cyc}`;
+        info.textContent = `${where} · showing ${waveStart}–${waveStart + waveSpan - 1} of ${last}` +
+          (waveDropped ? ` · ${waveDropped} chosen signal${waveDropped > 1 ? 's' : ''} not in this run` : '');
+      }
+      drawWaveNames(p);
+      drawWaveforms();
+    }
+
+    function waveCycleAtX(clientX) {
+      const canvas = document.getElementById('waveCanvas');
+      if (!canvas) return 0;
+      const r = canvas.getBoundingClientRect();
+      return waveStart + ((clientX - r.left) / Math.max(1, r.width)) * waveSpan;
+    }
+
+    // Clicking a waveform moves the whole simulator to that cycle: the last
+    // instruction that had started by then, which is the one the waveform is
+    // showing there.
+    function waveSeekToCycle(cycle) {
+      const t = hdlTrace;
+      if (!t || !t.steps.length) return;
+      let idx = 0;
+      for (let i = 0; i < t.steps.length; i++) {
+        if (t.steps[i].cyc <= cycle) idx = i; else break;
+      }
+      hdlSeek(idx);
+    }
+
+    function initWaveCanvas() {
+      const canvas = document.getElementById('waveCanvas');
+      if (!canvas) return;
+
+      // A plain wheel is left alone so it scrolls the signal list, which is
+      // what a wheel does everywhere else on the page. Zoom takes the usual
+      // modifier instead (ctrl, or the trackpad pinch that reports as ctrl).
+      canvas.addEventListener('wheel', e => {
+        if (!waveParsed) return;
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          waveSetSpan(waveSpan * (e.deltaY > 0 ? 1.2 : 1 / 1.2), waveCycleAtX(e.clientX));
+        } else if (e.shiftKey) {
+          e.preventDefault();
+          const step = Math.max(1, Math.round(waveSpan * 0.15));
+          waveStart += (e.deltaY > 0 || e.deltaX > 0) ? step : -step;
+          waveClampStart();
+          updateWaveHeaderAndDraw();
+        }
+      }, { passive: false });
+
+      let downX = 0, startAtDown = 0, dragging = false, moved = false;
+      canvas.addEventListener('pointerdown', e => {
+        if (!waveParsed) return;
+        dragging = true; moved = false;
+        downX = e.clientX;
+        startAtDown = waveStart;
+        canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener('pointermove', e => {
+        if (!dragging) return;
+        const dx = e.clientX - downX;
+        if (Math.abs(dx) > 3) {
+          moved = true;
+          canvas.classList.add('wave-panning');
+          const r = canvas.getBoundingClientRect();
+          waveStart = Math.round(startAtDown - (dx / Math.max(1, r.width)) * waveSpan);
+          waveClampStart();
+          updateWaveHeaderAndDraw();
+        }
+      });
+      const end = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        canvas.classList.remove('wave-panning');
+        canvas.releasePointerCapture && canvas.hasPointerCapture &&
+          canvas.hasPointerCapture(e.pointerId) && canvas.releasePointerCapture(e.pointerId);
+        // A drag pans; only a press that stayed put is a seek.
+        if (!moved) waveSeekToCycle(Math.floor(waveCycleAtX(e.clientX)));
+      };
+      canvas.addEventListener('pointerup', end);
+      canvas.addEventListener('pointercancel', () => { dragging = false; canvas.classList.remove('wave-panning'); });
+    }
+
+    function waveShortLabel(path) {
+      // The full path is in the title; the gutter shows the shortest tail
+      // that still tells two instances apart.
+      const parts = path.split('.');
+      if (parts.length <= 2) return parts[parts.length - 1];
+      const tail2 = parts.slice(-2).join('.');
+      const clashes = waveSignals.filter(o => o !== path && o.endsWith('.' + parts[parts.length - 1])).length;
+      return clashes ? tail2 : parts[parts.length - 1];
+    }
+
+    function drawWaveNames(p) {
+      const host = document.getElementById('waveNames');
+      if (!host) return;
+      let html = '<div class="wave-names-axis"></div>';
+      for (const path of waveSignals) {
+        const v = p.byPath.get(path);
+        const label = waveShortLabel(path);
+        const bits = v && v.width > 1 ? `[${v.width - 1}:0]` : '';
+        html += `<div class="wave-name" title="${escapeHtml(path)}">` +
+          `<span>${escapeHtml(label)}${bits ? ' ' + bits : ''}</span>` +
+          `<button class="wave-name-remove" type="button" data-path="${escapeHtml(path)}" ` +
+          `title="Remove this signal">✕</button></div>`;
+      }
+      host.innerHTML = html;
+    }
+
+    function drawWaveforms() {
+      const canvas = document.getElementById('waveCanvas');
+      const p = waveParsed;
+      if (!canvas || !p || !document.body.classList.contains('wave-open')) return;
+      // The rows define the height; the body scrolls if the strip is shorter.
+      // Set before measuring, so the first draw is already the right size.
+      const needed = WAVE_AXIS_H + waveSignals.length * WAVE_ROW_H;
+      canvas.style.height = needed + 'px';
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, needed);
+      const dpr = window.devicePixelRatio || 1;
+      if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+      }
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#1e1e2e';
+      ctx.fillRect(0, 0, w, h);
+
+      const tpc = waveTicksPerCycle(p);
+      const pxPerCycle = w / waveSpan;
+      const xOf = (cycle) => (cycle - waveStart) * pxPerCycle;
+      const activeEnd = waveActiveEndCycle();
+      const deadX = xOf(activeEnd);
+
+      // ---- cycle grid and axis ----
+      ctx.font = '10px Consolas, "Courier New", monospace';
+      ctx.textBaseline = 'middle';
+      // A label every cycle is unreadable below ~28px per cycle.
+      const labelEvery = Math.max(1, Math.ceil(28 / pxPerCycle));
+      ctx.strokeStyle = '#313244';
+      ctx.lineWidth = 1;
+      for (let c = waveStart; c <= waveStart + waveSpan; c++) {
+        const x = Math.round(xOf(c)) + 0.5;
+        const major = (c % labelEvery) === 0;
+        ctx.strokeStyle = major ? '#313244' : 'rgba(49,50,68,0.4)';
+        ctx.beginPath();
+        ctx.moveTo(x, major ? 0 : WAVE_AXIS_H);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+        if (major) {
+          ctx.fillStyle = '#6c7086';
+          ctx.fillText(String(c), x + 3, WAVE_AXIS_H / 2);
+        }
+      }
+      ctx.strokeStyle = '#313244';
+      ctx.beginPath();
+      ctx.moveTo(0, WAVE_AXIS_H + 0.5);
+      ctx.lineTo(w, WAVE_AXIS_H + 0.5);
+      ctx.stroke();
+
+      // ---- one row per signal ----
+      waveSignals.forEach((path, i) => {
+        const v = p.byPath.get(path);
+        if (!v) return;
+        const top = WAVE_AXIS_H + i * WAVE_ROW_H;
+        const pad = 4;
+        const yHi = top + pad;
+        const yLo = top + WAVE_ROW_H - pad - 1;
+
+        ctx.strokeStyle = 'rgba(49,50,68,0.45)';
+        ctx.beginPath();
+        ctx.moveTo(0, top + WAVE_ROW_H - 0.5);
+        ctx.lineTo(w, top + WAVE_ROW_H - 0.5);
+        ctx.stroke();
+
+        const c = p.changes.get(v.id);
+        if (!c || !c.times.length) return;
+
+        // Walk the transitions that fall in view, plus the one before it so
+        // the trace starts at the value actually held at the left edge.
+        const tStart = waveStart * tpc;
+        const tEnd = Math.min(waveStart + waveSpan, activeEnd) * tpc;
+        let k = 0;
+        while (k + 1 < c.times.length && c.times[k + 1] <= tStart) k++;
+
+        const single = v.width === 1;
+        ctx.lineWidth = 1.4;
+
+        let prevX = 0;
+        let prevVal = c.values[k];
+        const drawSeg = (x0, x1, raw) => {
+          if (x1 <= x0) return;
+          const bad = raw && (raw === 'x' || raw === 'z' || raw === 'X' || raw === 'Z' || /[xXzZ]/.test(raw));
+          if (single) {
+            const hi = raw === '1';
+            ctx.strokeStyle = bad ? '#f38ba8' : '#a6e3a1';
+            const y = bad ? (yHi + yLo) / 2 : (hi ? yHi : yLo);
+            ctx.beginPath();
+            ctx.moveTo(x0, y);
+            ctx.lineTo(x1, y);
+            ctx.stroke();
+          } else {
+            ctx.strokeStyle = bad ? '#f38ba8' : '#89b4fa';
+            // A bus reads as a stretched hexagon: both rails plus the bevels.
+            const bev = Math.min(3, (x1 - x0) / 2);
+            ctx.beginPath();
+            ctx.moveTo(x0, (yHi + yLo) / 2);
+            ctx.lineTo(x0 + bev, yHi);
+            ctx.lineTo(x1 - bev, yHi);
+            ctx.lineTo(x1, (yHi + yLo) / 2);
+            ctx.lineTo(x1 - bev, yLo);
+            ctx.lineTo(x0 + bev, yLo);
+            ctx.closePath();
+            ctx.stroke();
+            const text = waveFormatValue(raw, v.width);
+            const avail = x1 - x0 - 2 * bev - 2;
+            if (text && avail > 10) {
+              ctx.save();
+              ctx.beginPath();
+              ctx.rect(x0 + bev + 1, yHi, avail, yLo - yHi);
+              ctx.clip();
+              ctx.fillStyle = bad ? '#f38ba8' : '#bac2de';
+              ctx.fillText(text, x0 + bev + 2, (yHi + yLo) / 2);
+              ctx.restore();
+            }
+          }
+        };
+
+        prevX = Math.max(0, xOf(c.times[k] / tpc));
+        if (c.times[k] <= tStart) prevX = 0;
+        for (let j = k + 1; j < c.times.length && c.times[j] <= tEnd; j++) {
+          const x = xOf(c.times[j] / tpc);
+          drawSeg(prevX, x, prevVal);
+          if (single) {
+            // The vertical edge between levels.
+            const wasHi = prevVal === '1', isHi = c.values[j] === '1';
+            if (wasHi !== isHi && !/[xXzZ]/.test(prevVal) && !/[xXzZ]/.test(c.values[j])) {
+              ctx.strokeStyle = '#a6e3a1';
+              ctx.beginPath();
+              ctx.moveTo(x, yHi);
+              ctx.lineTo(x, yLo);
+              ctx.stroke();
+            }
+          }
+          prevX = x;
+          prevVal = c.values[j];
+        }
+        drawSeg(prevX, Math.min(w, deadX), prevVal);
+      });
+
+      // Past the last instruction, mask off what is only the halted PC
+      // spinning, and say so once rather than leaving a blank stretch that
+      // looks like a rendering failure.
+      if (deadX < w) {
+        const x0 = Math.max(0, deadX);
+        ctx.fillStyle = 'rgba(17, 17, 27, 0.72)';
+        ctx.fillRect(x0, WAVE_AXIS_H, w - x0, h - WAVE_AXIS_H);
+        ctx.strokeStyle = '#585b70';
+        ctx.beginPath();
+        ctx.moveTo(x0 + 0.5, WAVE_AXIS_H);
+        ctx.lineTo(x0 + 0.5, h);
+        ctx.stroke();
+        if (w - x0 > 90) {
+          ctx.fillStyle = '#6c7086';
+          ctx.fillText('PC not advancing past here', x0 + 8, WAVE_AXIS_H + 12);
+        }
+      }
+
+      // ---- the cursor: where the simulator is stopped ----
+      // Pinned to the active region: once the program halts the run keeps
+      // counting cycles, and a cursor floating inside the masked area would
+      // point at nothing.
+      const cursor = Math.min(hdlCurrentCycle(), activeEnd);
+      const cx = Math.round(xOf(cursor)) + 0.5;
+      if (cx >= 0 && cx <= w) {
+        ctx.strokeStyle = '#f9e2af';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx, 0);
+        ctx.lineTo(cx, h);
+        ctx.stroke();
+        ctx.fillStyle = '#f9e2af';
+        ctx.beginPath();
+        ctx.moveTo(cx - 4, 0);
+        ctx.lineTo(cx + 4, 0);
+        ctx.lineTo(cx, 6);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
     // The testbench is program-independent, so what gets saved here is
     // exactly what runs - no regeneration, no baked-in run settings.
     function hdlDownloadTestbench() {
@@ -15600,7 +17310,10 @@ endmodule
       const el = document.getElementById('hdlCycles');
       if (el && parseInt(el.value, 10) !== hdlCycleBudget) el.value = hdlCycleBudget;
     }
-    function setHdlDumpVcd(on) { hdlDumpVcd = !!on; }
+    function setHdlDumpVcd(on) {
+      hdlDumpVcd = !!on;
+      updateWaveView();
+    }
     function setHdlTrace(on) {
       hdlTraceEnabled = !!on;
       hdlDiscardTrace();
@@ -15711,6 +17424,7 @@ endmodule
       updateRegisters();
       updateStats();
       updateHdlReadiness();
+      updateWaveAvailability();
       if (typeof refreshSimSettingsScope === 'function') refreshSimSettingsScope();
       if (typeof updateToolbarButtonStates === 'function') updateToolbarButtonStates();
     }
@@ -15807,6 +17521,10 @@ endmodule
       renderHdlFileList();
       hdlRefreshRegPathHint();
       initConsoleResizer();
+      initWaveResizer();
+      initWavePicker();
+      initWaveCanvas();
+      updateWaveAvailability();
       initGlobalVerilogDrop();
     }
 
@@ -15973,36 +17691,31 @@ endmodule
       try { updateMemoryView(); } finally { hdlInPeriphRefresh = false; }
     };
 
-    // Bytes typed into the console are stamped with the cycle they were typed
-    // at and appended to the timeline the testbench reads. A buffered send is
-    // spread over the same instruction gap the functional engine would use -
-    // it cannot drip-feed here, because nothing steps its counter.
+    // Bytes typed into the console are stamped with the cycle they will
+    // actually arrive at and appended to the timeline the testbench reads.
+    // The JS engine's per-instruction delivery cannot run here - nothing
+    // steps its counter - so the whole send is placed on the timeline at
+    // once, one character time apart, and the testbench does the rest.
     const hdlBaseSendUartInput = sendUartInput;
     sendUartInput = function () {
       if (simEngineMode !== 'hdl' || !hdlTrace) { hdlBaseSendUartInput(); return; }
-      const before = uartRxQueue.slice();
+      const before = uartPending.length;
       hdlBaseSendUartInput();
-      const appended = uartRxQueue.length >= before.length &&
-                       before.every((b, i) => uartRxQueue[i] === b);
-      let added, gap = 0;
-      if (appended) {
-        added = uartRxQueue.slice(before.length);
-      } else {
-        // Buffered mode replaced the queue with its first byte and parked the
-        // rest; take the whole sequence and retire the JS-side drip feed.
-        added = uartRxQueue.concat(autoSeqQueue);
-        gap = Math.max(1, autoSeqDelayInstr || 10);
-        autoSeqPending = false;
-        autoSeqQueue = [];
-        const btn = document.getElementById('uartSendBtn');
-        if (btn) { btn.innerText = 'Send'; btn.style.background = ''; }
-        const st = document.getElementById('uartAutoSendStatus');
-        if (st) st.innerText = added.length > 1
-          ? 'Queued ' + added.length + ' bytes, ' + gap + ' cycles apart' : '';
-      }
+      // Take everything the base handler queued, plus anything it managed to
+      // hand straight to the holding register, and put it on the timeline.
+      const added = uartPending.slice();
+      if (uartRxFull && uartPending.length >= before) added.unshift(uartRxByte & 0xFF);
+      uartPending = [];
+      uartRxFull = false;
+      const btn = document.getElementById('uartSendBtn');
+      if (btn) { btn.innerText = 'Send'; btn.style.background = ''; }
       if (!added.length) { hdlOnUartInput(); return; }
+      const gap = uartGapInstr();
       const at = hdlCurrentCycle();
       added.forEach((b, i) => hdlRx.push({ cycle: at + i * gap, byte: b & 0xFF }));
+      const st = document.getElementById('uartAutoSendStatus');
+      if (st) st.innerText = added.length > 1
+        ? 'Queued ' + added.length + ' bytes, ' + gap + ' cycles apart' : '';
       hdlOnUartInput(added.length);
     };
 
@@ -16018,6 +17731,33 @@ endmodule
     window.hdlClearFiles = hdlClearFiles;
     window.runHdlSimulation = runHdlSimulation;
     window.hdlDownloadVcd = hdlDownloadVcd;
+    window.parseVcd = parseVcd;
+    window.toggleWaveDock = toggleWaveDock;
+    window.updateWaveView = updateWaveView;
+    window.updateWaveAvailability = updateWaveAvailability;
+    window.drawWaveforms = drawWaveforms;
+    window.waveEnableVcdAndRerun = waveEnableVcdAndRerun;
+    window.toggleWavePicker = toggleWavePicker;
+    window.waveAddSignal = waveAddSignal;
+    window.waveRemoveSignal = waveRemoveSignal;
+    window.waveToggleSignal = waveToggleSignal;
+    window.waveResetSignals = waveResetSignals;
+    window.waveZoom = waveZoom;
+    window.waveFit = waveFit;
+    window.waveSetSpan = waveSetSpan;
+    window.waveSeekToCycle = waveSeekToCycle;
+    window.waveCycleAtX = waveCycleAtX;
+    window.waveTicksPerCycle = waveTicksPerCycle;
+    window.waveValueAt = waveValueAt;
+    window.waveFormatValue = waveFormatValue;
+    window.getHdlLastVcd = () => hdlLastVcd;
+    window.getWaveState = () => ({
+      parsed: waveParsed,
+      signals: waveSignals.slice(),
+      start: waveStart,
+      span: waveSpan,
+      ticksPerCycle: waveParsed ? waveTicksPerCycle(waveParsed) : null
+    });
     window.hdlDownloadTestbench = hdlDownloadTestbench;
     window.setHdlCycles = setHdlCycles;
     window.setHdlDumpVcd = setHdlDumpVcd;
@@ -16043,6 +17783,7 @@ endmodule
     window.getSevsegState = () => sevsegState;
     window.getSimEngineMode = () => simEngineMode;
     window.hdlBuildTestbench = hdlBuildTestbench;
+    window.hdlHasDoubleBuffer = hdlHasDoubleBuffer;
     window.hdlMemFiles = hdlMemFiles;
     window.hdlParseTrace = hdlParseTrace;
     window.hdlDiscoverRegBank = hdlDiscoverRegBank;
@@ -16071,7 +17812,11 @@ endmodule
     };
     window.hdlSetStim = (list) => { hdlStim = list.slice(); };
     window.hdlSetRx = (list) => { hdlRx = list.slice(); };
-    window.getUartRxQueue = () => uartRxQueue.slice();
+    window.uartTickDelivery = uartTickDelivery;
+    window.setUartSendMode = setUartSendMode;
+    window.setUartCharInstr = setUartCharInstr;
+    window.getUartPending = () => uartPending.slice();
+    window.getUartRxState = () => ({ byte: uartRxByte, full: uartRxFull, dropped: uartRxDroppedTotal });
     // Load sources programmatically (the drop zone and file picker route
     // through hdlAddFiles; this is the same thing without a FileList).
     window.hdlSetSources = (list) => {
@@ -16134,7 +17879,7 @@ endmodule
       Object.defineProperty(window, 'currentExecLine', { get: () => currentExecLine, configurable: true });
       Object.defineProperty(window, 'running', { get: () => running, configurable: true });
       Object.defineProperty(window, 'runTimerId', { get: () => runTimerId, configurable: true });
-      Object.defineProperty(window, 'oledBuffer', { get: () => oledBuffer, configurable: true });
+      Object.defineProperty(window, 'oledBuffer', { get: () => oledPages[oledFrontPage], configurable: true });
       Object.defineProperty(window, 'oledCol', { get: () => oledCol, configurable: true });
       Object.defineProperty(window, 'oledRow', { get: () => oledRow, configurable: true });
       Object.defineProperty(window, 'oledCtrl', { get: () => oledCtrl, configurable: true });
@@ -16150,7 +17895,7 @@ endmodule
 
     window.getExecHistory = () => execHistory;
 
-    window.getOledBuffer = () => oledBuffer;
+    window.getOledBuffer = () => oledPages[oledFrontPage];
     window.readMem = readMem;
     window.writeMem = writeMem;
     window.getMemByte = getMemByte;

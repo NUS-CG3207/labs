@@ -10,6 +10,7 @@ theme:
     annotation: material/information-variant-circle-outline
   features:
     - content.tooltips
+    - navigation.indexes
     
 extra_css:
   - stylesheets/extra.css

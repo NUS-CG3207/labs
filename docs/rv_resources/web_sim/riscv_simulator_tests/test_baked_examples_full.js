@@ -105,9 +105,9 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   await win.loadExample('circle_accel_c');
   const mc3 = await win.assembleOnly();
   console.log(`  - Assembled instructions: ${mc3.length}`);
-  if (mc3.length !== 286) throw new Error(`Expected 286 instructions, got ${mc3.length}`);
+  if (mc3.length !== 299) throw new Error(`Expected 299 instructions, got ${mc3.length}`);
 
-  for (let s = 0; s < 6000; s++) win.executeOne();
+  for (let s = 0; s < 60000; s++) win.executeOne();
 
   const term3 = win.document.getElementById('uartTerminal');
   const uart3 = term3 ? term3.innerText : '';
@@ -115,6 +115,16 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   if (!uart3.includes('Tilt in various directions to see the colour change')) {
     throw new Error(`C circle_accel_c missing UART greeting, got ${JSON.stringify(uart3)}`);
   }
+
+  // The program presents each frame, so what reaches the canvas has been
+  // through a page exchange and its copy - a count alone would not notice if
+  // double buffering swallowed the drawing.
+  let circleCPixels = 0;
+  for (let i = 0; i < win.oledBuffer.length; i += 4) {
+    if (win.oledBuffer[i] > 0 || win.oledBuffer[i+1] > 0 || win.oledBuffer[i+2] > 0) circleCPixels++;
+  }
+  console.log(`  - Circle pixels presented on OLED: ${circleCPixels}`);
+  if (circleCPixels !== 2533) throw new Error(`Expected 2533 pixels, got ${circleCPixels}`);
   console.log('✅ circle_accel_c (C) fully verified!');
 
   // --- 4. C Mode: image_display_c ---

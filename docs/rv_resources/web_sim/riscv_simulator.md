@@ -110,6 +110,13 @@ instead of one machine instruction at a time. **Back** undoes exactly the same d
 
 ## 4. Reading the panels
 
+Every panel except Peripherals has a 🔍 in its header that narrows it to matching rows,
+which is the quick way to pull one register out of 32, or every `jal` out of a few
+hundred instructions. Labels work too: filtering Disassembly by `loop` gives you the
+block under `loop:`, not just the one instruction sitting on it. In Memory it filters the
+rows the address box is already showing, so move the window first if what you want is
+elsewhere.
+
 ### Registers
 
 All 32 integer registers in hex and decimal. The **Content (Dec)** header has a small
@@ -172,13 +179,71 @@ you assemble a different program.
 | Push buttons | `0xFFFF0068` | L / C / R: click to **toggle**, or hold `←` `↓` `→` for a real **momentary** press (down = pressed, up = released) |
 | 7-segment | `0xFFFF0080` | 32-bit value as 8 hex digits |
 | UART console | `0xFFFF0000`–`0xFFFF000C` | Type in the box and press **Send** |
-| OLED 96×64 | `0xFFFF0020`–`0xFFFF002C` | Colour and auto-advance modes |
+| OLED 96×64 | `0xFFFF0020`–`0xFFFF002C` | Colour and auto-advance modes, set through `OLED_CTRL`; see below |
 | Accelerometer + temp | `0xFFFF0040` | Sliders, Flat / Tilt / Shake presets, or hold `X`/`Y`/`Z`/`T` and press `←`/`→` to nudge that axis (T = temperature) |
 | Cycle counter | `0xFFFF00A0` | Cycles since reset |
 
 The UART box takes **ASCII** (including `\r`, `\n`, `\xHH`) or **Hex** (`0x41, 0x0D`).
-Tick **Buffer** to drip-feed a long string a few instructions apart, the way a real
-terminal would.
+
+**Arrival** sets how fast the characters reach your program, because that turns out to
+matter. The board has one receive register and no FIFO: a character arriving while your
+program has not yet read the previous one is discarded, the older one is kept, and nothing
+is set that you could check afterwards. At 115200 baud a character is 135 instructions at
+the default clock divider, so that is the budget a polling loop has.
+
+| Arrival | What it models |
+|---|---|
+| **Paste** | pressing Send in a terminal: back-to-back at 115200 baud |
+| **Typed** | a person at a keyboard, far slower than your program |
+| **Forgiving** | waits until your program has read the previous byte, so nothing is lost. Useful while you are debugging logic, but not something the board will do for you. |
+
+If characters go missing, the console says so and why. Fix it by reading `UART_RX` promptly
+rather than doing work between characters, and note that the budget shrinks if you lower
+`CLK_DIV_BITS`.
+
+`OLED_CTRL` low nibble picks what triggers a pixel (`0` data, `1` column, `2` row, `4`
+auto-advance along the row, `5` auto-advance down the column) and the high nibble picks
+the colour format (`0` 8-bit 3R-3G-2B, `1` 16-bit 5R-6G-5B, `2` 24-bit). Four things catch
+people out, all of them matching the board rather than being worked around here.
+
+- Narrow colour components are **left-aligned and zero-filled**, so full red in 8-bit mode
+  is `0xE0`, not `0xFF`, and the display is a little darker than a naive scaling would
+  give.
+- Each format has a **minimum store width**: 8-bit takes `sb`, 16-bit needs at least `sh`,
+  and 24-bit updates one byte lane per byte you store. A store too narrow for the format
+  still paints a pixel, using whatever colour was already in the register.
+- **The panel is 16-bit throughout**, so 24-bit mode is really 5-6-5 with the low three,
+  two and three bits of each channel discarded on the way out. Use it for convenience, not
+  for precision.
+- **`OLED_COL` is 7 bits and out-of-range columns do not wrap.** 96 to 127 fold back onto
+  32 to 63, and anything above 127 loses the top bits, so a column that has run past 95
+  lands somewhere in the middle of the screen rather than at the start of the next row.
+  Auto-advance handles the edge for you; if you are stepping the column yourself, keep it
+  under 96.
+
+Writing `OLED_CTRL` with **bit 3** set presents a frame rather than configuring anything,
+and the other bits are ignored, so you never have to remember the mode in order to present.
+The controller keeps two pages: one on the display, one you draw into. They start as the
+same page, so a program that never presents behaves as it always did. A present exchanges
+them at a frame boundary, then copies the newly displayed page back into the one you draw
+into, so partial updates keep working and you are not forced into repainting all 6144
+pixels every frame. `OLED_STATUS` at `0xFFFF0030` tells you when the present has landed:
+its bit 0 stays set until it has.
+
+```c
+*OLED_CTRL = 0x21;              // configure once
+for (;;) {
+    drawFrame();
+    *OLED_CTRL = 0x08;          // present
+    while (*OLED_STATUS & 1) ;  // wait until it is safe to draw again
+}
+```
+
+That poll is what makes it tear-free on the board. Here it always returns immediately,
+because the simulator paints the whole canvas at once and has no scan to be caught
+mid-frame by, so a program that forgets to wait looks correct in the simulator and tears on
+hardware. It is also why a program that paces itself off the poll needs its own delay to
+run at a sensible speed here.
 
 ---
 
@@ -283,6 +348,10 @@ Registers panel says so when that happens.
   and pretending otherwise would hide exactly the bugs you are looking for.
 - **`Cycles` counts real clock edges** (tagged `hw`) instead of the estimate JS mode
   shows (tagged `est`).
+- **Registers and memory are read-only.** Every Step rebuilds them by replaying the
+  recording from reset, so a typed-in value would vanish on the next one. Inputs are the
+  exception and still work: change them in the Peripherals panel, which re-simulates the
+  run around your new value.
 - **Flip a switch (or send UART input) while paused**, and it's stamped in at the
   current cycle when you Resume: everything recorded before that point stays identical,
   so you keep your place, and the very next instruction already sees the new value.
@@ -325,6 +394,35 @@ run, the same program is replayed on the functional model and you are told the *
 instruction where the two disagree**, with the cycle, the PC, the instruction word and
 both values. That is almost always where the RTL bug is.
 
+### Watching the waveform
+
+Tick **Dump a VCD waveform** (⚙ Settings → 🔌 HDL Simulation), Run, then press
+**📈 Waves**. A waveform strip opens along the bottom of the page, and its cursor sits on
+whatever cycle you are stopped at, so Step and Back walk it with you. That is the quickest
+way to see what your RTL was actually doing on the cycle an instruction went wrong, rather
+than inferring it from the registers afterwards.
+
+The dump covers your whole design, not just the Wrapper's ports, so anything inside your
+core is available. Press **+ Signal** and type part of a name or path: `alu` finds
+everything under any ALU instance, however deep. The 32 architectural registers are there
+too, as `x5_t0` and the like, so either spelling finds them. Click a row to add or drop it,
+or use the ✕ beside a name on the left. Your choice is remembered and survives a re-run.
+Memories are the exception to what you can add, since a Verilog array is not written to a
+VCD; read those in the Memory panel.
+
+Ctrl+scroll zooms, shift+scroll pans, and a plain scroll moves down the signal list.
+Dragging pans as well, and **Fit** shows the whole run. Clicking a waveform moves the
+*whole simulator* to that cycle, so registers, memory and the disassembly all follow, which
+is often faster than stepping to a suspicious edge you can already see.
+
+The strip stops where your PC does. Once the program halts or spins on one instruction
+there is nothing further to step to, so the cycles after that are greyed out rather than
+drawn.
+
+**⭳ VCD** still downloads the file, which is what you want for a long run or for the
+things a full waveform viewer does better. GTKWave and [Surfer](https://surfer-project.org/)
+both open it.
+
 ### Other things in the HDL tab
 
 | Setting | Why you would touch it |
@@ -332,7 +430,7 @@ both values. That is almost always where the RTL bug is.
 | **Cycles per Run / Resume** | How much to simulate at a time. Raise it for long programs. |
 | **Record the architectural trace** | On by default; needed for Step and Back. |
 | **Verilog standard** | Verilog-2005 by default; switch if your code needs it. |
-| **Dump a VCD waveform** | Produces a **⭳ VCD** button in the toolbar; open it in GTKWave. |
+| **Dump a VCD waveform** | Needed for the **📈 Waves** strip, and for the **⭳ VCD** download. |
 | **Register file** | Detected automatically. Type a path only if detection fails. |
 | **Save testbench** | The exact generated testbench, to run in Vivado or `iverilog` offline. |
 

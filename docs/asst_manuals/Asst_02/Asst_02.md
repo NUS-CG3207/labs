@@ -200,7 +200,7 @@ The `test_Wrapper.v` you use is specific to the assembly language program being 
 
 There is no requirement that you should use all the peripherals supported by the Wrapper. As long as your demo is convincing, it is fine to use only a limited set of peripherals (say, LEDs and DIP switches - at least one input and one output). [RISC-V Memory Map](../../rv_resources/rv_memmap.md) page has more details about the address and usage of the supported peripherals.
 
-To use a C compiler to generate code, please follow the instructions at [Using Compiled Code](../../rv_resources/using_compiled_code.md). However, note that this works only if the compiler does not generate any instruction that your processor doesn't support at this point.
+To use a C compiler to generate code, please follow the instructions at [Using Compiled Code](../../rv_resources/rv_programming.md#using-compiled-code). However, note that this works only if the compiler does not generate any instruction that your processor doesn't support at this point.
 
 ## Tips
 

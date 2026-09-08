@@ -26,6 +26,7 @@
 .eqv OLED_ROW_OFF			0x24 #WO
 .eqv OLED_DATA_OFF			0x28 #WO
 .eqv OLED_CTRL_OFF			0x2C #WO
+.eqv OLED_STATUS_OFF		0x30 #RO, status bit
 .eqv ACCEL_DATA_OFF			0x40 #RO
 .eqv ACCEL_DREADY_OFF			0x44 #RO, status bit
 .eqv DIP_OFF				0x64 #RO
