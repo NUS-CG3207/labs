@@ -1942,6 +1942,30 @@
 
     body.wave-open .wave-resizer { display: block; }
 
+    /* In HDL mode the strip is always on the page; closed means folded to its
+       own header, which is then the way to bring it back. */
+    body.hdl-mode:not(.wave-in-panel) .wave-dock { display: flex; }
+
+    body.hdl-mode:not(.wave-in-panel):not(.wave-open) .wave-dock {
+      flex: 0 0 auto;
+    }
+
+    body.hdl-mode:not(.wave-in-panel):not(.wave-open) .wave-dock > :not(.wave-hdr),
+    body.hdl-mode:not(.wave-in-panel):not(.wave-open) .wave-hdr-info,
+    body.hdl-mode:not(.wave-in-panel):not(.wave-open) .wave-hdr-hint,
+    body.hdl-mode:not(.wave-in-panel):not(.wave-open) .wave-add-btn,
+    body.hdl-mode:not(.wave-in-panel):not(.wave-open) .wave-hdr-actions > :not(.wave-fold-btn) {
+      display: none;
+    }
+
+    /* Folded, the whole bar is the target, not just the chevron. */
+    body.hdl-mode:not(.wave-in-panel):not(.wave-open) .wave-hdr {
+      cursor: pointer;
+    }
+
+    .wave-fold-btn::after { content: '▾'; }
+    body:not(.wave-open) .wave-fold-btn::after { content: '▸'; }
+
     .wave-dock {
       display: none;
       flex-direction: column;
@@ -1954,6 +1978,45 @@
     }
 
     body.wave-open .wave-dock { display: flex; }
+
+    /* Inside the mobile panel it is the panel's whole content, so it drops the
+       fixed strip height and the border that separated it from the page, and
+       shows whenever its tab is chosen rather than tracking `wave-open`. */
+    body.wave-in-panel #tab-waveform .wave-dock {
+      display: flex;
+      flex: 1 1 auto;
+      height: 100%;
+      min-height: 320px;
+      border-top: none;
+    }
+
+    body.wave-in-panel .wave-resizer { display: none; }
+
+    /* The panel chrome already names it, and ctrl+scroll is not a gesture the
+       devices this layout is for have. */
+    body.wave-in-panel #tab-waveform .wave-hdr-title,
+    body.wave-in-panel #tab-waveform .wave-hdr-hint { display: none; }
+
+    /* Mobile hides panel header buttons, but these are the waveform's only
+       controls: picking signals and zooming are how it is read at all. */
+    body.wave-in-panel #tab-waveform .wave-hdr .panel-hdr-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      min-height: 36px;
+      padding: 6px 10px;
+      font-size: 14px;
+      border: 1px solid #45475a;
+    }
+
+    body.wave-in-panel #tab-waveform .wave-hdr {
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px 8px;
+    }
+
+    body.wave-in-panel #tab-waveform .wave-hdr .wave-fold-btn { display: none; }
 
     .wave-hdr {
       display: flex;
@@ -1979,7 +2042,8 @@
     .wave-add-btn {
       flex-shrink: 0;
       font-size: 11px;
-      padding: 3px 7px;
+      padding: 3px 8px;
+      border: 1px solid #45475a;
     }
 
     .wave-hdr-info {
@@ -3115,7 +3179,7 @@
 
       .toolbar {
         display: grid;
-        grid-template-columns: auto 1fr;
+        grid-template-columns: 1fr 1fr;
         padding: 6px 8px;
         gap: 6px;
         font-size: 12px;
@@ -3154,8 +3218,14 @@
       }
 
       .toolbar-group-file-mode .example-label {
-        flex: 1.2 1 60px;
+        flex: 1 1 60px;
+        max-width: 104px;
         min-width: 0;
+      }
+
+      /* Its width is its message; growing it just takes room from the buttons. */
+      .toolbar-group-file-mode .hdl-chip {
+        flex: 0 0 auto;
       }
 
       /* The word costs more of this row than it is worth: the selected option
@@ -3176,7 +3246,7 @@
          row equally is what keeps the chip's text readable; Open and Save give
          up their words for the same reason. */
       .toolbar-group-file-mode button {
-        flex: 0 1 auto;
+        flex: 1 1 auto;
         min-width: 0;
         padding: 0 6px;
         height: 32px;
@@ -3239,6 +3309,12 @@
         font-weight: 550;
         justify-content: center;
         gap: 2px;
+      }
+
+      /* Sized to its own label rather than to `Waveform (.vcd)`, its longest
+         option, which is what a native select otherwise reserves room for. */
+      .toolbar-group-config-stats .dl-select {
+        flex: 0 0 96px;
       }
 
       /* Row 3: Assemble, Run, Step, Back, Reset - last action row, right
@@ -3923,9 +3999,9 @@
             <div class="toolbar-divider"></div>
             <!-- Group 2: Editor Operations (Edit-Related) -->
             <div class="toolbar-btn-group toolbar-group-editor">
-              <button id="btnUndo" class="mo-icon" onclick="editorHistory.undo()" title="Undo last edit (Ctrl+Z)"><span class="btn-ico">↶</span><span class="btn-text">Undo</span></button>
-              <button id="btnRedo" class="mo-icon" onclick="editorHistory.redo()" title="Redo last undone edit (Ctrl+Y)"><span class="btn-ico">↷</span><span class="btn-text">Redo</span></button>
-              <button id="btnFind" class="mo-icon" onclick="openFindReplace(false)" title="Find &amp; Replace in code editor (Ctrl+F / Ctrl+H)"><span class="btn-ico">🔍</span><span class="btn-text">Find</span></button>
+              <button id="btnUndo" onclick="editorHistory.undo()" title="Undo last edit (Ctrl+Z)"><span class="btn-ico">↶</span><span class="btn-text">Undo</span></button>
+              <button id="btnRedo" onclick="editorHistory.redo()" title="Redo last undone edit (Ctrl+Y)"><span class="btn-ico">↷</span><span class="btn-text">Redo</span></button>
+              <button id="btnFind" onclick="openFindReplace(false)" title="Find &amp; Replace in code editor (Ctrl+F / Ctrl+H)"><span class="btn-ico">🔍</span><span class="btn-text">Find</span></button>
             </div>
           </div>
           <!-- Row 2: Simulation Execution & Controls (Simulation-Related) -->
@@ -3950,9 +4026,7 @@
                 <option value="tb">Testbench (.v)</option>
                 <option value="vcd">Waveform (.vcd)</option>
               </select>
-              <button id="waveDockBtn" class="mo-icon" style="display:none;" onclick="toggleWaveDock()"
-                title="Show the waveform strip at the bottom of the page"><span class="btn-ico">📈</span><span class="btn-text">Waves</span></button>
-              <button id="btnSettings" onclick="openSettingsModal()" title="Configure Compiler, Linker segments, and Simulator settings" class="gear mo-icon"><span class="btn-ico">⚙</span><span class="btn-text">Settings…</span></button>
+              <button id="btnSettings" onclick="openSettingsModal()" title="Configure Compiler, Linker segments, and Simulator settings" class="gear"><span class="btn-ico">⚙</span><span class="btn-text">Settings…</span></button>
             </div>
           </div>
           <!-- Row 3: Status Message Line -->
@@ -4007,6 +4081,7 @@
           <button id="panelChip-peripherals" type="button"><span class="tab-chip-dot"></span>Peripherals</button>
           <button id="panelChip-disassembly" type="button"><span class="tab-chip-dot"></span>Disassembly</button>
           <button id="panelChip-locals" type="button"><span class="tab-chip-dot"></span>Locals</button>
+          <button id="panelChip-waveform" type="button" style="display:none;"><span class="tab-chip-dot"></span>Waveforms</button>
         </div>
         <div class="panel-stack" id="panelStack">
         <div class="tab-content" id="tab-registers">
@@ -4297,6 +4372,9 @@
           </div>
           <div id="disassemblyDisplay"></div>
         </div>
+        <!-- On mobile the waveform strip is reparented in here; on desktop it
+             stays at the bottom of the window, where it has the full width. -->
+        <div class="tab-content" id="tab-waveform"></div>
           <div class="panel-stack-empty">
             <span class="panel-stack-empty-icon">▤</span>
             <span>All panels are hidden — use the buttons above to show the various panels.</span>
@@ -4320,7 +4398,8 @@
           <button class="panel-hdr-btn" type="button" onclick="waveZoom(2)" title="Zoom out (show more cycles)">−</button>
           <button class="panel-hdr-btn" type="button" onclick="waveZoom(0.5)" title="Zoom in">+</button>
           <button class="panel-hdr-btn" type="button" onclick="waveFit()" title="Fit the whole run">Fit</button>
-          <button class="panel-hdr-btn" type="button" onclick="toggleWaveDock()" title="Hide the waveform strip">✕</button>
+          <button class="panel-hdr-btn wave-fold-btn" type="button" id="waveFoldBtn"
+            onclick="toggleWaveDock()" title="Fold the waveform strip"></button>
         </span>
       </div>
       <div class="wave-picker" id="wavePicker" hidden>
@@ -8340,6 +8419,7 @@
       { name: 'peripherals', label: 'Peripherals' },
       { name: 'disassembly', label: 'Disassembly' },
       { name: 'locals', label: 'Locals' },
+      { name: 'waveform', label: 'Waveforms', mobileOnly: true },
     ];
     // Width (px) of the right-side dock while the 2×2 grid is active. When the
     // user collapses back to ≤2 docked panels, the previously saved width
@@ -8993,6 +9073,7 @@
       const floatingNames = panelDock.order.filter(n => panelDock[n].visible && panelDock[n].floating);
       const twoCols = dockUsesTwoColumns();
       const mobile = mobileMode();
+      syncWaveformPanelHost();
       if (mobile) ensureMobileTab();
 
       // Set the dock width before laying out the grid: the row-fit clamp below
@@ -9366,6 +9447,7 @@
       applyPanelDock();
       panelDock.order.forEach(name => { if (isPanelVisible(name)) refreshPanel(name); });
       updateLocalsPanelAvailability();
+      updateWaveformPanelAvailability();
       // Wire up the intra-panel column-resize separators (Registers /
       // Memory / Disassembly) and apply any persisted per-panel widths.
       initPanelColResizers();
@@ -11950,6 +12032,44 @@
     // Locals only has anything to show in C mode - the chip (and the panel
     // itself, if it happened to be open) disappears in ASM mode rather than
     // sitting there just to explain that it's not applicable.
+    // The waveform strip lives at the bottom of the window on desktop, where it
+    // gets the full width a waveform needs. On mobile that puts it below the
+    // panels, so reaching it scrolls the toolbar off the screen and the run
+    // controls with it; there it becomes a sixth panel instead, and is moved
+    // into the stack rather than duplicated so all of its wiring still applies.
+    function syncWaveformPanelHost() {
+      const dock = document.getElementById('waveDock');
+      const host = document.getElementById('tab-waveform');
+      const resizer = document.getElementById('waveResizer');
+      if (!dock || !host) return;
+      const body = host.querySelector(':scope > .panel-body') || host;
+      const wantMobile = mobileMode();
+      const isInPanel = host.contains(dock);
+      if (wantMobile && !isInPanel) {
+        body.appendChild(dock);
+      } else if (!wantMobile && isInPanel) {
+        // Back to its own place at the bottom, immediately after its resizer.
+        if (resizer && resizer.parentNode) resizer.parentNode.insertBefore(dock, resizer.nextSibling);
+      }
+      document.body.classList.toggle('wave-in-panel', wantMobile);
+      if (typeof waveApplyDockSize === 'function' && document.body.dataset.booted) waveApplyDockSize();
+    }
+
+    // HDL mode is the only mode that produces waveforms, so the chip follows it
+    // the way Locals follows C mode.
+    function updateWaveformPanelAvailability() {
+      const chip = document.getElementById('panelChip-waveform');
+      // Read the engine off its toggle rather than the variable: this runs from
+      // initPanelDock(), which is called before `simEngineMode` is declared.
+      const hdlBtn = document.getElementById('engBtnHdl');
+      const show = mobileMode() && !!(hdlBtn && hdlBtn.classList.contains('active'));
+      if (chip) chip.style.display = show ? '' : 'none';
+      if (!show && panelDock && panelDock.waveform && panelDock.waveform.visible) {
+        setPanelVisible('waveform', false);
+      }
+      syncWaveformPanelHost();
+    }
+
     function updateLocalsPanelAvailability() {
       const chip = document.getElementById('panelChip-locals');
       const isC = editorLanguageMode === 'c';
@@ -13456,12 +13576,18 @@ int main()
       assembled = true;
       programFinished = false;
       resetPeriphFoldState();
-      const nInstr = mc.filter(i => !i.error && i.bytes).length;
+      const nInstr = countInstructions(mc);
       log(`Compiled and loaded ${nInstr} RV32 instructions from C source.`, 'success');
       setStatus(`Compiled & Assembled (${nInstr} instructions). Ready to step/run.`, 'success');
       if (typeof updateToolbarButtonStates === 'function') updateToolbarButtonStates();
 
       return mc;
+    }
+
+    // Only the text segment. Counting every assembled item called the image
+    // example's 130 rows of pixel data instructions too.
+    function countInstructions(mc) {
+      return (mc || []).filter(i => !i.error && i.bytes && i.address < dataBase).length;
     }
 
     function assembleOnly() {
@@ -13476,7 +13602,7 @@ int main()
         return;
       }
       lastAssembledCode = editor.value;
-      const nInstr = mc.filter(i => !i.error).length;
+      const nInstr = countInstructions(mc);
       log(`Assembly successful. ${nInstr} instructions.`, 'success');
       loadProgram(mc);
       updateMachineCode();
@@ -16458,6 +16584,7 @@ endmodule
             ' instructions in ' + t.budget + ' cycles', 'success');
         }
         if (hdlCompareEnabled) await hdlCompareWithJs();
+        waveRevealForRun();
         return t;
       });
     }
@@ -16719,6 +16846,11 @@ endmodule
     const WAVE_ROW_H = 22;      // must match .wave-name's height
     const WAVE_AXIS_H = 20;     // must match .wave-names-axis's height
     const WAVE_DEFAULT_SPAN = 40;   // cycles across, before zoom exists
+    const WAVE_NARROW_SPAN = 12;    // ...and on a phone, where the canvas is a third as wide
+
+    function waveDefaultSpan() {
+      return mobileMode() ? WAVE_NARROW_SPAN : WAVE_DEFAULT_SPAN;
+    }
 
     // Resolved against the parsed VCD by name, so a Wrapper that renames or
     // omits one of these simply shows fewer rows rather than failing.
@@ -16732,7 +16864,10 @@ endmodule
     let waveParsedFrom = null;   // the hdlLastVcd string it was parsed from
     let waveSignals = [];        // full dotted paths, in display order
     let waveStart = 0;           // leftmost cycle on screen
-    let waveSpan = WAVE_DEFAULT_SPAN;
+    let waveSpan = waveDefaultSpan();
+    // Once the span has been chosen deliberately, a layout change must not
+    // overwrite it; until then it follows whatever the layout can show.
+    let waveSpanChosen = false;
     let waveDropped = 0;         // chosen signals the current VCD no longer has
 
     // ---- VCD parsing ------------------------------------------------------
@@ -16958,13 +17093,28 @@ endmodule
       if (persist) { try { localStorage.setItem(WAVE_H_KEY, String(h)); } catch (e) { /* private mode */ } }
     }
 
+    function waveSavedHeight() {
+      let saved = null;
+      try { saved = parseInt(localStorage.getItem(WAVE_H_KEY) || '', 10); } catch (e) { saved = null; }
+      return Number.isFinite(saved) ? saved : WAVE_H_DEFAULT;
+    }
+
+    // setWaveHeight writes an inline flex, which outranks any rule, so folding
+    // and the in-panel layout have to clear it rather than style around it.
+    function waveApplyDockSize() {
+      const dock = waveDockEl();
+      if (!dock) return;
+      if (waveInPanel() || !document.body.classList.contains('wave-open')) {
+        dock.style.flex = '';
+      } else {
+        setWaveHeight(waveSavedHeight(), false);
+      }
+    }
+
     function initWaveResizer() {
       const bar = document.getElementById('waveResizer');
       const el = waveDockEl();
       if (!bar || !el) return;
-      let saved = null;
-      try { saved = parseInt(localStorage.getItem(WAVE_H_KEY) || '', 10); } catch (e) { saved = null; }
-      setWaveHeight(Number.isFinite(saved) ? saved : WAVE_H_DEFAULT, false);
 
       let startY = 0, startH = 0;
       const move = e => {
@@ -17001,9 +17151,25 @@ endmodule
       // Only ever open in HDL mode: there are no waveforms to show otherwise.
       const on = waveOpen && simEngineMode === 'hdl';
       document.body.classList.toggle('wave-open', on);
-      const btn = document.getElementById('waveDockBtn');
-      if (btn) btn.classList.toggle('active', on);
-      if (on) updateWaveView();
+      const fold = document.getElementById('waveFoldBtn');
+      if (fold) fold.title = on ? 'Fold the waveform strip' : 'Show the waveform';
+      waveApplyDockSize();
+      // As a panel it is shown by its tab, not by folding.
+      if (on || waveInPanel()) updateWaveView();
+    }
+
+    function waveInPanel() {
+      return document.body.classList.contains('wave-in-panel');
+    }
+
+    function initWaveFoldClick() {
+      const hdr = document.querySelector('#waveDock .wave-hdr');
+      if (!hdr) return;
+      hdr.addEventListener('click', e => {
+        if (document.body.classList.contains('wave-open') || waveInPanel()) return;
+        if (e.target.closest('button')) return;
+        toggleWaveDock();
+      });
     }
 
     function toggleWaveDock() {
@@ -17018,11 +17184,26 @@ endmodule
       }
     }
 
+    // A run's waveform is the one thing it produces that no other panel shows,
+    // so finishing one brings it into view: the dock on desktop, the tab on
+    // mobile, where the strip is a panel.
+    function waveRevealForRun() {
+      if (mobileMode()) {
+        if (!panelDock || !panelDock.waveform) return;
+        if (!panelDock.waveform.visible) setPanelVisible('waveform', true);
+        setMobileTab('waveform');
+        return;
+      }
+      if (!waveOpen) {
+        waveOpen = true;
+        try { localStorage.setItem(WAVE_OPEN_KEY, '1'); } catch (e) { /* private mode */ }
+      }
+      applyWaveOpen();
+    }
+
     // The button belongs to HDL mode, the way Locals belongs to C mode.
     function updateWaveAvailability() {
-      const btn = document.getElementById('waveDockBtn');
-      const isHdl = simEngineMode === 'hdl';
-      if (btn) btn.style.display = isHdl ? '' : 'none';
+      if (typeof updateWaveformPanelAvailability === 'function') updateWaveformPanelAvailability();
       applyWaveOpen();
     }
 
@@ -17036,7 +17217,8 @@ endmodule
 
     function updateWaveView() {
       const dock = waveDockEl();
-      if (!dock || !document.body.classList.contains('wave-open')) return;
+      if (!dock || !(document.body.classList.contains('wave-open') || waveInPanel())) return;
+      waveApplyDefaultSpan();
       const notice = document.getElementById('waveNotice');
       const info = document.getElementById('waveInfo');
 
@@ -17154,6 +17336,7 @@ endmodule
     function waveSetSpan(n, anchorCycle) {
       const p = waveParsed;
       if (!p) return;
+      waveSpanChosen = true;
       const last = waveActiveEndCycle();
       const span = Math.max(2, Math.min(Math.round(n), Math.max(2, last + 1)));
       // Keep whatever cycle the user pointed at under the pointer, so zooming
@@ -17195,8 +17378,15 @@ endmodule
 
     function waveZoom(factor) { waveSetSpan(waveSpan * factor); }
 
+    function waveApplyDefaultSpan() {
+      if (waveSpanChosen) return;
+      waveSpan = waveDefaultSpan();
+      waveClampStart();
+    }
+
     function waveFit() {
       if (!waveParsed) return;
+      waveSpanChosen = true;
       waveSpan = Math.max(2, waveActiveEndCycle() + 1);
       waveStart = 0;
       updateWaveHeaderAndDraw();
@@ -17737,6 +17927,7 @@ endmodule
       hdlRefreshRegPathHint();
       initConsoleResizer();
       initWaveResizer();
+      initWaveFoldClick();
       initWavePicker();
       initWaveCanvas();
       updateWaveAvailability();
@@ -18064,6 +18255,9 @@ endmodule
       updateToolbarButtonStates();
       hdlInitSources();
       initCompilerSettingWatchers();
+      // Marks the point after which the wave state is safe to touch: the panel
+      // relayout runs well before those declarations are reached.
+      document.body.dataset.booted = '1';
     }
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', bootSimulator);

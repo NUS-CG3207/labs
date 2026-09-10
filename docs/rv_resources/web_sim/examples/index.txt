@@ -1,22 +1,16 @@
 # Example Index
 
-Read by the simulator's **Example:** dropdown, in row order, filtered by the
-`Lang` column to match the `ASM | C` toggle. Add a program by adding a row here
-and dropping a matching file in `asm/` or `c/` — no HTML changes needed. Up to
-15 rows per language; the simulator does not enforce that limit, it is just what
-the menu is designed for.
+The **Example:** dropdown, in row order, filtered by `Lang`. Add a program by
+adding a row and dropping the file in `asm/` or `c/`.
 
-`IROM` and `DMEM` are the `IROM_DEPTH_BITS` and `DMEM_DEPTH_BITS` the program
-needs, i.e. the memory is `2**bits` bytes. Selecting an example sets the two
-Linker segment sizes from them, and with them the stack pointer the C startup
-shim loads. In HDL mode they are also checked against the `Wrapper.v` you
-loaded, and a program that does not fit is refused rather than half-loaded.
-Both default to 9, which is 512 bytes, or 128 instructions.
+`IROM` and `DMEM` are the `IROM_DEPTH_BITS` / `DMEM_DEPTH_BITS` the program
+needs, so its memory is `2**bits` bytes. Selecting an example sets the Linker
+segment sizes from them, and HDL mode refuses a program that does not fit the
+loaded `Wrapper.v`.
 
-`dip_led` and `dip_led_c` are the exception: they are also baked directly into
-`riscv_simulator.html` (`BAKED_ASM_EXAMPLE` / `BAKED_C_EXAMPLE`), so the page
-always has a working example with no server. If you change their rows here,
-update those baked copies too, or the two will say different things.
+`dip_led` and `dip_led_c` are also baked into `riscv_simulator.html`, so the
+page has a working example with no server. Change a row for either and update
+the baked copy to match.
 
 | Key | Lang | Label | File | IROM | DMEM | Description |
 |-----|------|-------|------|------|------|--------------|

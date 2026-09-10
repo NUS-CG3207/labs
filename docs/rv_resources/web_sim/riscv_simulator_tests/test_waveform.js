@@ -221,14 +221,21 @@ setTimeout(async () => {
 
     // ---------------------------------------------------------------
     console.log('\n[3] Dock availability follows the engine mode');
-    const waveBtn = doc.getElementById('waveDockBtn');
-    check('the Waves button exists', !!waveBtn);
+    // There is no toolbar button any more: in HDL mode the strip is always on
+    // the page, folded to its own title bar when closed, and that bar is how it
+    // comes back.
+    const dockEl = doc.getElementById('waveDock');
+    const foldBtn = doc.getElementById('waveFoldBtn');
+    check('the strip has a fold control rather than a toolbar button',
+      !!foldBtn && !doc.getElementById('waveDockBtn'));
     win.setSimEngineMode('js');
     win.updateWaveAvailability();
-    check('hidden in JS mode', waveBtn.style.display === 'none');
+    check('the strip is absent in JS mode', !doc.body.classList.contains('hdl-mode'));
     check('the strip is closed in JS mode', !doc.body.classList.contains('wave-open'));
     win.setSimEngineMode('hdl');
-    check('shown in HDL mode', waveBtn.style.display !== 'none');
+    check('present in HDL mode', doc.body.classList.contains('hdl-mode'));
+    check('folded leaves no inline height to fight the layout',
+      doc.body.classList.contains('wave-open') || dockEl.style.flex === '');
 
     console.log('\n[4] Empty states say what to do instead of showing a blank canvas');
     win.setHdlDumpVcd(false);

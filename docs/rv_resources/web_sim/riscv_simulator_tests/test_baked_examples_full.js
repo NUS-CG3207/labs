@@ -57,8 +57,8 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   win.setLanguageMode('asm');
   await win.loadExample('circle_accel');
   const mc1 = win.assembleOnly();
-  console.log(`  - Assembled instructions: ${mc1.length}`);
-  if (mc1.length !== 138) throw new Error(`Expected 138 instructions, got ${mc1.length}`);
+  console.log(`  - Assembled items (code + data): ${mc1.length}`);
+  if (mc1.length !== 138) throw new Error(`Expected 138 assembled items, got ${mc1.length}`);
   
   // Set Accel input
   const xSlider = win.document.getElementById('accelXSlider');
@@ -86,8 +86,8 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   console.log('\n[2] Testing image_display_accel in Assembly Mode...');
   await win.loadExample('image_display_accel');
   const mc2 = win.assembleOnly();
-  console.log(`  - Assembled instructions: ${mc2.length}`);
-  if (mc2.length !== 183) throw new Error(`Expected 183 instructions, got ${mc2.length}`);
+  console.log(`  - Assembled items (code + data): ${mc2.length}`);
+  if (mc2.length !== 183) throw new Error(`Expected 183 assembled items, got ${mc2.length}`);
 
   for (let s = 0; s < 75000; s++) win.executeOne();
 
@@ -104,8 +104,8 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   win.setLanguageMode('c');
   await win.loadExample('circle_accel_c');
   const mc3 = await win.assembleOnly();
-  console.log(`  - Assembled instructions: ${mc3.length}`);
-  if (mc3.length !== 299) throw new Error(`Expected 299 instructions, got ${mc3.length}`);
+  console.log(`  - Assembled items (code + data): ${mc3.length}`);
+  if (mc3.length !== 299) throw new Error(`Expected 299 assembled items, got ${mc3.length}`);
 
   for (let s = 0; s < 60000; s++) win.executeOne();
 
@@ -131,8 +131,8 @@ const CM6_BUNDLE_SOURCE = fs.readFileSync(path.resolve(__dirname, 'cm6_bundle.mi
   console.log('\n[4] Testing image_display_c in C Mode...');
   await win.loadExample('image_display_c');
   const mc4 = await win.assembleOnly();
-  console.log(`  - Assembled instructions: ${mc4.length}`);
-  if (mc4.length !== 658) throw new Error(`Expected 658 instructions, got ${mc4.length}`);
+  console.log(`  - Assembled items (code + data): ${mc4.length}`);
+  if (mc4.length !== 658) throw new Error(`Expected 658 assembled items, got ${mc4.length}`);
 
   for (let s = 0; s < 200000; s++) win.executeOne();
 

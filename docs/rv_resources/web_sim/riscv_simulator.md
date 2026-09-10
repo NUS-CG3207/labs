@@ -6,11 +6,10 @@
   </a>
 </p>
 
-A RISC-V simulator built for **NUS CG3207**: write assembly or C, assemble or compile
-it, then step or run it, either against a fast JS functional model or against your
-own synthesizable Verilog core (HDL mode), while the Registers, Memory, Disassembly
-and Peripherals panels (LEDs, DIP switches, push buttons, 7-segment display, OLED,
-UART, accelerometer) update live as it executes.
+A RISC-V simulator built for **NUS CG3207**. Write assembly or C, assemble it, then step
+or run it against either a fast JS functional model or your own synthesizable Verilog core.
+Registers, memory, the disassembly and a simulated Nexys 4 board (LEDs, switches, buttons,
+7-segment, OLED, UART, accelerometer) all update as it executes.
 
 Click the button above, or open [`riscv_simulator.html`](riscv_simulator.html)
 yourself: nothing to install.
@@ -26,13 +25,15 @@ That is the whole loop. Everything below is detail.
 
 ### The screen
 
-| Control | What it does |
-|---|---|
-| `ASM \| C` | RISC-V assembly, or C compiled for you |
-| `JS \| HDL` | The built-in model, or your own Verilog processor ([§7](#7-running-your-own-verilog-hdl-mode)) |
-| Panel chips (Registers / Memory / Peripherals / Disassembly / Locals) | Show, hide or float any combination; drag to resize. Layout is remembered. |
-| Console (below the editor) | Assembler messages, `ecall` output, compiler errors. Drag its top bar to resize. |
-| Status bar | `Cycles: 3 EST \| Instr: 3 \| PC: 0x0040000c`. `EST`/`HW` is estimated vs. Verilog-counted cycles; **PC** is the next instruction to execute. |
+`ASM | C` picks the language. `JS | HDL` picks the engine: the built-in model, or your
+own Verilog processor ([§7](#7-running-your-own-verilog-hdl-mode)).
+
+Panel chips show, hide or float any combination of panels, and the layout is remembered
+between sessions.
+
+The status bar reads `Cycles: 3 est | Instr: 3 | PC: 0x0040000c`. `est` is JS mode's
+estimate, `hw` is a real count from your Verilog. **PC** is the *next* instruction, not
+the one just executed.
 
 ---
 
@@ -51,17 +52,11 @@ loads. Each program states the same two numbers at the top of its source. Change
 Settings → Linker and in your `Wrapper.v`, if you change the program: HDL mode refuses to
 run a program that does not fit the Wrapper you loaded rather than loading half of it.
 
-The **Assemble** button greys out once your code is assembled and up to date, and comes
-back the moment you edit. Examples and opened files assemble themselves, so **Run** and
-**Step** are live immediately.
+Examples and opened files assemble themselves, so **Run** and **Step** are live at once.
 
-**Errors** appear in the console with a line number, and the offending line is marked in
-the editor. Fix and re-assemble.
-
-`ecall` works here because the simulator implements the RARS syscall services, but it
-won't work on a processor with no trap support and no OS behind it, so use the MMIO
-peripherals for anything headed to hardware. Examples that use it say so at the top, and
-the console repeats it after each assemble.
+`ecall` works here because the simulator implements the RARS syscall services. It will not
+work on a processor with no trap support and no OS behind it, so use the MMIO peripherals
+for anything headed to hardware. Examples that use it say so at the top.
 
 ### Help while you type
 
@@ -98,12 +93,11 @@ wrong logic.
 | **⏮ Back** | `Shift+F8` | Undo the last step, registers and memory included |
 | **⟲ Reset** | | Back to the start, keeping the assembled program |
 
-**Breakpoints**: click the gutter left of a line number, or press `F9`. If you pick a
-line with no instruction on it (a comment, a blank, a `}`), the breakpoint moves to the
-next real instruction and the console says so.
+**Breakpoints** go in the gutter, or on `F9`. Set one on a comment, a blank or a `}` and
+it moves to the next real instruction; the console says where it went.
 
-**Step Back** restores registers, memory and peripheral state; it isn't a re-run from
-the start.
+**Step Back** restores registers, memory and peripheral state. It is not a re-run from the
+start.
 
 **Statement Stepping** (⚙ Settings → JS Simulation or HDL Simulation) makes one **Step**
 cover a whole C statement, or a whole pseudo-instruction like `li x1, 0x12345678`,
@@ -116,28 +110,25 @@ instead of one machine instruction at a time. **Back** undoes exactly the same d
 
 ## 4. Reading the panels
 
-Every panel except Peripherals has a 🔍 in its header that narrows it to matching rows,
-which is the quick way to pull one register out of 32, or every `jal` out of a few
-hundred instructions. Labels work too: filtering Disassembly by `loop` gives you the
-block under `loop:`, not just the one instruction sitting on it. In Memory it filters the
-rows the address box is already showing, so move the window first if what you want is
-elsewhere.
+On a narrow screen the panels become tabs, the waveform among them, so stepping and
+watching the waves do not compete for the screen.
+
+The 🔍 in a panel header narrows it to matching rows: one register out of 32, or every
+`jal` in a few hundred instructions. Labels match too, so filtering Disassembly by `loop`
+gives you the whole block under `loop:`, not just the instruction sitting on it. In Memory
+it filters the rows already on screen, so move the address window first.
 
 ### Registers
 
-All 32 integer registers in hex and decimal. The **Content (Dec)** header has a small
-±/U switch: signed by default, flip it for unsigned. The most recently written
-register is highlighted. Click a value to edit it.
+All 32 integer registers, hex and decimal, editable. Decimal is signed unless you flip
+the ±/U switch in the column header.
 
 ### Memory
 
-Sub-tabs `[ Text | Data | Stack | MMIO ]`, an address box and a row count.
-
-- **Word / Byte**: one 32-bit little-endian word per row, or separate editable bytes.
-  Word is the default; the third column is **Content (ASCII)** in Byte mode, **Content
-  (DEC)** in Word mode, with the same ±/U switch as Registers.
-- **Text** is read-only; edit your source and re-assemble instead. **Data** and
-  **Stack** are freely editable: click a cell and type.
+- **Word / Byte** switches between one 32-bit little-endian word per row and separate
+  editable bytes.
+- **Text** is read-only; edit your source and re-assemble instead. **Data** and **Stack**
+  are editable.
 - **MMIO is editable per register, matching hardware**: a writable register (LED, 7SEG,
   UART TX, OLED, ...) commits the moment you type, no need to Step first; a read-only
   one (DIP, PB, UART RX VALID, ACCEL DATA, CYCLECOUNT, ...) is greyed out, the same as
@@ -175,10 +166,8 @@ paused and the program will see the change. The course's own
 [peripherals reference](https://nus-cg3207.github.io/labs/rv_resources/peripherals/)
 cover these registers in full.
 
-Click a section's title to fold or unfold it — LEDs & DIP Switches starts open,
-everything else starts folded, and a section unfolds itself the first time your
-program actually reads or writes it. Fold one back down and it stays that way until
-you assemble a different program.
+A section unfolds itself the first time your program reads or writes it. Fold it back
+down and it stays down until you assemble a different program.
 
 | Peripheral | Address | Notes |
 |---|---|---|
@@ -192,11 +181,11 @@ you assemble a different program.
 
 The UART box takes **ASCII** (including `\r`, `\n`, `\xHH`) or **Hex** (`0x41, 0x0D`).
 
-**Arrival** sets how fast the characters reach your program, because that turns out to
-matter. The board has one receive register and no FIFO: a character arriving while your
-program has not yet read the previous one is discarded, the older one is kept, and nothing
-is set that you could check afterwards. At 115200 baud a character is 135 instructions at
-the default clock divider, so that is the budget a polling loop has.
+**Arrival** sets how fast characters reach your program. The board has one receive
+register and no FIFO: a character arriving before you have read the previous one is
+discarded, the older one kept, and nothing records that it happened. At 115200 baud a
+character is 135 instructions at the default clock divider. That is your polling loop's
+budget.
 
 | Arrival | What it models |
 |---|---|
@@ -226,10 +215,9 @@ people out, all of them matching the board rather than being worked around here.
   two and three bits of each channel discarded on the way out. Use it for convenience, not
   for precision.
 - **`OLED_COL` is 7 bits and out-of-range columns do not wrap.** 96 to 127 fold back onto
-  32 to 63, and anything above 127 loses the top bits, so a column that has run past 95
-  lands somewhere in the middle of the screen rather than at the start of the next row.
-  Auto-advance handles the edge for you; if you are stepping the column yourself, keep it
-  under 96.
+  32 to 63; above 127 the top bits are lost. A column past 95 therefore lands mid-screen,
+  not at the start of the next row. Auto-advance handles the edge; if you step the column
+  yourself, keep it under 96.
 
 Writing `OLED_CTRL` with **bit 3** set presents a frame rather than configuring anything.
 The other bits of that write are ignored and the mode you set earlier is kept, so you never
@@ -238,9 +226,9 @@ have to re-send it in order to present.
 The controller keeps two pages: one on the display, one you draw into. **Both start as the
 same page**, so a program that never sets bit 3 is single-buffered and behaves as it always
 did. **The first present splits them**, and from then on you are double-buffered until you
-Reset; there is no bit that switches it back. A present exchanges the pages at a frame
-boundary, then copies the newly displayed page back into the one you draw into, so partial
-updates keep working and you are not forced into repainting all 6144 pixels every frame.
+Reset; there is no bit that switches it back. A present exchanges the pages at a frame boundary, then copies the newly displayed page
+back into the one you draw into. Partial updates therefore keep working: you do not have to
+repaint all 6144 pixels every frame.
 `OLED_STATUS` at `0xFFFF0030` tells you when the present has landed: its bit 0 stays set
 until it has.
 
@@ -253,11 +241,10 @@ for (;;) {
 }
 ```
 
-That poll is what makes it tear-free on the board. Here it always returns immediately,
-because the simulator paints the whole canvas at once and has no scan to be caught
-mid-frame by, so a program that forgets to wait looks correct in the simulator and tears on
-hardware. It is also why a program that paces itself off the poll needs its own delay to
-run at a sensible speed here.
+That poll is what makes it tear-free on the board. Here it returns immediately: the
+simulator paints the whole canvas at once, with no scan to be caught mid-frame. So a
+program that skips the wait looks right here and tears on hardware, and one that paces
+itself off the poll needs its own delay to run at a sensible speed here.
 
 ---
 
@@ -306,29 +293,26 @@ types rather than runs.
 
 ## 7. Running your own Verilog (HDL mode)
 
-This is the part that makes the simulator a lab tool rather than a toy: the **same
-program, the same breakpoints and the same board** can be driven by the processor *you*
+The same program, the same breakpoints and the same board, driven by the processor you
 wrote.
 
 ### Getting started
 
-1. Click **HDL** in the toolbar. The settings dialog opens on **🔌 HDL Simulation**,
-   because nothing can happen until it has your sources.
-2. **Drop your `.v` files anywhere on the page**, or use **browse…**, or **📂 Open**.
-   You need the file that declares `module Wrapper`, your processor, and *every*
-   submodule either of them instantiates. The wrapper is tagged **WRAPPER** in the list.
-3. Close the dialog. The chip next to `JS | HDL` reports how many files it holds.
-4. Assemble a program as usual, then **▶ Run**.
+1. Click **HDL**. Settings opens on **🔌 HDL Simulation**, since nothing can happen
+   without your sources.
+2. Drop your `.v` files anywhere on the page, or use **browse…**, or **📂 Open**. You need
+   the file declaring `module Wrapper`, your processor, and *every* submodule either
+   instantiates.
+3. Assemble a program as usual, then **▶ Run**.
 
 Your Verilog is never uploaded anywhere. It is compiled inside your browser by Icarus
 Verilog, and it disappears when you close the tab, so you load it once per session.
 
-**Prebuilt processor** in the same dialog loads a working RV32I+M processor and the
-fixed Wrapper instead, so you can see what HDL mode does before your own processor runs,
-and have something to compare against once it does. It is pre-synthesised into a single
-flattened module with its internal names discarded, so there is nothing in it to read.
-The register file is left intact, so the **Registers** panel still works. It is fetched
-from `examples/hdl/`, so it needs the page served over `http://`.
+**Prebuilt processor** loads a working RV32I+M core and the fixed Wrapper instead: something
+to run before yours does, and to compare against once it does. It is pre-synthesised into
+one flattened module with its names discarded, so there is nothing in it to read. Its
+register file is left intact, so the **Registers** panel still works. It is fetched from
+`examples/hdl/` and needs the page served over `http://`.
 
 ### Requirements your Verilog must meet
 
@@ -371,17 +355,14 @@ Registers panel says so when that happens.
   recording from reset, so a typed-in value would vanish on the next one. Inputs are the
   exception and still work: change them in the Peripherals panel, which re-simulates the
   run around your new value.
-- **Flip a switch (or send UART input) while paused**, and it's stamped in at the
-  current cycle when you Resume: everything recorded before that point stays identical,
-  so you keep your place, and the very next instruction already sees the new value.
-- **Not while a Run is actually in progress, though.** Icarus computes a whole Run's
-  *Cycles* budget in one uninterruptible pass, so the browser is essentially frozen
-  until it stops, at its end or at a breakpoint; a change you make mid-run just waits
-  until then. JS mode has no such restriction, you can change an input at any point
-  while it's running. There's a real trade-off here: a smaller *Cycles per Run/Resume*
-  (⚙ Settings → 🔌 HDL Simulation) gives more frequent chances to change an input, but
-  means clicking Run more times to get through a long program, such as one that
-  displays an image on the OLED.
+- **An input changed while paused takes effect at the current cycle.** Flip a switch or
+  send UART input, then Resume: the cycles already recorded are unchanged, and the next
+  instruction sees the new value.
+- **You cannot change one mid-Run.** Icarus simulates a whole *Cycles* budget in one
+  uninterruptible pass, so the page is frozen until the run stops. A change made during
+  it applies when the run ends. JS mode has no such limit. A smaller *Cycles per
+  Run/Resume* (⚙ Settings → 🔌 HDL Simulation) gives more openings to change an input,
+  at the cost of pressing Run more often on a long program.
 
 ### Is my Verilog synthesisable?
 
@@ -415,11 +396,13 @@ both values. That is almost always where the RTL bug is.
 
 ### Watching the waveform
 
-Tick **Dump a VCD waveform** (⚙ Settings → 🔌 HDL Simulation), Run, then press
-**📈 Waves**. A waveform strip opens along the bottom of the page, and its cursor sits on
-whatever cycle you are stopped at, so Step and Back walk it with you. That is the quickest
-way to see what your RTL was actually doing on the cycle an instruction went wrong, rather
-than inferring it from the registers afterwards.
+In HDL mode a waveform strip sits along the bottom of the page, folded to its title bar
+until there is something to show. The first Run after a Reset opens it; after that it stays
+where you put it, and the `▸` on the bar brings it back. On a narrow screen it is a panel
+alongside Registers and the rest instead.
+
+Its cursor sits on the cycle you are stopped at, so Step and Back walk it with you. That is
+the quickest way to see what your RTL did on the cycle an instruction went wrong.
 
 The dump covers your whole design, not just the Wrapper's ports, so anything inside your
 core is available. Press **+ Signal** and type part of a name or path: `alu` finds
@@ -429,16 +412,14 @@ or use the ✕ beside a name on the left. Your choice is remembered and survives
 Memories are the exception to what you can add, since a Verilog array is not written to a
 VCD; read those in the Memory panel.
 
-Ctrl+scroll zooms, shift+scroll pans, and a plain scroll moves down the signal list.
-Dragging pans as well, and **Fit** shows the whole run. Clicking a waveform moves the
-*whole simulator* to that cycle, so registers, memory and the disassembly all follow, which
-is often faster than stepping to a suspicious edge you can already see.
+Ctrl+scroll zooms, shift+scroll pans, a plain scroll moves down the signal list, and
+dragging pans. On a phone, use the `−` `+` `Fit` buttons. Clicking a waveform moves the
+*whole simulator* to that cycle: registers, memory and the disassembly all follow.
 
 The strip stops where your PC does. Once the program halts or spins on one instruction
 there is nothing further to step to, so the cycles after that are greyed out rather than
 drawn.
-
-**⭳ Download → Waveform (.vcd)** still saves the file, which is what you want for a long run or for the
+**⭳ Download → Waveform (.vcd)** saves the file, which is what you want for a long run or for the
 things a full waveform viewer does better. GTKWave and [Surfer](https://surfer-project.org/)
 both open it.
 
@@ -449,7 +430,7 @@ both open it.
 | **Cycles per Run / Resume** | How much to simulate at a time. Raise it for long programs. |
 | **Record the architectural trace** | On by default; needed for Step and Back. |
 | **Verilog standard** | Verilog-2005 by default; switch if your code needs it. |
-| **Dump a VCD waveform** | On by default. Needed for the **📈 Waves** strip, and for the **⭳ Download → Waveform (.vcd)** entry. |
+| **Dump a VCD waveform** | On by default. Without it there is no waveform to show or download. |
 | **Register file** | Detected automatically. Type a path only if detection fails. |
 
 ---

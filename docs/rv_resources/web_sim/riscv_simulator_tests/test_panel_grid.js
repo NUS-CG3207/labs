@@ -277,7 +277,9 @@ setTimeout(() => {
     check('Row splitter present for the vertical stack on mobile', vSplMComputed);
     // Panels should be direct children (mobile tabbed stack)
     const stackM = Array.from(stack.children).filter(c => c.id && c.id.startsWith('tab-'));
-    check('5 panels are direct stack children on mobile', stackM.length === 5);
+    const stackIds = stackM.map(c => c.id.replace('tab-', '')).sort();
+    check('Every panel is a direct stack child on mobile (' + stackIds.join(', ') + ')',
+      stackIds.join(',') === 'disassembly,locals,memory,peripherals,registers,waveform');
 
     // --- 9. Mobile tabbed view: exactly one panel visible at a time ---
     console.log('\n[9] Mobile tabbed view (≤800px) → single mutually-exclusive panel');
