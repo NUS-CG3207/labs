@@ -334,9 +334,18 @@ setTimeout(async () => {
       throw new Error('Settings modal did not close on apply');
     }
 
-    // Switch to C mode and verify compiled CRT0 uses stackBase = 0x20400
+    // The example is loaded first: selecting one sets the segment sizes from
+    // its row in examples/index.txt, so a layout chosen by hand has to come
+    // after, which is the order anyone would do it in anyway.
     win.setLanguageMode('c');
     await win.loadExample('fibonacci_c');
+    win.openSettingsModal('linker');
+    win.document.getElementById('ms-code').value = '0x10000';
+    win.document.getElementById('ms-codesize').value = '0x400';
+    win.document.getElementById('ms-data').value = '0x20000';
+    win.document.getElementById('ms-datasize').value = '0x400';
+    win.updateLinkerStackPreview();
+    win.applyAndCloseSettings();
     await win.assembleOnly();
 
     // Step past CRT0 li sp, 0x20400 (lui + addi) -> check sp (x2)

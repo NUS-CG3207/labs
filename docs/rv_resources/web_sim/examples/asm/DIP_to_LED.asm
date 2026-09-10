@@ -12,6 +12,11 @@
 
 # This sample program for RISC-V simulation using RARS
 
+# Memory this program needs: IROM_DEPTH_BITS 9, DMEM_DEPTH_BITS 9
+# (2**9 = 512 bytes of code, 2**9 = 512 bytes of data). The simulator sets its
+# Linker segments from these when you pick the example; set the same two
+# localparams in Wrapper.v. Change both if you change the program.
+
 .eqv MMIO_BASE 0xFFFF0000
 # Memory-mapped peripheral register offsets
 .eqv UART_RX_VALID_OFF 			0x00 #RO, status bit

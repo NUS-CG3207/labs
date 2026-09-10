@@ -14,6 +14,11 @@
 # *Some terminal programs send '\r' (default in TeraTerm), whereas some such as the RARS Keyboard and Display MMIO simulator sends '\n'.
 # There should be a sufficient time gap between the press of 'A' and '\r' or '\n'if the processor is run at a low freq.
 
+# Memory this program needs: IROM_DEPTH_BITS 9, DMEM_DEPTH_BITS 9
+# (2**9 = 512 bytes of code, 2**9 = 512 bytes of data). The simulator sets its
+# Linker segments from these when you pick the example; set the same two
+# localparams in Wrapper.v. Change both if you change the program.
+
 .eqv LSB_MASK 0xFF # A mask to extract the least significant byte.
 
 .eqv MMIO_BASE 0xFFFF0000

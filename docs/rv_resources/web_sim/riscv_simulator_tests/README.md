@@ -184,7 +184,7 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 
 ### 17. `test_hdl_mode.js` — HDL Simulation Mode, End to End (159 assertions)
 - **Purpose**: The only suite that drives real external tooling. It loads the page, assembles through the normal assembler, asks the page for the artefacts it would hand to Icarus (the generated testbench, the memory images, the stimulus files), then runs the **real** Icarus/WASM pipeline over the unmodified `RV/*.v` sources.
-- **Covers**: settings layout, engine toggle, register-file discovery (including after the module, instance and array are all renamed), synthesis lint, post-synthesis plumbing, compiler-setting invalidation, the program-independent testbench, MMIO timing in both directions, breakpoints and Resume, `UART_RX_valid` behaviour, and Statement Stepping through the recording.
+- **Covers**: settings layout, engine toggle, register-file discovery (including after the module, instance and array are all renamed), synthesis lint, post-synthesis plumbing, compiler-setting invalidation, the program-independent testbench, the memory depths an example declares (a program too big for the loaded Wrapper is refused rather than half-loaded, and the Wrapper shipped with the prebuilt processor is sized to fit while an uploaded one is left alone), MMIO timing in both directions, breakpoints and Resume, `UART_RX_valid` behaviour, and Statement Stepping through the recording.
 - **Requires**: the `RV/` sources, which are gitignored — the engine-backed sections skip cleanly without them.
 - **Run Command**: `npm run test:hdl`
 
@@ -213,6 +213,15 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 
 ---
 
+### 21. `test_m_extension.js` — RV32M, Three Ways (21 assertions)
+- **Purpose**: `MCycle.v` against the JS engine, and both against a reference computed here with BigInt. A generated straight-line program runs all eight M instructions over six awkward operand pairs — mixed signs, `-2**31 / -1`, a product that needs the full 64 bits, division by zero — storing every result to its own word of data memory. The three sets of stored words are then compared. Agreement between the two engines is what the processor must preserve; the BigInt reference is there so that both agreeing on something wrong still fails.
+- **Covers**: the M encodings coming out of the assembler; the program fitting the Wrapper's 128-word IROM (silent truncation of the IROM image is what a too-long program looks like from the hardware side, so it fails on the length instead); all 48 results on the JS engine, on `RV/*.v` through the real Icarus/WASM pipeline, and against the reference; the stall — no PC executed twice in a row, one write-back per M instruction rather than one per cycle, and a signed multiply taking 65 cycles; and section [5], `examples/hdl/RV_reference.v`, which is generated from those same sources and so goes stale silently if `RV/` changes and nobody reruns `examples/hdl/build_reference_core.sh` — it is checked for its stripped names, for `RegBank` surviving the flattening (`dut.RV1.RegFile1.RegBank`), and for running the same program to the same results.
+- **Note**: register writes are found by shadow-comparing the array, so a write of the value already in the register is invisible. The write count is compared against the results that actually change `x3`, not against all of them.
+- **Requires**: the `RV/` sources and the vendored engine, as `test_hdl_mode.js` does.
+- **Run Command**: `npm run test:m`
+
+---
+
 ## 🛠️ The CodeMirror bundle
 
 ### `cm6_bundle.min.js` & `cm6_entry.js`
@@ -226,9 +235,10 @@ Every suite in this directory is wired into `npm test`. There is no build step:
 
 Every example but `dip_led` / `dip_led_c` lives outside `riscv_simulator.html` entirely, in
 [`../examples/`](../examples/) (`asm/*.asm`, `c/*.c`) — the page `fetch()`es one when it is
-selected. The **menu itself** is data too: `asm/index.txt` and `c/index.txt` each hold one
-markdown-style table (`| key | label | file | description |`), fetched and parsed at page load
-into the dropdown and the file each key maps to. Plain `.txt`, not `.md` — a static site
+selected. The **menu itself** is data too: `index.txt` holds one markdown-style table
+(`| key | lang | label | file | irom | dmem | description |`), fetched and parsed at page load
+into the dropdown, the file each key maps to, and the two memory depths that key needs —
+which set the Linker segment sizes when the example is selected. Plain `.txt`, not `.md` — a static site
 generator hosting this repo tends to render `.md` through its own Markdown pipeline instead of
 serving it verbatim, which broke this fetch. jsdom has no `fetch`, so two shims stand in for
 both of these:

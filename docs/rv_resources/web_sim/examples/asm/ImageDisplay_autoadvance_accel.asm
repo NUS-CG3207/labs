@@ -1,4 +1,9 @@
-#**** Warning: The data memory size should be higher than default (at least 0x4000)  for this program to work****
+
+# Memory this program needs: IROM_DEPTH_BITS 9, DMEM_DEPTH_BITS 14
+# (2**9 = 512 bytes of code, 2**14 = 16384 bytes of data). The simulator sets its
+# Linker segments from these when you pick the example; set the same two
+# localparams in Wrapper.v. Change both if you change the program.
+
 main:
         li      a1, 0
         lui     sp, 65556

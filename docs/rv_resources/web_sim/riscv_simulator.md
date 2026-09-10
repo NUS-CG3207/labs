@@ -45,6 +45,12 @@ That is the whole loop. Everything below is detail.
 | Save your work | **💾 Save**, or `Ctrl/Cmd+S` |
 | Assemble / compile | **⚙ Assemble**, or `Ctrl/Cmd+Enter` |
 
+Picking an example also sets the two **Linker** segment sizes from the memory depths its
+row in `examples/index.txt` declares, and with them the stack pointer the C startup shim
+loads. Each program states the same two numbers at the top of its source. Change them, in
+Settings → Linker and in your `Wrapper.v`, if you change the program: HDL mode refuses to
+run a program that does not fit the Wrapper you loaded rather than loading half of it.
+
 The **Assemble** button greys out once your code is assembled and up to date, and comes
 back the moment you edit. Examples and opened files assemble themselves, so **Run** and
 **Step** are live immediately.
@@ -140,7 +146,8 @@ Sub-tabs `[ Text | Data | Stack | MMIO ]`, an address box and a row count.
 - **Stack** counts *downwards*, the way the stack actually grows.
 - Orange **labels** sit above the word they name, with a trailing `:`, like `main:`.
   Yellow bytes were written at runtime.
-- **💾 Dump Text / 💾 Dump Data** export `AA_IROM.mem` / `AA_DMEM.mem` for Vivado.
+- **⭳ Download** in the toolbar exports `AA_IROM.mem` / `AA_DMEM.mem` for Vivado, and in
+  HDL mode the Wrapper, the generated testbench and the recorded waveform.
 
 ### Disassembly
 
@@ -193,9 +200,12 @@ the default clock divider, so that is the budget a polling loop has.
 
 | Arrival | What it models |
 |---|---|
-| **Paste** | pressing Send in a terminal: back-to-back at 115200 baud |
-| **Typed** | a person at a keyboard, far slower than your program |
-| **Forgiving** | waits until your program has read the previous byte, so nothing is lost. Useful while you are debugging logic, but not something the board will do for you. |
+| **Paste** | pressing Send in a terminal: one character every 135 instructions, read or not |
+| **Typed** | a person at a keyboard: the same, with a much larger gap |
+| **Forgiving** | nothing on the board. Each character waits until you have read the one before, so none is ever dropped. Useful while you are debugging your logic rather than your timing. |
+
+The box beside the selector is that gap, in instructions, and you can edit it for Paste and
+Typed; Forgiving greys it out because it does not use one.
 
 If characters go missing, the console says so and why. Fix it by reading `UART_RX` promptly
 rather than doing work between characters, and note that the budget shrinks if you lower
@@ -221,14 +231,18 @@ people out, all of them matching the board rather than being worked around here.
   Auto-advance handles the edge for you; if you are stepping the column yourself, keep it
   under 96.
 
-Writing `OLED_CTRL` with **bit 3** set presents a frame rather than configuring anything,
-and the other bits are ignored, so you never have to remember the mode in order to present.
-The controller keeps two pages: one on the display, one you draw into. They start as the
-same page, so a program that never presents behaves as it always did. A present exchanges
-them at a frame boundary, then copies the newly displayed page back into the one you draw
-into, so partial updates keep working and you are not forced into repainting all 6144
-pixels every frame. `OLED_STATUS` at `0xFFFF0030` tells you when the present has landed:
-its bit 0 stays set until it has.
+Writing `OLED_CTRL` with **bit 3** set presents a frame rather than configuring anything.
+The other bits of that write are ignored and the mode you set earlier is kept, so you never
+have to re-send it in order to present.
+
+The controller keeps two pages: one on the display, one you draw into. **Both start as the
+same page**, so a program that never sets bit 3 is single-buffered and behaves as it always
+did. **The first present splits them**, and from then on you are double-buffered until you
+Reset; there is no bit that switches it back. A present exchanges the pages at a frame
+boundary, then copies the newly displayed page back into the one you draw into, so partial
+updates keep working and you are not forced into repainting all 6144 pixels every frame.
+`OLED_STATUS` at `0xFFFF0030` tells you when the present has landed: its bit 0 stays set
+until it has.
 
 ```c
 *OLED_CTRL = 0x21;              // configure once
@@ -309,6 +323,13 @@ wrote.
 Your Verilog is never uploaded anywhere. It is compiled inside your browser by Icarus
 Verilog, and it disappears when you close the tab, so you load it once per session.
 
+**Prebuilt processor** in the same dialog loads a working RV32I+M processor and the
+fixed Wrapper instead, so you can see what HDL mode does before your own processor runs,
+and have something to compare against once it does. It is pre-synthesised into a single
+flattened module with its internal names discarded, so there is nothing in it to read.
+The register file is left intact, so the **Registers** panel still works. It is fetched
+from `examples/hdl/`, so it needs the page served over `http://`.
+
 ### Requirements your Verilog must meet
 
 The simulator never edits your design; it only wraps it in a testbench, the way you
@@ -317,11 +338,9 @@ things about the Wrapper non-negotiable:
 
 - **Exactly one file declares `module Wrapper`.** That is how your design is found at
   all; everything else hangs off it.
-- **Its port list (name, width, direction and order) is fixed**, because the testbench
-  connects to it *positionally*. Change a port and the testbench still compiles (Verilog
-  doesn't check names on a positional connection), but it wires the wrong signal to the
-  wrong pin with no error, so a mismatch shows up as nonsense on a peripheral, not as a
-  rejected design. Start from the
+- **Its port names, widths and directions are fixed.** The testbench connects to it by
+  name, so reordering the ports is harmless but renaming one is not: the testbench will
+  not compile against a Wrapper missing a port it expects. Start from the
   [wrapper template](https://github.com/NUS-CG3207/labs/tree/main/docs/code_templates/Asst_02),
   which also has the other modules you will need for the eventual Nexys 4 / Nexys 4 DDR /
   Nexys A7 build.
@@ -419,7 +438,7 @@ The strip stops where your PC does. Once the program halts or spins on one instr
 there is nothing further to step to, so the cycles after that are greyed out rather than
 drawn.
 
-**⭳ VCD** still downloads the file, which is what you want for a long run or for the
+**⭳ Download → Waveform (.vcd)** still saves the file, which is what you want for a long run or for the
 things a full waveform viewer does better. GTKWave and [Surfer](https://surfer-project.org/)
 both open it.
 
@@ -430,9 +449,8 @@ both open it.
 | **Cycles per Run / Resume** | How much to simulate at a time. Raise it for long programs. |
 | **Record the architectural trace** | On by default; needed for Step and Back. |
 | **Verilog standard** | Verilog-2005 by default; switch if your code needs it. |
-| **Dump a VCD waveform** | Needed for the **📈 Waves** strip, and for the **⭳ VCD** download. |
+| **Dump a VCD waveform** | On by default. Needed for the **📈 Waves** strip, and for the **⭳ Download → Waveform (.vcd)** entry. |
 | **Register file** | Detected automatically. Type a path only if detection fails. |
-| **Save testbench** | The exact generated testbench, to run in Vivado or `iverilog` offline. |
 
 ---
 
@@ -464,7 +482,7 @@ both open it.
 | [`riscv_simulator.html`](riscv_simulator.html) | The simulator |
 | [`riscv_simulator.md`](riscv_simulator.md) | This guide |
 | [`riscv_simulator_specs.md`](riscv_simulator_specs.md) | Full reference: MMIO map, ISA, syscalls, architecture, changelog |
-| `examples/` | Every example but DIP to LED, one file each, listed in `asm/index.txt` / `c/index.txt`; add one by adding a row and a file, no HTML edit (needs the page served over `http://`) |
+| `examples/` | Every example but DIP to LED, one file each, listed in `index.txt` with the memory depths each needs; add one by adding a row and a file, no HTML edit (needs the page served over `http://`) |
 | `riscv_simulator_tests/` | The automated test suite |
 | [`vendor/`](vendor/README.md) | Local copies of CodeMirror, Icarus Verilog and Yosys, used when the CDN cannot be reached (needs the page served over `http://`) |
 

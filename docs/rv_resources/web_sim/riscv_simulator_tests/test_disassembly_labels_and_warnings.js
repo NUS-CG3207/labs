@@ -54,7 +54,7 @@ const dom = new JSDOM(htmlContent, {
     }
     // Installed here, inside beforeParse, so it exists before the page's
     // own top-level script runs (it calls fetch() immediately on load to
-    // populate the Example menu from examples/*/index.txt) - installing it
+    // populate the Example menu from examples/index.txt) - installing it
     // after `new JSDOM()` returns would be too late.
     installExamplesFetch(window);
   }

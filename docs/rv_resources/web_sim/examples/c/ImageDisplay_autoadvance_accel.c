@@ -1,10 +1,9 @@
-#define IROM_BASE 0x00400000		// Should be the same as the .txt address based on the Memory Configuration set in the assembler/linker, 
-                                        // Wrapper.v and the PC default value as well as reset value in **ProgramCounter.v** 
-#define DMEM_BASE 0x10010000   	// Should be the same as the .data address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
-#define DMEM_SIZE 0x4000         // 2**DMEM_DEPTH_BITS, as in Wrapper.v
-//**** Warning: The data memory size should be higher than default for this program to work****
+// Memory this program needs: IROM_DEPTH_BITS 10, DMEM_DEPTH_BITS 14
+// (2**10 = 1024 bytes of code, 2**14 = 16384 bytes of data). The simulator sets its
+// Linker segments from these when you pick the example; set the same two
+// localparams in Wrapper.v. Change both if you change the program.
+
 #define MMIO_BASE 0xFFFF0000   // Should be the same as the .mmio address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
-#define STACK_INIT DMEM_BASE + DMEM_SIZE // Top of RAM to allow stack to grow downwards
 
 // Memory-mapped peripheral register offsets
 #define UART_RX_VALID_OFF	0x00 //RO, status bit

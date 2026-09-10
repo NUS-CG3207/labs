@@ -102,13 +102,17 @@ setTimeout(async () => {
     // 3. Breakpoint Snapping & Line Number Highlighting Alone
     console.log('\n[3] Testing Breakpoint Gutter, Line Number Highlight, and Snapping...');
     await win.loadExample('fib');
-    // Fibonacci has comment lines 1-2, .text on line 3, main: on line 4, li x1, 0 on line 5
-    win.toggleBreakpoint(1); // Click line 1 (comment) -> snaps to line 5
-    if (!win.breakpoints.has(5) || win.breakpoints.has(1)) {
-      throw new Error('Breakpoint snapping failed for line 1');
+    // The first instruction is found in the source rather than pinned to a line
+    // number, so the example's header can change without breaking this.
+    const fibLines = win.editor.value.split('\n');
+    const firstInstr = fibLines.findIndex(l => /^\s*(li|add|mv|addi|j|bgt|la|sw|ecall)\b/.test(l)) + 1;
+    win.toggleBreakpoint(1); // line 1 is a comment, so it snaps forward
+    if (!win.breakpoints.has(firstInstr) || win.breakpoints.has(1)) {
+      throw new Error(`Breakpoint snapping failed: expected ${firstInstr}, got ` +
+        JSON.stringify(Array.from(win.breakpoints)));
     }
     console.log('Breakpoints set:', Array.from(win.breakpoints));
-    console.log('✅ Breakpoint snapping to line 5 verified!');
+    console.log(`✅ Breakpoint snapping to line ${firstInstr} verified!`);
 
     // 4. Two-Pass Assembler & Instruction Verification
     console.log('\n[4] Testing Assembler Execution on Fibonacci Example...');
@@ -267,13 +271,26 @@ setTimeout(async () => {
     console.log('\n[10] Testing Toolbar Structure and Buttons...');
     const toolbar = doc.getElementById('mainToolbar');
     if (!toolbar) throw new Error('mainToolbar element not found');
-    const sourceRowButtons = toolbar.querySelectorAll('.toolbar-row-source button');
-    const simRowButtons = toolbar.querySelectorAll('.toolbar-row-simulation button');
-    console.log(`Toolbar Row 1 (Source & Editing) buttons: ${sourceRowButtons.length} (expected >= 7)`);
-    console.log(`Toolbar Row 2 (Simulation & Controls) buttons: ${simRowButtons.length} (expected >= 8)`);
-    if (sourceRowButtons.length < 7 || simRowButtons.length < 8) {
-      throw new Error('Toolbar button structure missing expected controls');
+    // The controls themselves rather than a count, which moved when the two
+    // memory-dump buttons became entries in the Download menu.
+    const expectRow1 = ['langBtnAsm', 'langBtnC', 'engBtnJs', 'engBtnHdl', 'btnOpen',
+                        'btnSave', 'btnUndo', 'btnRedo', 'btnFind'];
+    const expectRow2 = ['btnAssemble', 'runPauseBtn', 'btnStep', 'btnBack', 'btnReset',
+                        'downloadSelect', 'btnSettings'];
+    const missing = (row, ids) => ids.filter(id => !toolbar.querySelector(row + ' #' + id));
+    const missing1 = missing('.toolbar-row-source', expectRow1);
+    const missing2 = missing('.toolbar-row-simulation', expectRow2);
+    console.log(`Toolbar Row 1: ${expectRow1.length - missing1.length}/${expectRow1.length} controls`);
+    console.log(`Toolbar Row 2: ${expectRow2.length - missing2.length}/${expectRow2.length} controls`);
+    if (missing1.length || missing2.length) {
+      throw new Error('Toolbar missing: ' + missing1.concat(missing2).join(', '));
     }
+    const dl = doc.getElementById('downloadSelect');
+    const dlValues = [...dl.options].map(o => o.value).filter(Boolean);
+    if (!['irom', 'dmem', 'wrapper', 'tb', 'vcd'].every(v => dlValues.includes(v))) {
+      throw new Error('Download menu is missing entries: ' + dlValues.join(', '));
+    }
+    console.log('Download menu offers:', dlValues.join(', '));
     console.log('✅ Toolbar layout structure verified!');
 
     // 11. Operands that used to be accepted silently
@@ -493,8 +510,13 @@ setTimeout(async () => {
 
     // The overflow warnings state the size once, and the advice lives in the
     // console rather than being repeated in the status bar.
-    doc.getElementById('console').innerHTML = '';
+    // circle_accel used to overflow the default 0x200 code segment, which is
+    // what this checked. Selecting it now sets the segment from its row in
+    // examples/index.txt, so it fits - the overflow has to be forced instead.
     await win.loadExample('circle_accel');
+    doc.getElementById('ms-codesize').value = '0x100';
+    win.eval('applyAndCloseSettings()');
+    doc.getElementById('console').innerHTML = '';
     win.assembleOnly();
     const overflowLine = [...doc.querySelectorAll('#console div')].map(d => d.textContent)
       .find(t => /over the .* Code segment/.test(t)) || '';

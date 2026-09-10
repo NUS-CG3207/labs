@@ -32,7 +32,7 @@ const ENGINE = process.env.HDL_ENGINE_DIR || path.join(ROOT, 'vendor', 'verisim'
 const html = fs.readFileSync(path.join(ROOT, 'riscv_simulator.html'), 'utf8');
 const CM6 = fs.readFileSync(path.join(__dirname, 'cm6_bundle.min.js'), 'utf8');
 
-const DESIGN = ['ALU.v', 'Decoder.v', 'Extend.v', 'PC_Logic.v', 'ProgramCounter.v',
+const DESIGN = ['ALU.v', 'Decoder.v', 'Extend.v', 'MCycle.v', 'PC_Logic.v', 'ProgramCounter.v',
                 'RegFile.v', 'Shifter.v', 'RV.v', 'Wrapper.v'];
 
 let passed = 0, failed = 0;
@@ -139,8 +139,8 @@ setTimeout(async () => {
       !!doc.getElementById('engBtnJs') && !!doc.getElementById('engBtnHdl'));
     check('File drop zone and file input exist',
       !!doc.getElementById('hdlDropZone') && !!doc.getElementById('hdlFileInput'));
-    check('The toolbar carries the source-state chip and the VCD download',
-      !!doc.getElementById('hdlFilesChip') && !!doc.getElementById('hdlVcdBtn'));
+    check('The toolbar carries the source-state chip and the download menu',
+      !!doc.getElementById('hdlFilesChip') && !!doc.getElementById('downloadSelect'));
     check('With nothing loaded the file list does not repeat the drop zone advice',
       /No files loaded yet/.test(doc.getElementById('hdlFileList').textContent) &&
       !/every submodule it needs/.test(doc.getElementById('hdlFileList').innerHTML));
@@ -170,8 +170,6 @@ setTimeout(async () => {
     check('Every HDL setting is on the HDL tab',
       ['hdlCycles', 'hdlGeneration', 'hdlVcd', 'hdlCompare', 'hdlTrace', 'hdlRegPath',
        'hdlDropZone', 'hdlFileList'].every(id => inTab(id, 'hdl')));
-    check('The JS tab points at the HDL tab rather than hiding it',
-      /HDL Simulation<\/b>/.test(doc.getElementById('settingsContent-simulator').innerHTML));
     check('The duplicate in-panel Run button is gone', !doc.getElementById('hdlRunBtn'));
     check('Each simulation tab is named for the engine it configures',
       /JS Simulation/.test(doc.getElementById('settingsTabBtn-simulator').textContent) &&
@@ -233,9 +231,9 @@ setTimeout(async () => {
       win.hdlDiscoverRegBank() === null);
 
     win.hdlSetSources(DESIGN.map(n => ({ name: n, src: fs.readFileSync(path.join(RV, n), 'utf8') })));
-    check('All 9 RV sources are loaded', win.getHdlFiles().length === 9);
+    check('All 10 RV sources are loaded', win.getHdlFiles().length === 10);
     check('The toolbar chip reports the loaded sources',
-      /9 files/.test(doc.getElementById('hdlFilesChip').textContent));
+      /10 files/.test(doc.getElementById('hdlFilesChip').textContent));
     const regPath = win.hdlDiscoverRegBank();
     check('Register bank discovered: ' + regPath, regPath === 'dut.RV1.RegFile1.RegBank');
     check('The hint line reports the discovered path',
@@ -266,11 +264,9 @@ setTimeout(async () => {
     const lint = win.hdlSynthLint();
     check('No false "will not synthesise" errors on the reference design',
       lint.filter(h => h.level === 'err').length === 0);
-    check('What it does flag on the reference design is only the ' +
-      'explicit-sensitivity-list warning (' + lint.length + ')',
-      lint.length > 0 && lint.every(h => /synthesis treats this as/.test(h.msg)));
-    check('It names a file and a line',
-      lint.every(h => /\.v$/.test(h.file) && h.line > 0));
+    check('The reference design is clean' +
+      (lint.length ? ': ' + lint.map(h => h.file + ':' + h.line + ' ' + h.msg).join('; ') : ''),
+      lint.length === 0);
 
     const badModule = [
       'module bad(input CLK, input [3:0] a, output reg [3:0] y, output reg [3:0] z);',
@@ -298,6 +294,8 @@ setTimeout(async () => {
     check('Catches forever', says(/`forever`/));
     check('Catches casex', says(/`casex`/));
     check('Catches a blocking assignment in a clocked block', says(/blocking `=` in a clocked block/));
+    check('Every hit names a file and a line',
+      bad.length > 0 && bad.every(h => /\.v$/.test(h.file) && h.line > 0));
     check('Catches an initial block with a delay', says(/`initial` with a delay/));
 
     // The three things that made the first cut of this lint useless.
@@ -327,7 +325,7 @@ setTimeout(async () => {
     check('It sits on the HDL Simulation tab',
       doc.getElementById('hdlSynth').closest('#settingsContent-hdl') !== null);
     check('Only the core is synthesised — the fixed Wrapper is excluded',
-      win.hdlCoreFiles().length === 8 &&
+      win.hdlCoreFiles().length === 9 &&
       !win.hdlCoreFiles().some(f => /Wrapper/.test(f.name)));
 
     // Synthesis resolves parameters away; the Wrapper still says
@@ -392,8 +390,11 @@ setTimeout(async () => {
       errLines.some(l => /__mulsi3/.test(l) && /M extension/.test(l)));
 
     // A program that does not fit its segment used to be reported only in the
-    // console, where the success message immediately followed it.
+    // console, where the success message immediately followed it. Selecting an
+    // example now sizes the segment to fit it, so the overflow is forced.
     await win.loadExample('circle_accel');
+    doc.getElementById('ms-codesize').value = '0x100';
+    win.eval('applyAndCloseSettings()');
     win.assembleOnly();
     check('A code-segment overflow survives on the status bar',
       /too many for the Code segment/.test(doc.getElementById('statusBar').textContent));
@@ -497,7 +498,7 @@ setTimeout(async () => {
     const wrapperSrc = fs.readFileSync(path.join(RV, 'Wrapper.v'), 'utf8');
     const mem = win.hdlMemFiles(wrapperSrc);
     check('IROM depth read from the uploaded Wrapper (9)', mem.iromBits === 9);
-    check('DMEM depth read from the uploaded Wrapper (14)', mem.dmemBits === 14);
+    check('DMEM depth read from the uploaded Wrapper (9)', mem.dmemBits === 9);
     const iromLines = mem.files['AA_IROM.mem'].trim().split('\n');
     check('IROM image is 8-hex-digit words, one per line',
       iromLines.every(l => /^[0-9a-f]{8}$/.test(l)));
@@ -515,6 +516,51 @@ setTimeout(async () => {
     const sameWords = refIrom.filter((w, i) => w === gotIrom[i]).length;
     check('At least 80% of words are byte-identical to the reference dump (' +
       sameWords + '/' + refIrom.length + ')', sameWords >= refIrom.length * 0.8);
+
+    // --- 5b. The memory depths an example declares ---------------------
+    // examples/index.txt carries the IROM_DEPTH_BITS / DMEM_DEPTH_BITS each
+    // program needs. A Wrapper the student loaded is checked against them and
+    // never rewritten; the one shipped with the prebuilt processor is ours, so
+    // it is sized to fit.
+    console.log('\n[5b] Memory depths, checked against the Wrapper');
+    await win.loadExample('circle_accel');
+    check('Selecting an example sets the Linker segments from its row (0x' +
+      (Math.pow(2, win.hdlRequiredDepths().irom)).toString(16) + ')',
+      win.hdlRequiredDepths().irom === 10 && win.hdlRequiredDepths().dmem === 9);
+
+    doc.getElementById('console').innerHTML = '';
+    const refused = await win.hdlBuildTrace(2000, {});
+    const refusalLog = [...doc.querySelectorAll('#console div')].map(d => d.textContent);
+    check('A program too big for the loaded Wrapper is refused, not half-loaded',
+      refused === null);
+    check('The refusal names the depth it has and the one it needs',
+      refusalLog.some(l => /does not fit the Wrapper/.test(l) &&
+        /IROM_DEPTH_BITS is 9/.test(l) && /at least 10/.test(l)));
+    check('…and the status bar says so too',
+      /does not fit this Wrapper/.test(doc.getElementById('statusBar').textContent));
+    check('The uploaded Wrapper itself is left alone',
+      /IROM_DEPTH_BITS\s*=\s*9/.test(win.hdlFindWrapper().src));
+
+    // The shipped Wrapper follows the example instead.
+    const prebuilt = ['Wrapper.v', 'RV_reference.v'].map(n => ({
+      name: n, src: fs.readFileSync(path.join(ROOT, 'examples', 'hdl', n), 'utf8'), isPrebuilt: n === 'Wrapper.v'
+    }));
+    win.hdlSetSources(prebuilt);
+    win.hdlFindWrapper().isPrebuilt = true;
+    win.hdlSyncReferenceWrapperDepths();
+    const depthsOf = () => {
+      const w = win.hdlFindWrapper().src;
+      return /IROM_DEPTH_BITS\s*=\s*(\d+)/.exec(w)[1] + '/' + /DMEM_DEPTH_BITS\s*=\s*(\d+)/.exec(w)[1];
+    };
+    check('The prebuilt Wrapper is sized for the selected example (' + depthsOf() + ')',
+      depthsOf() === '10/9');
+    await win.loadExample('image_display_accel');
+    check('…and follows it to the next one (' + depthsOf() + ')', depthsOf() === '9/14');
+    await win.loadExample('dip_led');
+    check('…and back down again (' + depthsOf() + ')', depthsOf() === '9/9');
+
+    win.hdlSetSources(DESIGN.map(n => ({ name: n, src: fs.readFileSync(path.join(RV, n), 'utf8') })));
+    await win.loadExample('dip_led');
 
     // --- 6. Stimulus file format ---------------------------------------
     console.log('\n[6] Run-time stimulus files');

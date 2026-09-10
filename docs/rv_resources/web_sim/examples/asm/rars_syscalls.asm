@@ -1,5 +1,11 @@
 # RARS Syscalls Demonstration (print_int, print_string, print_hex, print_char, exit)
 # ⚠ ecall is a simulator convenience — real hardware needs trap support in the processor AND an OS/ISR to service it, and the CG3207 Wrapper has neither. Use the MMIO peripherals for real I/O.
+
+# Memory this program needs: IROM_DEPTH_BITS 9, DMEM_DEPTH_BITS 9
+# (2**9 = 512 bytes of code, 2**9 = 512 bytes of data). The simulator sets its
+# Linker segments from these when you pick the example; set the same two
+# localparams in Wrapper.v. Change both if you change the program.
+
 .text
 main:
 	# 1. Print null-terminated string (Syscall 4)

@@ -118,7 +118,6 @@
       min-width: 0;
       flex-shrink: 0;
     }
-    .editor-container textarea,
     /* Toolbar */
     .toolbar {
       display: flex;
@@ -1756,7 +1755,23 @@
     }
     .hdl-chip-warn:hover { background: #3a3420; color: #f9e2af; }
 
-    /* Marks which kind of cycle count the toolbar is showing. */
+.dl-select {
+      background: #313244;
+      color: #cdd6f4;
+      border: 1px solid #45475a;
+      border-radius: 4px;
+      height: 28px;
+      padding: 0 6px;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 550;
+      cursor: pointer;
+    }
+
+    .dl-select:hover { border-color: #585b70; }
+    .dl-select option:disabled { color: #6c7086; }
+
+        /* Marks which kind of cycle count the toolbar is showing. */
     .stat-tag {
       font-size: 9px;
       font-weight: 700;
@@ -3100,7 +3115,7 @@
 
       .toolbar {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: auto 1fr;
         padding: 6px 8px;
         gap: 6px;
         font-size: 12px;
@@ -3139,8 +3154,14 @@
       }
 
       .toolbar-group-file-mode .example-label {
-        flex: 1.2 1 120px;
+        flex: 1.2 1 60px;
         min-width: 0;
+      }
+
+      /* The word costs more of this row than it is worth: the selected option
+         names the example, and the label keeps its tooltip. */
+      .example-label-text {
+        display: none;
       }
 
       .toolbar-group-file-mode select {
@@ -3150,10 +3171,14 @@
         font-size: 11.5px;
       }
 
+      /* This row carries both toggles, the example picker, the HDL chip and
+         Open/Save. Sizing the buttons to their content rather than sharing the
+         row equally is what keeps the chip's text readable; Open and Save give
+         up their words for the same reason. */
       .toolbar-group-file-mode button {
-        flex: 1 1 0;
+        flex: 0 1 auto;
         min-width: 0;
-        padding: 0 4px;
+        padding: 0 6px;
         height: 32px;
         font-size: 11.5px;
         font-weight: 550;
@@ -3161,8 +3186,30 @@
         gap: 2px;
       }
 
-      /* Row 2: Undo/Redo/Find and Dump Text/Dump Data/Settings, sharing the
-         row as two halves - freeing a whole row versus each on its own. */
+      /* A toolbar button drops half of itself here: `mo-icon` where the glyph
+         alone identifies it, `mo-word` where it does not - the two dumps share
+         one disk icon, and it is the same one Save already carries. */
+      .mo-icon .btn-text,
+      .mo-word .btn-ico {
+        display: none;
+      }
+
+      .mo-icon .btn-ico {
+        font-size: 13px;
+      }
+
+      .toolbar-group-file-mode .lang-btn {
+        padding: 0 5px !important;
+      }
+
+      .toolbar-group-file-mode .eng-btn {
+        padding: 0 5px;
+      }
+
+      /* Row 2: Undo/Redo/Find and Dump Text/Dump Data/Settings share the row -
+         one row rather than two. The Editor group takes only what its three
+         buttons need so the other group, which grows to five in HDL mode, gets
+         the rest; either wraps rather than shrinking its labels away. */
       .toolbar-group-editor {
         grid-column: 1;
         grid-row: 2;
@@ -3178,20 +3225,20 @@
         display: flex;
         width: 100%;
         gap: 3px;
+        flex-wrap: wrap;
       }
 
       .toolbar-group-editor button,
-      .toolbar-group-config-stats button {
-        flex: 1 1 0;
+      .toolbar-group-config-stats button,
+      .toolbar-group-config-stats .dl-select {
+        flex: 1 1 auto;
         min-width: 0;
-        padding: 0 2px;
-        height: 34px;
-        font-size: 9.5px;
-        line-height: 1.15;
+        padding: 0 5px;
+        height: 32px;
+        font-size: 11.5px;
         font-weight: 550;
         justify-content: center;
-        white-space: normal;
-        gap: 0 2px;
+        gap: 2px;
       }
 
       /* Row 3: Assemble, Run, Step, Back, Reset - last action row, right
@@ -3240,7 +3287,6 @@
         box-sizing: border-box;
       }
 
-      .editor-container textarea,
       .console {
         max-height: 110px;
         font-size: 11px;
@@ -3643,10 +3689,6 @@
             <div class="c-body" id="cyclesConfigBody" style="padding:0;"></div>
           </div>
 
-          <div class="cycle-hint">
-            Everything for the hardware engine — your Verilog sources, the cycle budget,
-            the compiler and the register-file path — is on <b>🔌 HDL Simulation</b>.
-          </div>
         </div>
         <!-- Tab 4: HDL — the Verilog engine's setup. All of it is done once per
              session, which is why it is here rather than in a panel. Run, Step
@@ -3676,9 +3718,9 @@
               testbench instantiates <code>Wrapper</code> by name, so add your Wrapper.v.
             </div>
             <div class="hdl-row" style="margin-top:8px;">
+              <button type="button" class="hdl-btn" id="hdlPrebuiltBtn" onclick="hdlLoadPrebuiltProcessor()"
+                title="Replace the loaded sources with a working RV32I+M processor and the fixed Wrapper, so HDL mode has something to run before yours does. Pre-synthesised into one flattened module, so there is nothing in it to read.">Prebuilt processor</button>
               <button type="button" class="hdl-btn" onclick="hdlClearFiles()">Clear files</button>
-              <button type="button" class="hdl-btn" onclick="hdlDownloadTestbench()"
-                title="Save the exact auto-generated testbench, to run in Vivado or iverilog offline">Save testbench</button>
             </div>
           </div>
 
@@ -3758,7 +3800,7 @@
                 </select>
               </div>
               <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:#cba6f7;cursor:pointer;font-size:13px;margin-top:10px;">
-                <input type="checkbox" id="hdlVcd" onchange="setHdlDumpVcd(this.checked)"
+                <input type="checkbox" id="hdlVcd" checked onchange="setHdlDumpVcd(this.checked)"
                   style="accent-color:#cba6f7;width:16px;height:16px;cursor:pointer;">
                 Dump a VCD waveform
               </label>
@@ -3870,20 +3912,20 @@
               </div>
               <button type="button" id="hdlFilesChip" class="hdl-chip" style="display:none;"
                 onclick="openSettingsModal('hdl')">no Verilog</button>
-              <label class="example-label" title="Select an example program">Example:
+              <label class="example-label" title="Select an example program"><span class="example-label-text">Example:</span>
                 <!-- Filled from EXAMPLE_MENU by updateExampleSelectorOptions(). -->
                 <select id="exampleSelect" onchange="loadExample(this.value)"></select>
               </label>
               <input type="file" id="fileLoader" accept=".asm,.s,.c,.h,.txt,.v,.sv,.vh,.svh" onchange="loadFile(event)">
-              <button id="btnOpen" onclick="document.getElementById('fileLoader').click()" title="Open RISC-V assembly or C source file">📂 Open</button>
-              <button id="btnSave" onclick="saveFile()" title="Save source code to file">💾 Save</button>
+              <button id="btnOpen" class="mo-icon" onclick="document.getElementById('fileLoader').click()" title="Open RISC-V assembly or C source file"><span class="btn-ico">📂</span><span class="btn-text">Open</span></button>
+              <button id="btnSave" class="mo-icon" onclick="saveFile()" title="Save source code to file"><span class="btn-ico">💾</span><span class="btn-text">Save</span></button>
             </div>
             <div class="toolbar-divider"></div>
             <!-- Group 2: Editor Operations (Edit-Related) -->
             <div class="toolbar-btn-group toolbar-group-editor">
-              <button id="btnUndo" onclick="editorHistory.undo()" title="Undo last edit (Ctrl+Z)">↶ Undo</button>
-              <button id="btnRedo" onclick="editorHistory.redo()" title="Redo last undone edit (Ctrl+Y)">↷ Redo</button>
-              <button id="btnFind" onclick="openFindReplace(false)" title="Find &amp; Replace in code editor (Ctrl+F / Ctrl+H)">🔍 Find</button>
+              <button id="btnUndo" class="mo-icon" onclick="editorHistory.undo()" title="Undo last edit (Ctrl+Z)"><span class="btn-ico">↶</span><span class="btn-text">Undo</span></button>
+              <button id="btnRedo" class="mo-icon" onclick="editorHistory.redo()" title="Redo last undone edit (Ctrl+Y)"><span class="btn-ico">↷</span><span class="btn-text">Redo</span></button>
+              <button id="btnFind" class="mo-icon" onclick="openFindReplace(false)" title="Find &amp; Replace in code editor (Ctrl+F / Ctrl+H)"><span class="btn-ico">🔍</span><span class="btn-text">Find</span></button>
             </div>
           </div>
           <!-- Row 2: Simulation Execution & Controls (Simulation-Related) -->
@@ -3899,13 +3941,18 @@
             <div class="toolbar-divider"></div>
             <!-- Group 4: Memory Dump, Settings & Metrics -->
             <div class="toolbar-btn-group toolbar-group-config-stats">
-              <button id="btnDumpTxt" onclick="dumpTextSegment()" title="Dump code (text) memory to AA_IROM.mem">💾 Dump Text</button>
-              <button id="btnDumpData" onclick="dumpDataSegment()" title="Dump data memory to AA_DMEM.mem">💾 Dump Data</button>
-              <button id="waveDockBtn" style="display:none;" onclick="toggleWaveDock()"
-                title="Show the waveform strip at the bottom of the page">📈 Waves</button>
-              <button id="hdlVcdBtn" style="display:none;" onclick="hdlDownloadVcd()"
-                title="Download the waveform recorded by the last HDL run">⭳ VCD</button>
-              <button id="btnSettings" onclick="openSettingsModal()" title="Configure Compiler, Linker segments, and Simulator settings" class="gear">⚙ Settings…</button>
+              <select id="downloadSelect" class="dl-select" onchange="handleDownloadPick(this)"
+                title="Save a memory image, the generated testbench, the Wrapper or the recorded waveform">
+                <option value="" selected>⭳ Download</option>
+                <option value="irom">AA_IROM.mem</option>
+                <option value="dmem">AA_DMEM.mem</option>
+                <option value="wrapper">Wrapper.v</option>
+                <option value="tb">Testbench (.v)</option>
+                <option value="vcd">Waveform (.vcd)</option>
+              </select>
+              <button id="waveDockBtn" class="mo-icon" style="display:none;" onclick="toggleWaveDock()"
+                title="Show the waveform strip at the bottom of the page"><span class="btn-ico">📈</span><span class="btn-text">Waves</span></button>
+              <button id="btnSettings" onclick="openSettingsModal()" title="Configure Compiler, Linker segments, and Simulator settings" class="gear mo-icon"><span class="btn-ico">⚙</span><span class="btn-text">Settings…</span></button>
             </div>
           </div>
           <!-- Row 3: Status Message Line -->
@@ -4115,7 +4162,7 @@
                     title="How fast the characters arrive. The board holds one byte at a time, so anything the program does not read before the next arrives is lost.">Arrival</label>
                   <select id="uartSendMode" onchange="setUartSendMode(this.value)"
                     style="height:24px;padding:1px 4px;font-size:11px;box-sizing:border-box;border-radius:3px;border:1px solid #45475a;background:#313244;color:#cdd6f4;flex:0 0 auto;"
-                    title="Paste: back-to-back at 115200 baud, what pressing Send in a terminal does. Typed: at human speed. Forgiving: waits for your program, so nothing is ever lost - not how the board behaves.">
+                    title="Sets the gap between arriving characters, shown in the box beside this. Paste and Typed both keep to that gap whether or not your program has read the previous byte, so a slow polling loop loses characters. Paste uses one character time at 115200 baud, 135 instructions by default. Typed uses a much larger gap, as if someone were typing it in. Forgiving ignores the gap and holds each character until your program has read the one before, so nothing is ever dropped. The board cannot do that.">
                     <option value="paste" selected>Paste (baud rate)</option>
                     <option value="typed">Typed (slow)</option>
                     <option value="forgiving">Forgiving (never drops)</option>
@@ -4540,8 +4587,8 @@
     // Operand counts for the pseudo-instructions. Most are read straight off
     // their expansion template (the highest %N used), but the five that
     // emitPseudo() handles specially do not match their template, so they are
-    // listed. Without this, `nop t0` and `ret t0` quietly ignored the operand
-    // and `li t0` crashed inside the expansion instead of reporting anything.
+    // listed. Without this, `nop t0` and `ret t0` would quietly ignore the
+    // operand and `li t0` would crash inside the expansion rather than report.
     const PSEUDO_ARITY_OVERRIDE = {
       la: 2, lla: 2, lga: 2, call: 1, tail: 1, li: 2,
     };
@@ -5625,10 +5672,10 @@
 
     // How many operands each instruction takes.
     //
-    // Without this, a missing operand was quietly filled in with x0 or 0 -
-    // `add t0, t1` assembled as `add t0, t1, x0` and `slli t0, t1` as a shift
-    // by zero - and a surplus operand was dropped on the floor. Both produce a
-    // program that runs and is wrong, with nothing on screen to say so.
+    // Without this, a missing operand would be quietly filled in with x0 or 0 -
+    // `add t0, t1` assembling as `add t0, t1, x0` and `slli t0, t1` as a shift
+    // by zero - and a surplus one dropped on the floor. Both produce a program
+    // that runs and is wrong, with nothing on screen to say so.
     const INSTR_ARITY = {
       // rd, rs1  (one source operand only)
       'fcvt.w.s': [2], 'fcvt.wu.s': [2], 'fmv.x.w': [2], 'fclass.s': [2],
@@ -8206,10 +8253,6 @@
       statusBar.style.color = type === 'error' ? '#f38ba8' : type === 'success' ? '#a6e3a1' : '#a6adc8';
     }
 
-    // Intentional no-op: CM6 manages its own scrolling. Retained because the
-    // pre-CodeMirror API surface is still called by the test suite.
-    function syncScroll() {}
-
     function resetExecutionForSourceChange() {
       if (lastAssembledCode !== null && editor.value === lastAssembledCode) {
         return;
@@ -8286,10 +8329,9 @@
 
     // ============================================================
     // DOCKABLE / DETACHABLE RIGHT-SIDE PANELS
-    // The four panels (Registers / Memory / Peripherals / Disassembly)
-    // are no longer mutually exclusive: each can be independently shown,
-    // stacked vertically in the right column, or detached to a floating
-    // window. Layout is persisted to localStorage.
+    // The panels in PANEL_DEFS are independent, not mutually exclusive tabs:
+    // each can be shown on its own, stacked vertically in the right column,
+    // or detached to a floating window. Layout persists to localStorage.
     // ============================================================
     const PANEL_DOCK_KEY = 'rvsim.panelDock.v1';
     const PANEL_DEFS = [
@@ -8319,7 +8361,7 @@
     function panelDockDefaults() {
       // Per-panel seeds. Anything in PANEL_DEFS without an entry here still
       // gets a default below, so adding a panel can never leave the dock
-      // with an undefined state object (which used to crash applyPanelDock).
+      // holding an undefined state object.
       const seeds = {
         registers: { visible: true, x: 90, y: 90, w: 460, h: 360 },
         memory: { x: 130, y: 120, w: 540, h: 400 },
@@ -8390,9 +8432,8 @@
       mobileTab = first || 'registers';
     }
 
-    // Mobile chip clicks switch the single visible tab (mutually exclusive),
-    // exactly like the pre-v22 tab strip — without touching the persisted
-    // desktop panel visibility.
+    // Mobile chip clicks switch the single visible tab, mutually exclusive,
+    // without touching the persisted desktop panel visibility.
     function setMobileTab(name) {
       if (!panelDock || !panelDock[name]) return;
       mobileTab = name;
@@ -8436,10 +8477,9 @@
 
     // Row-fit clamp for the 2×2 grid: if a paired row's persisted column bases
     // (+ the 6px splitter) exceed the dock's available width, scale them down
-    // proportionally so the row never overflows (which previously clipped the
-    // rightmost panel and left blank space on the right). Only shrink on
-    // overflow — a lone row-2 panel is never affected (it always uses `1 1 0`).
-    // Extracted so both `applyPanelDock()` and the live main-splitter drag can
+    // proportionally so the row never overflows. Only shrink on overflow — a
+    // lone row-2 panel is never affected (it always uses `1 1 0`). Shared by
+    // `applyPanelDock()` and the live main-splitter drag, both of which need to
     // re-clamp persisted widths against the current (possibly narrower) dock.
     // The clamp deliberately reads ONLY the rendered clientWidth: in jsdom (and
     // in layouts where getBoundingClientRect is stubbed) clientWidth is 0, so
@@ -11803,9 +11843,9 @@
       }
     }
 
-    // Backward-compatible alias. Panels are now independent (not exclusive tabs);
-    // callers of switchTab() expect the named panel to end up shown, so ensure it
-    // is visible and refreshed rather than toggling it. On mobile (≤800px) the
+    // Alias kept for callers that expect a tab interface. Panels are independent,
+    // and a caller of switchTab() wants the named panel shown, so this makes it
+    // visible and refreshes it rather than toggling. On mobile (≤800px) the
     // tabbed view is active, so it also switches the visible tab.
     function switchTab(tab) {
       if (panelDock && panelDock[tab]) {
@@ -11822,28 +11862,34 @@
     // still needs the network for Godbolt regardless, same as every other
     // C example, baked or not.
 
-    // The Example menu is read from examples/asm/index.txt and
-    // examples/c/index.txt, not written out here - adding a program is a row
-    // in one of those files plus the file itself, no HTML edit. Plain .txt,
-    // not .md: static site generators that serve the repo tend to render
-    // .md through a Markdown->HTML pipeline instead of serving it verbatim,
-    // which broke this fetch when hosted that way - .txt is never touched.
-    // Each row is `| key | label | file | description |`; loadExampleIndex()
-    // parses it into EXAMPLE_MENU (for the dropdown) and EXAMPLE_FILENAMES
-    // (for the fetch path and the Save filename). Until that fetch resolves
-    // - and permanently, over file://, where it never will - both fall back
-    // to just the one baked example in each language, so the dropdown is
-    // never genuinely empty.
+    // The Example menu is read from examples/index.txt, not written out here -
+    // adding a program is a row in that file plus the file itself, no HTML
+    // edit. Plain .txt, not .md: static site generators that serve the repo
+    // tend to render .md through a Markdown->HTML pipeline instead of serving
+    // it verbatim, which broke this fetch when hosted that way - .txt is never
+    // touched. Each row is `| key | lang | label | file | irom | dmem |
+    // description |`; loadExampleIndex() parses it into EXAMPLE_MENU (for the
+    // dropdown), EXAMPLE_FILENAMES (for the fetch path and the Save filename)
+    // and EXAMPLE_DEPTHS (the memory sizes the program needs). Until that
+    // fetch resolves - and permanently, over file://, where it never will -
+    // all three fall back to just the one baked example in each language, so
+    // the dropdown is never genuinely empty.
+    const DEFAULT_DEPTH_BITS = 9;
     let EXAMPLE_MENU = {
       asm: [['dip_led', 'DIP to LED (start here)', 'DIP to LED — the one example baked into the page, works with no server']],
       c: [['dip_led_c', 'DIP to LED (start here)', 'DIP switches mirrored to LEDs — the one C example baked into the page, works with no server']],
     };
     let EXAMPLE_FILENAMES = { dip_led: 'DIP_to_LED.asm', dip_led_c: 'DIP_to_LED.c' };
+    let EXAMPLE_DEPTHS = {
+      dip_led: { irom: 9, dmem: 9 },
+      dip_led_c: { irom: 9, dmem: 9 },
+    };
 
-    // Parses the simple markdown table format above into [key, label, file,
-    // description] rows. Only structure matters, not header wording: the
-    // first all-dashes row (markdown's column-alignment row) marks the start
-    // of real data, so a row before it is a header regardless of its text.
+    // Parses the simple markdown table format above into
+    // [key, lang, label, file, irom, dmem, description] rows. Only structure
+    // matters, not header wording: the first all-dashes row (markdown's
+    // column-alignment row) marks the start of real data, so a row before it
+    // is a header regardless of its text.
     function parseExampleIndexMarkdown(text) {
       const rows = [];
       let dataStarted = false;
@@ -11857,23 +11903,33 @@
           if (cells.length && cells.every(c => /^:?-+:?$/.test(c))) dataStarted = true;
           continue;
         }
-        if (cells.length < 4 || !cells[0]) continue;
-        rows.push([cells[0], cells[1], cells[2], cells.slice(3).join(' | ')]);
+        if (cells.length < 7 || !cells[0]) continue;
+        const bits = (c, fallback) => {
+          const n = parseInt(c, 10);
+          return (Number.isFinite(n) && n >= 2 && n <= 30) ? n : fallback;
+        };
+        rows.push([cells[0], cells[1], cells[2], cells[3],
+                   bits(cells[4], DEFAULT_DEPTH_BITS), bits(cells[5], DEFAULT_DEPTH_BITS),
+                   cells.slice(6).join(' | ')]);
       }
       return rows;
     }
 
     async function loadExampleIndex() {
-      for (const lang of ['asm', 'c']) {
-        try {
-          const resp = await fetch(`examples/${lang}/index.txt`);
-          if (!resp.ok) continue;
-          const rows = parseExampleIndexMarkdown(await resp.text());
-          if (!rows.length) continue;
-          EXAMPLE_MENU[lang] = rows.map(([key, label, , desc]) => [key, label, desc]);
-          for (const [key, , file] of rows) EXAMPLE_FILENAMES[key] = file;
-        } catch (err) { /* index.txt unreachable (e.g. file://) - stay on the fallback */ }
-      }
+      try {
+        const resp = await fetch('examples/index.txt');
+        if (!resp.ok) return;
+        const rows = parseExampleIndexMarkdown(await resp.text());
+        if (!rows.length) return;
+        const menu = { asm: [], c: [] };
+        for (const [key, lang, label, file, irom, dmem, desc] of rows) {
+          const l = (lang === 'c') ? 'c' : 'asm';
+          menu[l].push([key, label, desc]);
+          EXAMPLE_FILENAMES[key] = file;
+          EXAMPLE_DEPTHS[key] = { irom: irom, dmem: dmem, lang: l };
+        }
+        for (const l of ['asm', 'c']) if (menu[l].length) EXAMPLE_MENU[l] = menu[l];
+      } catch (err) { /* index.txt unreachable (e.g. file://) - stay on the fallback */ }
       updateExampleSelectorOptions();
     }
     // Captured so loadExample() can await it - a non-baked key looked up in
@@ -12013,6 +12069,11 @@
 
 # This sample program for RISC-V simulation using RARS
 
+# Memory this program needs: IROM_DEPTH_BITS 9, DMEM_DEPTH_BITS 9
+# (2**9 = 512 bytes of code, 2**9 = 512 bytes of data). The simulator sets its
+# Linker segments from these when you pick the example; set the same two
+# localparams in Wrapper.v. Change both if you change the program.
+
 .eqv MMIO_BASE 0xFFFF0000
 # Memory-mapped peripheral register offsets
 .eqv UART_RX_VALID_OFF 			0x00 #RO, status bit
@@ -12023,6 +12084,7 @@
 .eqv OLED_ROW_OFF			0x24 #WO
 .eqv OLED_DATA_OFF			0x28 #WO
 .eqv OLED_CTRL_OFF			0x2C #WO
+.eqv OLED_STATUS_OFF		0x30 #RO, status bit
 .eqv ACCEL_DATA_OFF			0x40 #RO
 .eqv ACCEL_DREADY_OFF			0x44 #RO, status bit
 .eqv DIP_OFF				0x64 #RO
@@ -12077,14 +12139,16 @@ var1: .word	1 		# a statically allocated variable (which can have an initial val
 STACK_INIT:	# Stack pointer can be initialised to this location - DMEM+0x200 (i.e., the address of stack_top)
 			# stack grows downwards, so stack pointer should be decremented when pushing and incremented when popping (if the stack is full-descending). Stack can be used for function calls and local variables.
 		# Not allocating any heap, as it is unlikely to be used in this simple program. If we need dynamic memory allocation,we need to allocate memory and imeplement a heap manager.
-#------- <Data Memory ends>													`;
+#------- <Data Memory ends>													
+`;
     const BAKED_C_EXAMPLE = `// DIP switches mirrored to LEDs, continuously (C translation of DIP_to_LED.asm)
-#define IROM_BASE 0x00400000		// Should be the same as the .txt address based on the Memory Configuration set in the assembler/linker, 
-                                        // Wrapper.v and the PC default value as well as reset value in **ProgramCounter.v** 
-#define DMEM_BASE 0x10010000   	// Should be the same as the .data address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
-#define DMEM_SIZE 0x200         // 2**DMEM_DEPTH_BITS, as in Wrapper.v
+
+// Memory this program needs: IROM_DEPTH_BITS 9, DMEM_DEPTH_BITS 9
+// (2**9 = 512 bytes of code, 2**9 = 512 bytes of data). The simulator sets its
+// Linker segments from these when you pick the example; set the same two
+// localparams in Wrapper.v. Change both if you change the program.
+
 #define MMIO_BASE 0xFFFF0000   // Should be the same as the .mmio address based on the Memory Configuration set in the assembler/linker, and Wrapper.v
-#define STACK_INIT DMEM_BASE + DMEM_SIZE // Top of RAM to allow stack to grow downwards
 
 // Memory-mapped peripheral register offsets
 #define UART_RX_VALID_OFF	0x00 //RO, status bit
@@ -12120,7 +12184,8 @@ int main()
         for (volatile unsigned int i = DELAY_COUNT; i > 0; i--);
     }
     return 0;
-}`;
+}
+`;
 
     async function loadExample(name) {
       const myToken = ++exampleLoadToken;
@@ -12171,6 +12236,7 @@ int main()
       updateEditor();
       updateLineNumbers();
       clearLog();
+      applyExampleMemoryConfig(name); // before assembling: the segment sizes gate it
       if (editorLanguageMode === 'asm') {
         assembleOnly(); // Auto-assemble on load so Run / Step are active immediately
       }
@@ -12371,6 +12437,28 @@ int main()
       }
     }
 
+    // An example declares the two memory depths it needs in examples/index.txt.
+    // The Linker segment sizes follow from them, and the stack pointer the C
+    // startup shim loads follows from the data size, so selecting an example is
+    // enough to set up a layout the program actually fits in.
+    function applyExampleMemoryConfig(key) {
+      const d = EXAMPLE_DEPTHS[key];
+      if (!d) return;
+      const newCode = Math.pow(2, d.irom) >>> 0;
+      const newData = Math.pow(2, d.dmem) >>> 0;
+      if (codeSize === newCode && dataSize === newData) return;
+      const stackWasDefault = stackBase === ((dataBase + dataSize) >>> 0);
+      codeSize = newCode;
+      dataSize = newData;
+      if (stackWasDefault) stackBase = (dataBase + dataSize) >>> 0;
+      buildMemSegmentsPanel();
+      hdlSyncReferenceWrapperDepths();
+      log('Memory layout for this example: IROM_DEPTH_BITS ' + d.irom + ' (code segment 0x' +
+          newCode.toString(16) + '), DMEM_DEPTH_BITS ' + d.dmem + ' (data segment 0x' +
+          newData.toString(16) + '), stack top 0x' + (stackBase >>> 0).toString(16) +
+          '. Change these in Settings → Linker, and in Wrapper.v, if you change the program.', 'info');
+    }
+
     function buildMemSegmentsPanel() {
       const codeEl = document.getElementById('ms-code');
       const codeSizeEl = document.getElementById('ms-codesize');
@@ -12478,12 +12566,12 @@ int main()
         };
         set('hdlCycles', '2000', 'value');
         set('hdlGeneration', '2005', 'value');
-        set('hdlVcd', false, 'checked');
+        set('hdlVcd', true, 'checked');
         set('hdlCompare', false, 'checked');
         set('hdlTrace', true, 'checked');
         set('hdlRegPath', '', 'value');
         setHdlCycles(2000);
-        setHdlDumpVcd(false);
+        setHdlDumpVcd(true);
         setHdlCompare(false);
         setHdlTrace(true);
         setHdlRegPath();
@@ -12492,10 +12580,8 @@ int main()
       }
     }
 
-    // Compatibility shims. Each of these used to open its own overlay before
-    // v17 folded them into the one Settings modal; they are kept so older
-    // links, bookmarklets and tests keep working. `applyMemSegments` and
-    // `resetMemSegments` are exercised by riscv_simulator_tests.
+    // Shims onto the single Settings modal. Nothing in this page or the test
+    // suite calls them; they are a stable entry point for anything outside it.
     function toggleCompilerConfigPanel() { openSettingsModal('compiler'); }
     function closeCompilerConfigPanel() { closeSettingsModal(); }
     function toggleMemSegmentsPanel() { openSettingsModal('linker'); }
@@ -12566,6 +12652,52 @@ int main()
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setStatus('Dumped data memory segment to AA_DMEM.mem', 'success');
+    }
+
+    // Everything the page can hand back as a file. `ready` decides whether the
+    // entry is offered; picking one saves it and the menu snaps back to its
+    // label, so it reads as a menu of actions rather than a setting.
+    const DOWNLOADS = {
+      irom: {
+        ready: () => machineCode.some(i => !i.error && i.bytes && i.address < dataBase),
+        save: () => dumpTextSegment()
+      },
+      dmem: {
+        ready: () => machineCode.some(i => !i.error && i.bytes && i.address >= dataBase),
+        save: () => dumpDataSegment()
+      },
+      wrapper: {
+        ready: () => !!hdlFindWrapper(),
+        save: () => {
+          const w = hdlFindWrapper();
+          hdlSaveText(w.src, w.name || 'Wrapper.v');
+          setStatus('Saved ' + (w.name || 'Wrapper.v'), 'success');
+        }
+      },
+      tb: {
+        ready: () => !!hdlFindWrapper(),
+        save: () => hdlDownloadTestbench()
+      },
+      vcd: {
+        ready: () => !!hdlLastVcd,
+        save: () => hdlDownloadVcd()
+      }
+    };
+
+    function refreshDownloadMenu() {
+      const sel = document.getElementById('downloadSelect');
+      if (!sel) return;
+      for (const opt of sel.options) {
+        if (!opt.value) continue;
+        const d = DOWNLOADS[opt.value];
+        opt.disabled = !(d && d.ready());
+      }
+    }
+
+    function handleDownloadPick(sel) {
+      const d = DOWNLOADS[sel.value];
+      sel.value = '';
+      if (d) d.save();
     }
 
     function saveFile() {
@@ -13470,6 +13602,7 @@ int main()
     let programFinished = false;
 
     function updateToolbarButtonStates() {
+      refreshDownloadMenu();
       const isCodeModifiedOrUnassembled = (lastAssembledCode === null || (editor && editor.value !== lastAssembledCode) || !assembled);
 
       // 1. Assemble button: enabled ONLY when a program is loaded or modified, disabled once assembled
@@ -13961,11 +14094,10 @@ int main()
       event.target.value = '';
     }
 
-    // This runs before CodeMirror exists (editor.value's setter no-ops
-    // until cmEditor is mounted), so it is only ever the place that wires
-    // up the splitters and panel docking - everything else it used to do
-    // here (a hardcoded demo program, status/log messages) was overwritten
-    // by bootSimulator()'s own loadExample() a moment later regardless.
+    // This runs before CodeMirror exists - editor.value's setter no-ops until
+    // cmEditor is mounted - so it can only wire up the splitters and panel
+    // docking. Anything touching the editor or the status line belongs in
+    // bootSimulator(), which runs after the mount.
     initSplitter();
     initPanelDock();
 
@@ -14734,7 +14866,7 @@ int main()
     let hdlLastVcd = null;        // most recent VCD text, for download
     let hdlRunning = false;
     let hdlCycleBudget = 2000;    // cycles recorded per run, grown on demand
-    let hdlDumpVcd = false;
+    let hdlDumpVcd = true;
     let hdlTraceEnabled = true;   // record the architectural trace (needed to step)
     let hdlCompareEnabled = false;// cross-check against the JS functional model
     let hdlSynthEnabled = false;  // synthesise with Yosys and check the netlist
@@ -14879,6 +15011,40 @@ int main()
       });
     }
 
+    // The way in for someone whose own processor does not run yet: a
+    // pre-synthesised core plus the fixed Wrapper, replacing whatever is
+    // loaded. Fetched rather than baked into the page - it is only ever wanted
+    // deliberately, and the page is already ~1 MB.
+    const HDL_PREBUILT_FILES = ['Wrapper.v', 'RV_reference.v'];
+
+    async function hdlLoadPrebuiltProcessor() {
+      const btn = document.getElementById('hdlPrebuiltBtn');
+      if (btn) btn.disabled = true;
+      try {
+        hdlStatus('fetching the prebuilt processor …', 'busy');
+        const loaded = await Promise.all(HDL_PREBUILT_FILES.map(async name => {
+          const resp = await fetch('examples/hdl/' + name);
+          if (!resp.ok) throw new Error(name + ' - HTTP ' + resp.status);
+          return { name: name, src: await resp.text() };
+        }));
+        for (const f of loaded) if (/^\s*module\s+Wrapper\b/m.test(f.src)) f.isPrebuilt = true;
+        hdlFiles = loaded;
+        renderHdlFileList();
+        hdlSyncReferenceWrapperDepths();
+        hdlLog('Loaded the prebuilt processor: ' + loaded.map(f => f.name).join(', ') +
+          '. It is pre-synthesised, so it will not tell you anything about how a ' +
+          'processor is built - load your own sources when you have them.', 'sys');
+        hdlStatus('prebuilt processor loaded', 'ok');
+      } catch (e) {
+        hdlLog('Could not load the prebuilt processor (' + e.message + '). It is fetched ' +
+          'from examples/hdl/, so the page has to be served over http rather than ' +
+          'opened as a file.', 'err');
+        hdlStatus('prebuilt processor unavailable', 'err');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
     function hdlRemoveFile(name) {
       hdlFiles = hdlFiles.filter(f => f.name !== name);
       renderHdlFileList();
@@ -14921,6 +15087,7 @@ int main()
       hdlRefreshRegPathHint();
       updateHdlReadiness();
       hdlReportLint(true);
+      refreshDownloadMenu();
     }
 
     function updateHdlReadiness() {
@@ -14928,9 +15095,8 @@ int main()
       const warn = document.getElementById('hdlWrapperWarn');
       if (warn) warn.style.display = (hdlFiles.length && !wrapper) ? 'block' : 'none';
 
-      // A compact standing answer to "is my Verilog loaded?", now that there
-      // is no panel showing the file list all the time. Clicking it opens the
-      // tab that does.
+      // No panel shows the file list all the time, so this chip is the standing
+      // answer to "is my Verilog loaded?". Clicking it opens the tab that does.
       const chip = document.getElementById('hdlFilesChip');
       if (chip) {
         chip.style.display = (simEngineMode === 'hdl') ? '' : 'none';
@@ -15188,8 +15354,44 @@ int main()
         },
         iromBits, dmemBits,
         codeWords: Math.max(0, Math.ceil((lastCode - baseAddress + 1) / 4)),
-        iromCapacity: Math.pow(2, iromBits - 2)
+        dataWords: Math.max(0, Math.ceil((lastData - dataBase + 1) / 4)),
+        iromCapacity: Math.pow(2, iromBits - 2),
+        dmemCapacity: Math.pow(2, dmemBits - 2)
       };
+    }
+
+    // The two depths the current program needs, as IROM_DEPTH_BITS and
+    // DMEM_DEPTH_BITS would express them. Taken from the Linker segment sizes,
+    // which an example sets from its row in examples/index.txt.
+    function hdlRequiredDepths() {
+      const bitsFor = bytes => {
+        let b = 2;
+        while (Math.pow(2, b) < bytes) b++;
+        return Math.max(b, DEFAULT_DEPTH_BITS);
+      };
+      return { irom: bitsFor(codeSize >>> 0), dmem: bitsFor(dataSize >>> 0) };
+    }
+
+    // The Wrapper that ships with the prebuilt processor is ours, so its two
+    // depths are set to whatever the selected program needs. A Wrapper the
+    // student loaded is theirs, and is only ever checked, never rewritten.
+    function hdlSyncReferenceWrapperDepths() {
+      const w = hdlFindWrapper();
+      if (!w || !w.isPrebuilt) return false;
+      const need = hdlRequiredDepths();
+      const before = w.src;
+      w.src = w.src
+        .replace(/(localparam\s+IROM_DEPTH_BITS\s*=\s*)\d+/, '$1' + need.irom)
+        .replace(/(localparam\s+DMEM_DEPTH_BITS\s*=\s*)\d+/, '$1' + need.dmem);
+      if (w.src === before) return false;
+      hdlDiscardTrace();
+      hdlLog('Set the prebuilt Wrapper to IROM_DEPTH_BITS ' + need.irom +
+        ', DMEM_DEPTH_BITS ' + need.dmem + ' for this program. Take the matching file ' +
+        'from ⭳ Download → Wrapper.v.', 'sys');
+      setStatus('Prebuilt Wrapper sized for this program: IROM ' + need.irom +
+        ', DMEM ' + need.dmem, 'info');
+      renderHdlFileList();
+      return true;
     }
 
     // ================================================================
@@ -15950,29 +16152,44 @@ endmodule
       if (!machineCode || !machineCode.length)
         throw new Error('Assemble a program first - the Wrapper loads it via $readmemh.');
 
-      await loadHdlEngine();
-      const compiled = await hdlEnsureCompiled();
-      if (!compiled) return null;
-
       // Build the memory images from a pristine program image: seeking has
       // been writing into `memory`, and those writes must not be handed back
-      // to the hardware as if they were initial contents.
+      // to the hardware as if they were initial contents. Done before the
+      // engine loads, so a program that cannot fit is refused in a moment
+      // rather than after a minute of compiling.
       loadProgram(machineCode);
+      hdlSyncReferenceWrapperDepths();
       const mem = hdlMemFiles(wrapper.src);
       hdlDmemBytes = Math.pow(2, mem.dmemBits);
       if (!opts.quiet) {
         hdlLog('Program image: ' + mem.codeWords + ' instruction words into an IROM of ' +
           mem.iromCapacity + ' (IROM_DEPTH_BITS=' + mem.iromBits +
           ', DMEM_DEPTH_BITS=' + mem.dmemBits + ')', 'sys');
-        if (mem.codeWords > mem.iromCapacity) {
-          hdlLog('The program needs ' + mem.codeWords + ' instruction words but this ' +
-            'Wrapper\'s IROM holds only ' + mem.iromCapacity + ' — the last ' +
-            (mem.codeWords - mem.iromCapacity) + ' are NOT loaded, and the core will ' +
-            'fetch whatever is past the end. Raise IROM_DEPTH_BITS in Wrapper.v ' +
-            '(currently ' + mem.iromBits + '; each +1 doubles the IROM) and reload it.', 'err');
-          setStatus('Program does not fit this Wrapper\'s IROM — raise IROM_DEPTH_BITS', 'error');
-        }
       }
+      // A program that does not fit is refused rather than half-loaded: the
+      // image would stop at the end of the memory and the core would fetch
+      // whatever lay past it, which looks like a bug in the processor.
+      const tooBig = [];
+      if (mem.codeWords > mem.iromCapacity) {
+        tooBig.push('IROM_DEPTH_BITS is ' + mem.iromBits + ', holding ' + mem.iromCapacity +
+          ' instruction words; this program needs ' + mem.codeWords);
+      }
+      if (mem.dataWords > mem.dmemCapacity) {
+        tooBig.push('DMEM_DEPTH_BITS is ' + mem.dmemBits + ', holding ' + mem.dmemCapacity +
+          ' data words; this program needs ' + mem.dataWords);
+      }
+      if (tooBig.length) {
+        const need = hdlRequiredDepths();
+        hdlLog('This program does not fit the Wrapper you loaded, so it was not run. ' +
+          tooBig.join('. ') + '. Raise them in your Wrapper.v to at least ' + need.irom +
+          ' and ' + need.dmem + ' (each +1 doubles that memory) and load it again.', 'err');
+        setStatus('Program does not fit this Wrapper — raise its depth bits, see the console', 'error');
+        return null;
+      }
+
+      await loadHdlEngine();
+      const compiled = await hdlEnsureCompiled();
+      if (!compiled) return null;
 
       const lvl = hdlTraceEnabled ? 2 : 1;
       hdlStatus('simulating ' + budget + ' cycles...', 'busy');
@@ -15986,8 +16203,7 @@ endmodule
       t.regBank = compiled.regBank;
       hdlTrace = t;
       hdlLastVcd = s.vcd || null;
-      const dl = document.getElementById('hdlVcdBtn');
-      if (dl) dl.style.display = hdlLastVcd ? '' : 'none';
+      refreshDownloadMenu();
 
       if (hdlSynthEnabled && !opts.quiet) {
         try {
@@ -16158,8 +16374,7 @@ endmodule
       // otherwise the download button and the waveform both keep offering
       // the previous run's data as if it were current.
       hdlLastVcd = null;
-      const dl = document.getElementById('hdlVcdBtn');
-      if (dl) dl.style.display = 'none';
+      refreshDownloadMenu();
       updateWaveView();
     }
 
@@ -17731,6 +17946,8 @@ endmodule
     window.hdlClearFiles = hdlClearFiles;
     window.runHdlSimulation = runHdlSimulation;
     window.hdlDownloadVcd = hdlDownloadVcd;
+    window.handleDownloadPick = handleDownloadPick;
+    window.refreshDownloadMenu = refreshDownloadMenu;
     window.parseVcd = parseVcd;
     window.toggleWaveDock = toggleWaveDock;
     window.updateWaveView = updateWaveView;
@@ -17785,6 +18002,8 @@ endmodule
     window.hdlBuildTestbench = hdlBuildTestbench;
     window.hdlHasDoubleBuffer = hdlHasDoubleBuffer;
     window.hdlMemFiles = hdlMemFiles;
+    window.hdlRequiredDepths = hdlRequiredDepths;
+    window.hdlSyncReferenceWrapperDepths = hdlSyncReferenceWrapperDepths;
     window.hdlParseTrace = hdlParseTrace;
     window.hdlDiscoverRegBank = hdlDiscoverRegBank;
     window.hdlStimFile = hdlStimFile;
@@ -17819,6 +18038,7 @@ endmodule
     window.getUartRxState = () => ({ byte: uartRxByte, full: uartRxFull, dropped: uartRxDroppedTotal });
     // Load sources programmatically (the drop zone and file picker route
     // through hdlAddFiles; this is the same thing without a FileList).
+    window.hdlLoadPrebuiltProcessor = hdlLoadPrebuiltProcessor;
     window.hdlSetSources = (list) => {
       hdlFiles = list.map(f => ({ name: f.name, src: f.src }));
       renderHdlFileList();

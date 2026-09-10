@@ -4,8 +4,10 @@
 
 # Assemble this using RARS. Dump memory => .txt as AA_IROM.mem and .data as AA_DMEM.mem, in hexadecimal text format.
 
-# **** Warning: This program requires more than 128 instructions. The IROM_DEPTH_BITS has to be adjusted accordingly.****
-# DMEM_DEPTH_BITS need not be changed, as the program uses very low data memory for storing constants. No variables at all!
+# Memory this program needs: IROM_DEPTH_BITS 10, DMEM_DEPTH_BITS 9
+# (2**10 = 1024 bytes of code, 2**9 = 512 bytes of data). The simulator sets its
+# Linker segments from these when you pick the example; set the same two
+# localparams in Wrapper.v. Change both if you change the program.
 
 main:
         addi    sp, sp, -32

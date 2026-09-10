@@ -58,40 +58,47 @@ setTimeout(async () => {
     await win.loadExample('fib');
     console.log('Editor code lines:\n' + win.editor.value);
 
-    // Line 1 is: "# Fibonacci — compute fib(10) = 55"
-    // Line 2 is: "# ⚠ ecall is a simulator convenience..."
-    // Line 3 is: ".text"
-    // Line 4 is: "main:"
-    // Line 5 is: "\tli\tx1, 0\t# fib(0)"
-    
-    console.log('\n--- Test 1: Snapping from Line 1 (Comment) ---');
-    win.toggleBreakpoint(1);
-    console.log('Breakpoints Set:', Array.from(win.breakpoints));
-    if (!win.breakpoints.has(5)) {
-      throw new Error(`Expected breakpoint on line 5, got ${Array.from(win.breakpoints)}`);
-    }
-    if (win.breakpoints.has(1)) {
-      throw new Error('Breakpoint should NOT be on line 1!');
-    }
-    console.log('✅ Line 1 snapped to line 5!');
+    // Derived from the file rather than pinned: what is under test is that a
+    // line carrying no instruction snaps forward to the one that does, not
+    // where the example happens to put its header.
+    const lines = win.editor.value.split('\n');
+    const lineOf = pred => lines.findIndex(pred) + 1;
+    const commentLine = lineOf(l => l.trim().startsWith('#'));
+    const textLine = lineOf(l => l.trim() === '.text');
+    const mainLine = lineOf(l => l.trim() === 'main:');
+    let instrLine = mainLine + 1;
+    while (instrLine <= lines.length &&
+           (!lines[instrLine - 1].trim() || lines[instrLine - 1].trim().startsWith('#'))) instrLine++;
+    console.log(`comment line ${commentLine}, .text ${textLine}, main: ${mainLine}, ` +
+                `first instruction ${instrLine}`);
 
-    // Toggle line 2 (.text) -> since line 5 is already set, it should toggle off line 5
-    console.log('\n--- Test 2: Toggling from Line 2 (.text) ---');
-    win.toggleBreakpoint(2);
+    console.log('\n--- Test 1: Snapping from a comment line ---');
+    win.toggleBreakpoint(commentLine);
+    console.log('Breakpoints Set:', Array.from(win.breakpoints));
+    if (!win.breakpoints.has(instrLine)) {
+      throw new Error(`Expected breakpoint on line ${instrLine}, got ${Array.from(win.breakpoints)}`);
+    }
+    if (win.breakpoints.has(commentLine)) {
+      throw new Error(`Breakpoint should NOT be on line ${commentLine}!`);
+    }
+    console.log(`✅ Line ${commentLine} snapped to line ${instrLine}!`);
+
+    // Toggling .text snaps to the same instruction, which is already set, so it clears it
+    console.log('\n--- Test 2: Toggling from the .text directive ---');
+    win.toggleBreakpoint(textLine);
     console.log('Breakpoints Set after toggle:', Array.from(win.breakpoints));
-    if (win.breakpoints.has(5)) {
-      throw new Error('Expected breakpoint on line 5 to be toggled off');
+    if (win.breakpoints.has(instrLine)) {
+      throw new Error(`Expected breakpoint on line ${instrLine} to be toggled off`);
     }
-    console.log('✅ Toggling line 2 toggled off line 5!');
+    console.log(`✅ Toggling line ${textLine} toggled off line ${instrLine}!`);
 
-    // Test 3: Snap from Line 4 ("main:") -> sets on line 5
-    console.log('\n--- Test 3: Snapping from Line 4 (main:) ---');
-    win.toggleBreakpoint(4);
+    console.log('\n--- Test 3: Snapping from the label line ---');
+    win.toggleBreakpoint(mainLine);
     console.log('Breakpoints Set:', Array.from(win.breakpoints));
-    if (!win.breakpoints.has(5)) {
-      throw new Error('Expected breakpoint on line 5');
+    if (!win.breakpoints.has(instrLine)) {
+      throw new Error(`Expected breakpoint on line ${instrLine}`);
     }
-    console.log('✅ Line 4 snapped to line 5!');
+    console.log(`✅ Line ${mainLine} snapped to line ${instrLine}!`);
 
     // Test 4: Verify breakpoint state in CodeMirror 6 editor
     console.log('\n--- Test 4: CodeMirror 6 Breakpoint Field Verification ---');

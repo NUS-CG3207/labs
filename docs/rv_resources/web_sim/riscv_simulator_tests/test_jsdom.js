@@ -126,12 +126,17 @@ setTimeout(async () => {
     if (window.regs[4] !== 0) throw new Error(`Expected x4=0 after stepBack, got ${window.regs[4]}`);
 
     console.log('\n--- JSDOM Test 5: Breakpoint Toggling ---');
-    window.toggleBreakpoint(6);
-    console.log('Breakpoints has line 6:', window.breakpoints.has(6));
-    if (!window.breakpoints.has(6)) throw new Error('Breakpoint at line 6 was not set');
-    window.toggleBreakpoint(6);
-    console.log('Breakpoints has line 6 after toggle:', window.breakpoints.has(6));
-    if (window.breakpoints.has(6)) throw new Error('Breakpoint at line 6 was not cleared');
+    // A line that carries an instruction, found in the source rather than
+    // pinned, so a change to the example's header does not move it.
+    const srcLines = window.editor.value.split('\n');
+    const instrLine = srcLines.findIndex(l => /^\s*(li|add|mv|addi|j|bgt|la|sw|ecall)\b/.test(l)) + 1;
+    console.log('First instruction line:', instrLine);
+    window.toggleBreakpoint(instrLine);
+    console.log(`Breakpoints has line ${instrLine}:`, window.breakpoints.has(instrLine));
+    if (!window.breakpoints.has(instrLine)) throw new Error(`Breakpoint at line ${instrLine} was not set`);
+    window.toggleBreakpoint(instrLine);
+    console.log(`Breakpoints has line ${instrLine} after toggle:`, window.breakpoints.has(instrLine));
+    if (window.breakpoints.has(instrLine)) throw new Error(`Breakpoint at line ${instrLine} was not cleared`);
 
     console.log('\n--- JSDOM Test 6: Example Loading & Execution ---');
     const examples = ['dip_led', 'rars_syscalls', 'fib', 'hello_world', 'hello_jal', 'circle_accel', 'image_display_accel'];

@@ -1,7 +1,8 @@
-// Serves examples/asm/*.asm and examples/c/*.c (and the two index.txt files
-// that list them - see EXAMPLE_MENU in riscv_simulator.html) from local
-// disk, so the page's own fetch() calls work under jsdom, which has no
-// fetch of its own (confirmed: window.fetch is undefined there by default).
+// Serves examples/ from local disk - the programs, examples/index.txt that
+// lists them (see EXAMPLE_MENU in riscv_simulator.html), and examples/hdl/
+// for the prebuilt processor - so the page's own fetch() calls work under
+// jsdom, which has no fetch of its own (confirmed: window.fetch is undefined
+// there by default).
 //
 // This is the runtime counterpart of the offline godbolt_cache: without it,
 // every example but `dip_led` / `dip_led_c` fails to load under test, the
@@ -17,7 +18,7 @@
 //     }
 //   });
 //
-// The page's own top-level script calls fetch('examples/*/index.txt')
+// The page's own top-level script calls fetch('examples/index.txt')
 // immediately as it loads - which, with runScripts: 'dangerously', happens
 // synchronously while `new JSDOM()` is still running, before any code after
 // it (including `const win = dom.window; installExamplesFetch(win);`) gets
@@ -37,9 +38,12 @@ const EXAMPLES_ROOT = path.resolve(__dirname, '..', 'examples');
 function installExamplesFetch(win) {
   const existing = typeof win.fetch === 'function' ? win.fetch : null;
   win.fetch = async (url, opts) => {
-    const m = String(url).match(/(?:^|\/)examples\/(asm|c)\/([^/?#]+)$/);
+    // examples/index.txt, examples/<lang>/<program>, and examples/hdl/<file>
+    // for the prebuilt processor.
+    const m = String(url).match(/(?:^|\/)examples\/(?:([a-z]+)\/)?([^/?#]+)$/);
     if (m) {
-      const filePath = path.join(EXAMPLES_ROOT, m[1], m[2]);
+      const filePath = m[1] ? path.join(EXAMPLES_ROOT, m[1], m[2])
+                            : path.join(EXAMPLES_ROOT, m[2]);
       try {
         const text = fs.readFileSync(filePath, 'utf8');
         return { ok: true, status: 200, text: async () => text, json: async () => JSON.parse(text) };
