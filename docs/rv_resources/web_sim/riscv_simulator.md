@@ -413,8 +413,9 @@ Memories are the exception to what you can add, since a Verilog array is not wri
 VCD; read those in the Memory panel.
 
 Ctrl+scroll zooms, shift+scroll pans, a plain scroll moves down the signal list, and
-dragging pans. On a phone, use the `−` `+` `Fit` buttons. Clicking a waveform moves the
-*whole simulator* to that cycle: registers, memory and the disassembly all follow.
+dragging pans. The `‹` `›` buttons pan half a window at a time and `−` `+` `Fit` set the
+zoom, which is all a phone has. Clicking a waveform moves the *whole simulator* to that
+cycle: registers, memory and the disassembly all follow.
 
 The strip stops where your PC does. Once the program halts or spins on one instruction
 there is nothing further to step to, so the cycles after that are greyed out rather than

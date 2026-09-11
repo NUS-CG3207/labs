@@ -4425,6 +4425,8 @@
         <span class="wave-hdr-info" id="waveInfo"></span>
         <span class="wave-hdr-hint">ctrl+scroll zooms · shift+scroll pans · click a wave to go there</span>
         <span class="wave-hdr-actions">
+          <button class="panel-hdr-btn" type="button" onclick="wavePan(-1)" title="Pan to earlier cycles">‹</button>
+          <button class="panel-hdr-btn" type="button" onclick="wavePan(1)" title="Pan to later cycles">›</button>
           <button class="panel-hdr-btn" type="button" onclick="waveZoom(2)" title="Zoom out (show more cycles)">−</button>
           <button class="panel-hdr-btn" type="button" onclick="waveZoom(0.5)" title="Zoom in">+</button>
           <button class="panel-hdr-btn" type="button" onclick="waveFit()" title="Fit the whole run">Fit</button>
@@ -9499,6 +9501,9 @@
         if (moved) savePanelDock();
         // Keep the 2×2 grid width in sync when the viewport size changes.
         if (dockUsesTwoColumns() || dockSavedWidth !== null) updateDockWidthForGrid();
+        // The waveform panel exists only below the breakpoint, and its chip is
+        // not part of the state applyPanelDock() re-applies.
+        updateWaveformPanelAvailability();
         // Re-apply when crossing the mobile/desktop breakpoint so the layout
         // switches between the tabbed mobile view and the dock/grid view.
         if (mobileMode() || (panelDock && panelDock.order.some(n => panelDock[n].visible))) {
@@ -17413,6 +17418,16 @@ endmodule
 
     function waveZoom(factor) { waveSetSpan(waveSpan * factor); }
 
+    // Half a window per press, so there is always an overlap to line the new
+    // view up against. Touch drag pans too, but it is not discoverable and it
+    // fights the panel's own scrolling.
+    function wavePan(dir) {
+      if (!waveParsed) return;
+      waveStart += dir * Math.max(1, Math.round(waveSpan / 2));
+      waveClampStart();
+      updateWaveHeaderAndDraw();
+    }
+
     function waveApplyDefaultSpan() {
       if (waveSpanChosen) return;
       waveSpan = waveDefaultSpan();
@@ -18187,6 +18202,7 @@ endmodule
     window.waveToggleSignal = waveToggleSignal;
     window.waveResetSignals = waveResetSignals;
     window.waveZoom = waveZoom;
+    window.wavePan = wavePan;
     window.waveFit = waveFit;
     window.waveSetSpan = waveSetSpan;
     window.waveSeekToCycle = waveSeekToCycle;

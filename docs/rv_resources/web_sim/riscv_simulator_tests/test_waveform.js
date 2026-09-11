@@ -428,6 +428,9 @@ setTimeout(async () => {
     check('zoom and fit controls exist',
       /onclick="waveZoom\(2\)"/.test(html) && /onclick="waveZoom\(0\.5\)"/.test(html) &&
       /onclick="waveFit\(\)"/.test(html));
+    check('pan controls sit to the left of them',
+      html.indexOf('onclick="wavePan(-1)"') < html.indexOf('onclick="wavePan(1)"') &&
+      html.indexOf('onclick="wavePan(1)"') < html.indexOf('onclick="waveZoom(2)"'));
     check('the canvas advertises click, wheel and drag',
       /id="waveCanvas"[^>]*title="[^"]*[Cc]lick[^"]*wheel[^"]*drag/.test(html));
 
@@ -492,6 +495,43 @@ setTimeout(async () => {
         check(`the waveform's PC matches the trace's PC at every cursor cycle (${agree}/${tested})`,
           agree === tested && tested > 0);
       }
+
+      // ---------------------------------------------------------------
+      console.log('\n[6] Panning the viewport over that real VCD');
+      // Hand the page the VCD the run just produced, so the viewport maths
+      // runs against a real end cycle rather than an invented one.
+      win.__vcdUnderTest = vcd;
+      win.eval('hdlLastVcd = window.__vcdUnderTest; waveEnsureParsed();');
+      const st = () => win.getWaveState();
+      check('the page parsed the VCD it was handed', !!st().parsed);
+
+      win.waveFit();
+      const fitted = st();
+      check('Fit starts at cycle 0', fitted.start === 0);
+      const end = fitted.span - 1;
+      check('Fit spans the whole run (got ' + fitted.span + ')', fitted.span > 20);
+
+      win.waveSetSpan(10, 0);
+      check('a 10-cycle window can be set at the left edge',
+        st().span === 10 && st().start === 0);
+
+      win.wavePan(1);
+      check('one press right moves half a window', st().start === 5);
+      win.wavePan(1);
+      check('presses accumulate', st().start === 10);
+      check('panning does not change the zoom', st().span === 10);
+      win.wavePan(-1); win.wavePan(-1);
+      check('panning back returns to where it started', st().start === 0);
+      win.wavePan(-1);
+      check('panning left at cycle 0 stops there rather than going negative',
+        st().start === 0);
+
+      for (let i = 0; i < 200; i++) win.wavePan(1);
+      const far = st();
+      check('panning right stops with the last cycle on screen (start ' +
+        far.start + ' + span ' + far.span + ' vs end ' + end + ')',
+        far.start + far.span - 1 >= end && far.start <= end);
+      check('and never scrolls past it', far.start === Math.max(0, end - far.span + 1));
     }
 
     console.log('\n===========================================================');
