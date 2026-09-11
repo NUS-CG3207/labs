@@ -1747,6 +1747,8 @@
       color: #a6adc8;
       cursor: pointer;
     }
+    .hdl-chip .chip-short { display: none; }
+
     .hdl-chip:hover { background: #45475a; color: #cdd6f4; }
     .hdl-chip-warn {
       border-color: #f9e2af;
@@ -2046,6 +2048,10 @@
       border: 1px solid #45475a;
     }
 
+    /* Nothing to say for most runs, and an empty item still takes a row when
+       the header wraps. */
+    .wave-hdr-info:empty { display: none; }
+
     .wave-hdr-info {
       font-size: 11px;
       color: #6c7086;
@@ -2140,6 +2146,12 @@
     .wave-names-axis {
       height: 20px;
       border-bottom: 1px solid #313244;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 6px;
+      font-size: 10px;
+      color: #6c7086;
     }
 
     #waveCanvas {
@@ -3218,8 +3230,8 @@
       }
 
       .toolbar-group-file-mode .example-label {
-        flex: 1 1 60px;
-        max-width: 104px;
+        flex: 1 1 32px;
+        max-width: 150px;
         min-width: 0;
       }
 
@@ -3228,13 +3240,22 @@
         flex: 0 0 auto;
       }
 
+      /* The long label plus six other controls will not fit 374px, and the row
+         wrapping is worse than the short form plus the tooltip. */
+      .hdl-chip .chip-long { display: none; }
+      .hdl-chip .chip-short { display: inline; }
+
+      .toolbar-group-file-mode .hdl-chip { padding: 2px 5px; }
+
       /* The word costs more of this row than it is worth: the selected option
          names the example, and the label keeps its tooltip. */
       .example-label-text {
         display: none;
       }
 
-      .toolbar-group-file-mode select {
+      /* #exampleSelect sets its own height, so this has to outrank an id. */
+      .toolbar-group-file-mode select,
+      .toolbar-group-file-mode #exampleSelect {
         width: 100%;
         max-width: 100%;
         height: 32px;
@@ -3246,7 +3267,7 @@
          row equally is what keeps the chip's text readable; Open and Save give
          up their words for the same reason. */
       .toolbar-group-file-mode button {
-        flex: 1 1 auto;
+        flex: 0 1 auto;
         min-width: 0;
         padding: 0 6px;
         height: 32px;
@@ -3603,6 +3624,15 @@
         max-width: 95vw;
         margin: 10px;
         max-height: 90vh;
+      }
+    }
+
+    /* Narrower than a modern phone: Open and Save give up their words so the
+       row still holds, rather than wrapping and clipping Assemble below it. */
+    @media (max-width: 380px) {
+      #btnOpen .btn-text,
+      #btnSave .btn-text {
+        display: none;
       }
     }
 
@@ -3993,8 +4023,8 @@
                 <select id="exampleSelect" onchange="loadExample(this.value)"></select>
               </label>
               <input type="file" id="fileLoader" accept=".asm,.s,.c,.h,.txt,.v,.sv,.vh,.svh" onchange="loadFile(event)">
-              <button id="btnOpen" class="mo-icon" onclick="document.getElementById('fileLoader').click()" title="Open RISC-V assembly or C source file"><span class="btn-ico">📂</span><span class="btn-text">Open</span></button>
-              <button id="btnSave" class="mo-icon" onclick="saveFile()" title="Save source code to file"><span class="btn-ico">💾</span><span class="btn-text">Save</span></button>
+              <button id="btnOpen" onclick="document.getElementById('fileLoader').click()" title="Open RISC-V assembly or C source file"><span class="btn-ico">📂</span><span class="btn-text">Open</span></button>
+              <button id="btnSave" onclick="saveFile()" title="Save source code to file"><span class="btn-ico">💾</span><span class="btn-text">Save</span></button>
             </div>
             <div class="toolbar-divider"></div>
             <!-- Group 2: Editor Operations (Edit-Related) -->
@@ -15226,17 +15256,22 @@ int main()
       const chip = document.getElementById('hdlFilesChip');
       if (chip) {
         chip.style.display = (simEngineMode === 'hdl') ? '' : 'none';
+        // Two labels: the narrow row cannot hold the long one beside six other
+        // controls, and CSS picks which is shown.
+        const label = (long, short) =>
+          '<span class="chip-long">' + long + '</span>' +
+          '<span class="chip-short">' + short + '</span>';
         if (!hdlFiles.length) {
-          chip.textContent = '⚠ no Verilog';
+          chip.innerHTML = label('⚠ no Verilog', '⚠ no .v');
           chip.className = 'hdl-chip hdl-chip-warn';
           chip.title = 'HDL mode needs your processor sources - click to load them';
         } else if (!wrapper) {
-          chip.textContent = '⚠ no Wrapper';
+          chip.innerHTML = label('⚠ no Wrapper', '⚠ no top');
           chip.className = 'hdl-chip hdl-chip-warn';
           chip.title = 'None of the ' + hdlFiles.length +
             ' loaded files declares `module Wrapper` - click to fix';
         } else {
-          chip.textContent = hdlFiles.length + ' files';
+          chip.innerHTML = label(hdlFiles.length + ' files', hdlFiles.length + ' files');
           chip.className = 'hdl-chip';
           chip.title = 'Loaded: ' + hdlFiles.map(f => f.name).join(', ') +
             ' - click to manage them';
@@ -17403,11 +17438,12 @@ endmodule
         const cyc = hdlCurrentCycle();
         // Once the PC stops, the hardware keeps counting cycles while the
         // waveform stops; saying only "cycle 200 ... of 7" would look wrong.
-        const where = cyc > last
-          ? `cycle ${cyc}, PC last advanced at ${last - 1}`
-          : `cycle ${cyc}`;
-        info.textContent = `${where} · showing ${waveStart}–${waveStart + waveSpan - 1} of ${last}` +
-          (waveDropped ? ` · ${waveDropped} chosen signal${waveDropped > 1 ? 's' : ''} not in this run` : '');
+        const notes = [];
+        if (cyc > last) notes.push(`PC last advanced at cycle ${last - 1}`);
+        if (waveDropped) {
+          notes.push(`${waveDropped} chosen signal${waveDropped > 1 ? 's' : ''} not in this run`);
+        }
+        info.textContent = notes.join(' · ');
       }
       drawWaveNames(p);
       drawWaveforms();
@@ -17500,7 +17536,7 @@ endmodule
     function drawWaveNames(p) {
       const host = document.getElementById('waveNames');
       if (!host) return;
-      let html = '<div class="wave-names-axis"></div>';
+      let html = '<div class="wave-names-axis">cycle</div>';
       for (const path of waveSignals) {
         const v = p.byPath.get(path);
         const label = waveShortLabel(path);
