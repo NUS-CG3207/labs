@@ -1,5 +1,8 @@
 # RISC-V Simulator User Guide
 
+!!! danger
+    This is a work in progress. While it can be a useful resource to get started, its correspondence with actual hardware has not been tested yet. The C/asm/HDL codes will need modifications including, but not limited to, appropriate delays , ensuring that all instructions produced by the compiler are implemented in your processor, adjustment of memory segment sizes, etc. for proper functionality.
+
 <p align="center">
   <a href="../riscv_simulator.html" target="_blank" rel="noopener">
     <img alt="Start the Simulator" src="https://img.shields.io/badge/▶%20Start%20the%20Simulator-2ea44f?style=for-the-badge">

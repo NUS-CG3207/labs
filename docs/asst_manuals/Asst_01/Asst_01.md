@@ -179,7 +179,7 @@ Download the template for Assignment 1 from [the labs file repository](https://g
 In total, we will need `Top_Nexys`, `Seven_Seg_Nexys`, `Clock_Enable`, `Get_MEM`, and one `.xdc` file corresponding to our board.
 
 !!! warning
-    The Nexys 4 and Nexys 4 DDR/Nexys A7 use the same FPGA chip on board, but the pins are connected differently. Thus, the part number we choose when creating a new project is the same for both (XC7A100T-1CSG324C), however, the constraints file **is different**. Using the wrong constraints file will work for simulation, synthesis, implementation and even bitstream generation - but the bitstream will not work on the board!
+    The Nexys 4 and Nexys 4 DDR/Nexys A7 use the same FPGA chip on board, but the pins are connected differently. Thus, the part number we choose when creating a new project is the same for both (xc7a100tcsg324-1), however, the constraints file **is different**. Using the wrong constraints file will work for simulation, synthesis, implementation and even bitstream generation - but the bitstream will not work on the board!
 
 We need to fill out `Clock_Enable`, `Get_MEM` and `Top_Nexys` to achieve the functionality described above. 
 
