@@ -109,6 +109,37 @@ setTimeout(async () => {
     win.assembleOnly();
     console.log('Assembled machine code length:', win.machineCode.length);
 
+    // Pause cancels the pending batch, so the run loop never reaches the exit
+    // path that normally moves the highlight. Without this the editor keeps
+    // pointing at the first instruction however far the program has run.
+    console.log('\n--- Test 5: Pausing a run highlights where it stopped ---');
+    win.breakpoints.clear();
+    await win.loadExample('dip_led');   // loops forever, so a run spans several batches
+    win.assembleOnly();
+    const lineOfPc = () => win.eval('sourceLineForPc(pc)');
+    const firstLine = win.currentExecLine;
+    if (firstLine !== lineOfPc()) {
+      throw new Error(`Expected the highlight to start on the first instruction, ` +
+                      `got ${firstLine} against PC line ${lineOfPc()}`);
+    }
+
+    const stops = [];
+    for (let round = 0; round < 2; round++) {
+      win.toggleRunPause();                                  // Run / Resume
+      await new Promise(r => setTimeout(r, 20));             // let a batch land
+      win.toggleRunPause();                                  // Pause
+      if (win.currentExecLine !== lineOfPc()) {
+        throw new Error(`Pause ${round + 1}: highlight on line ${win.currentExecLine}, ` +
+                        `PC on line ${lineOfPc()}`);
+      }
+      stops.push(win.currentExecLine);
+      console.log(`  pause ${round + 1}: highlight and PC agree on line ${win.currentExecLine}`);
+    }
+    if (stops.every(l => l === firstLine)) {
+      throw new Error(`The highlight never left the first instruction (line ${firstLine})`);
+    }
+    console.log(`✅ Pausing moves the highlight off line ${firstLine} and onto the paused instruction`);
+
     console.log('\n======================================================');
     console.log('🎉 ALL BREAKPOINT HIGHLIGHT & SNAP TESTS PASSED!');
     console.log('======================================================');

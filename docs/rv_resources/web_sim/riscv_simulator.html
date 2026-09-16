@@ -1472,6 +1472,49 @@
       overflow-wrap: anywhere;
     }
 
+    /* Only immediates whose encoded field genuinely reads more than one way
+       are marked, so the dotted underline means "there is more here" rather
+       than decorating every number in the column. */
+    .code-list .disasm-imm {
+      border-bottom: 1px dotted #6c7086;
+      cursor: help;
+    }
+
+    .code-list .disasm-imm:hover,
+    .code-list .disasm-imm:focus {
+      border-bottom-color: #cba6f7;
+      color: #f5e0dc;
+      outline: none;
+    }
+
+    /* Fixed, so the panel's own overflow:auto cannot clip it, and
+       pointer-events:none so it never swallows the tap that dismisses it. */
+    #immPopover {
+      position: fixed;
+      z-index: 9999;
+      background: #181825;
+      border: 1px solid #45475a;
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-family: 'Consolas', 'Roboto Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: #cdd6f4;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      max-width: 92vw;
+    }
+
+    #immPopover[hidden] { display: none; }
+
+    #immPopover .imm-row { white-space: nowrap; }
+
+    #immPopover .imm-key {
+      color: #6c7086;
+      display: inline-block;
+      min-width: 58px;
+    }
+
     .code-list .pseudo {
       /* Simple colour swap: pseudoinstructions were orange (the label colour in
          the code window / memory view); the panel's label blue is a better fit. */
@@ -3376,7 +3419,7 @@
       }
 
       .editor-wrapper {
-        height: 300px;
+        height: 240px;
         min-height: 180px;
         flex: none;
         width: 100%;
@@ -3511,11 +3554,12 @@
 
       /* A bounded, independently-scrollable body — instead of growing to
          full content height and pushing the page itself down; a long
-         table/board scrolls in place. Sized a little over half the
-         editor's height: the editor gave up the rest of the difference. */
+         table/board scrolls in place. Slightly taller than the editor above
+         it: a panel is what you read on a phone, and the editor still holds
+         a dozen lines. */
       .panel-body {
         overflow: auto;
-        max-height: 186px;
+        max-height: 246px;
         flex: 0 0 auto;
       }
 
@@ -3976,7 +4020,8 @@
             <a href="https://github.com/TheThirdOne/rars" target="_blank" rel="noopener noreferrer">RARS</a>,
             the RISC-V Assembler and Runtime Simulator.</p>
           <p>The code editor is <a href="https://codemirror.net/" target="_blank" rel="noopener noreferrer">CodeMirror
-              6</a>. HDL mode runs on <a href="https://github.com/steveicarus/iverilog" target="_blank"
+              6</a>, and C is compiled by <a href="https://godbolt.org/" target="_blank"
+              rel="noopener noreferrer">Compiler Explorer</a>. HDL mode runs on <a href="https://github.com/steveicarus/iverilog" target="_blank"
               rel="noopener noreferrer">Icarus Verilog</a>, compiled to WebAssembly by
             <a href="https://github.com/senolgulgonul/verisim" target="_blank" rel="noopener noreferrer">verisim</a>,
             and post-synthesis simulation runs on <a href="https://github.com/YosysHQ/yosys" target="_blank"
@@ -4048,11 +4093,10 @@
             <!-- Group 4: Memory Dump, Settings & Metrics -->
             <div class="toolbar-btn-group toolbar-group-config-stats">
               <select id="downloadSelect" class="dl-select" onchange="handleDownloadPick(this)"
-                title="Save a memory image, the generated testbench, the Wrapper or the recorded waveform">
+                title="Save a memory image, the generated testbench or the recorded waveform">
                 <option value="" selected>⭳ Download</option>
                 <option value="irom">AA_IROM.mem</option>
                 <option value="dmem">AA_DMEM.mem</option>
-                <option value="wrapper">Wrapper.v</option>
                 <option value="tb">Testbench (.v)</option>
                 <option value="vcd">Waveform (.vcd)</option>
               </select>
@@ -4841,6 +4885,8 @@
     let oledFrontPage = 0;   // what the panel scans out
     let oledBackPage = 0;    // what writes land in
     let oledBuffer = oledPages[0]; // alias for the back page, kept in step below
+    let oledSwapUnpolled = false;  // a present was asked for, OLED_STATUS unread since
+    let oledRaceWarned = false;    // worth saying once a run, not once a pixel
 
     let accelX = 0;      // 8-bit signed (-128..+127), 0g = 0x00
     let accelY = 0;      // 8-bit signed (-128..+127), 0g = 0x00
@@ -5122,7 +5168,7 @@
       throw new Error(`Unknown symbol '${s}'`);
     }
     function instructionSlots(mnemonic, args) {
-      // Loads with a bare label operand or 3 args (rd, symbol, rt) expand to lui + load (2 slots)
+      // Loads with a bare label operand or 3 args (rd, symbol, rt) expand to auipc + load (2 slots)
       if (['lb', 'lh', 'lw', 'lbu', 'lhu', 'lwu', 'ld', 'flw', 'fld'].includes(mnemonic)) {
         if (args.length === 3) return 2;
         if (args.length === 2) {
@@ -5135,7 +5181,7 @@
           }
         }
       }
-      // Stores with a bare label operand or 3 args (rs2, symbol, rt) expand to lui + store (2 slots)
+      // Stores with a bare label operand or 3 args (rs2, symbol, rt) expand to auipc + store (2 slots)
       if (['sb', 'sh', 'sw', 'sd', 'fsw', 'fsd'].includes(mnemonic)) {
         if (args.length === 3) return 2;
         if (args.length === 2) {
@@ -5196,7 +5242,102 @@
     }
 
     function formatNativeInstruction(mnemonic, args) {
-      return mnemonic + (args.length ? ' ' + args.map(hwRegOperand).join(', ') : '');
+      return buildNativeInstruction(mnemonic, args).text;
+    }
+
+    // The same string, plus where the immediate operand sits inside it. The
+    // column still shows the operand as it was written; the span is only so
+    // that the other readings of the same field can be offered on hover.
+    const SHIFT_IMM_OPS = new Set(['slli', 'srli', 'srai']);
+    const IMM_TYPES = new Set(['I', 'S', 'B', 'U', 'J']);
+
+    function buildNativeInstruction(mnemonic, args) {
+      const ops = args.map(hwRegOperand);
+      const text = mnemonic + (ops.length ? ' ' + ops.join(', ') : '');
+      const none = { text, immFrom: -1, immTo: -1 };
+      const instr = INSTRUCTIONS[mnemonic];
+      if (!ops.length || !instr || !IMM_TYPES.has(instr.type)) return none;
+
+      const starts = [];
+      let at = mnemonic.length + 1;
+      for (const op of ops) { starts.push(at); at += op.length + 2; }
+
+      // offset(base) carries the number in front of the bracket; every other
+      // format that has one carries it as the last operand.
+      for (let i = 0; i < ops.length; i++) {
+        const m = /^([^(]+)\(/.exec(ops[i]);
+        if (m) return { text, immFrom: starts[i], immTo: starts[i] + m[1].length };
+      }
+      const last = ops.length - 1;
+      if (toHwRegName(ops[last])) return none;
+      return { text, immFrom: starts[last], immTo: starts[last] + ops[last].length };
+    }
+
+    // The immediate as the *encoding* holds it, which is not always what the
+    // source said: a literal written in hex, the same value written in decimal
+    // and one a pseudo-op computed all land in the same field.
+    function nativeImmInfo(mnemonic, word, address) {
+      const instr = INSTRUCTIONS[mnemonic];
+      if (!instr) return null;
+      const sext = (v, bits) => (v << (32 - bits)) >> (32 - bits);
+      const w = word >>> 0;
+      switch (instr.type) {
+        case 'U':
+          return { kind: 'u20', value: (w >>> 12) & 0xFFFFF, mnemonic };
+        case 'J': {
+          const raw = (((w >>> 31) & 1) << 20) | (((w >>> 12) & 0xFF) << 12) |
+                      (((w >>> 20) & 1) << 11) | (((w >>> 21) & 0x3FF) << 1);
+          const off = sext(raw, 21);
+          return { kind: 'target', value: (address + off) >>> 0, offset: off, mnemonic };
+        }
+        case 'B': {
+          const raw = (((w >>> 31) & 1) << 12) | (((w >>> 7) & 1) << 11) |
+                      (((w >>> 25) & 0x3F) << 5) | (((w >>> 8) & 0xF) << 1);
+          const off = sext(raw, 13);
+          return { kind: 'target', value: (address + off) >>> 0, offset: off, mnemonic };
+        }
+        case 'S':
+          return { kind: 'sext', value: sext((((w >>> 25) & 0x7F) << 5) | ((w >>> 7) & 0x1F), 12), mnemonic };
+        case 'I':
+          if (SHIFT_IMM_OPS.has(mnemonic)) return { kind: 'shamt', value: (w >>> 20) & 0x1F, mnemonic };
+          return { kind: 'sext', value: sext((w >>> 20) & 0xFFF, 12), mnemonic };
+        default:
+          return null;
+      }
+    }
+
+    // What else this field can legally be read as. Only spellings a RISC-V
+    // assembler accepts are offered: a 12-bit signed field may be written as
+    // the signed value or as its full 32-bit two's complement, but never as
+    // the raw 12 bits read unsigned, and a genuinely unsigned field (a shift
+    // amount, lui's 20 bits) has no signed reading at all. An empty list
+    // means the operand as shown is already the whole story.
+    function nativeImmReadings(info) {
+      if (!info) return [];
+      const hex = v => '0x' + (v >>> 0).toString(16);
+      const addr = v => '0x' + (v >>> 0).toString(16).padStart(8, '0');
+      if (info.kind === 'target') {
+        const off = info.offset;
+        return [['target', addr(info.value)],
+                ['offset', (off < 0 ? '−' : '+') + Math.abs(off) + ' bytes from this instruction']];
+      }
+      if (info.kind === 'u20') {
+        const shifted = (info.value << 12) >>> 0;
+        return [['decimal', String(info.value)],
+                ['hex', hex(info.value)],
+                [info.mnemonic === 'auipc' ? 'adds' : 'loads', addr(shifted)]];
+      }
+      if (info.kind === 'shamt') {
+        if (info.value < 10) return [];
+        return [['decimal', String(info.value)], ['hex', hex(info.value)]];
+      }
+      if (info.value < 0) {
+        return [['signed', String(info.value)],
+                ['hex', hex(info.value)],
+                ['unsigned', String(info.value >>> 0)]];
+      }
+      if (info.value < 10) return [];
+      return [['decimal', String(info.value)], ['hex', hex(info.value)]];
     }
 
     function signedHex(n) {
@@ -5392,8 +5533,24 @@
       const pushInstr = (mnMnemonic, args, address, lineNo, asmText, isPseudo = false) => {
         const encoding = encodeInstruction(mnMnemonic, args, address);
         if (encoding === null) throw new Error('Encoding failed');
-        push({ address, bytes: encoding, text: asmText, native: formatNativeInstruction(mnMnemonic, args), isPseudo, line: lineNo, asmLine: asmText });
+        const nat = buildNativeInstruction(mnMnemonic, args);
+        const word = ((encoding[3] << 24) | (encoding[2] << 16) | (encoding[1] << 8) | encoding[0]) >>> 0;
+        push({ address, bytes: encoding, text: asmText, native: nat.text,
+               immFrom: nat.immFrom, immTo: nat.immTo,
+               imm: nat.immFrom >= 0 ? nativeImmInfo(mnMnemonic, word, address) : null,
+               isPseudo, line: lineNo, asmLine: asmText });
         bump(4);
+      };
+
+      // A symbol is reached PC-relatively, the way the toolchain reaches it:
+      // `auipc` and then a 12-bit signed offset, with the carry into the upper
+      // half when that offset comes out negative. `la` already expands this
+      // way, so this is also what makes `lw rd, sym` and
+      // `la rd, sym; lw rd, 0(rd)` build the same address.
+      const pcRelHiLo = (target, here) => {
+        const d = target - here;
+        const hi20 = Math.floor((d + 0x800) / 4096) & 0xFFFFF;
+        return { hi20, lo: d - (hi20 << 12) };
       };
 
       const emitPseudo = (mn, args, address, lineNo, asmText) => {
@@ -5455,12 +5612,10 @@
               if (args.length === 3) {
                 const target = resolveAddrRef(args[1]);
                 const rt = args[2];
-                let upper = target >>> 12;
-                let lower = target & 0xFFF;
-                if (lower & 0x800) { upper = (upper + 1) & 0xFFFFF; }
-                const loSigned = (lower & 0x800) ? (lower - 0x1000) : lower;
-                pushInstr('lui', [rt, String(upper)], getAddr(), lineNo, asmText, true);
-                pushInstr(mn, [args[0], String(loSigned) + `(${rt})`], getAddr(), lineNo, asmText, true);
+                const here = getAddr();
+                const rel = pcRelHiLo(target, here);
+                pushInstr('auipc', [rt, String(rel.hi20)], here, lineNo, asmText, true);
+                pushInstr(mn, [args[0], String(rel.lo) + `(${rt})`], getAddr(), lineNo, asmText, true);
                 return;
               }
               if (args.length === 2) {
@@ -5468,10 +5623,6 @@
                 if (mem && mem.reg === 0) {
                   const addr = mem.offset;
                   if (addr > 2047 || addr < -2048) {
-                    let upper = addr >>> 12;
-                    let lower = addr & 0xFFF;
-                    if (lower & 0x800) { upper = (upper + 1) & 0xFFFFF; }
-                    const loSigned = (lower & 0x800) ? (lower - 0x1000) : lower;
                     // The address has to be built in a register first. For an
                     // integer load that register is rd itself, which the load
                     // is about to overwrite anyway - nothing else is touched.
@@ -5484,8 +5635,10 @@
                         `'${args[1]}' takes an integer register, and ${mn} has none to spare.`);
                     }
                     const tmpReg = 'x' + parseReg(args[0]);
-                    pushInstr('lui', [tmpReg, String(upper)], getAddr(), lineNo, asmText, true);
-                    pushInstr(mn, [args[0], String(loSigned) + `(${tmpReg})`], getAddr(), lineNo, asmText, true);
+                    const here = getAddr();
+                    const rel = pcRelHiLo(addr, here);
+                    pushInstr('auipc', [tmpReg, String(rel.hi20)], here, lineNo, asmText, true);
+                    pushInstr(mn, [args[0], String(rel.lo) + `(${tmpReg})`], getAddr(), lineNo, asmText, true);
                     return;
                   }
                 }
@@ -5497,12 +5650,10 @@
               if (args.length === 3) {
                 const target = resolveAddrRef(args[1]);
                 const rt = args[2];
-                let upper = target >>> 12;
-                let lower = target & 0xFFF;
-                if (lower & 0x800) { upper = (upper + 1) & 0xFFFFF; }
-                const loSigned = (lower & 0x800) ? (lower - 0x1000) : lower;
-                pushInstr('lui', [rt, String(upper)], getAddr(), lineNo, asmText, true);
-                pushInstr(mn, [args[0], String(loSigned) + `(${rt})`], getAddr(), lineNo, asmText, true);
+                const here = getAddr();
+                const rel = pcRelHiLo(target, here);
+                pushInstr('auipc', [rt, String(rel.hi20)], here, lineNo, asmText, true);
+                pushInstr(mn, [args[0], String(rel.lo) + `(${rt})`], getAddr(), lineNo, asmText, true);
                 return;
               }
               if (args.length === 2) {
@@ -5519,7 +5670,7 @@
                       `${mn} ${args[0]}, ${args[1]} would need a scratch register to hold ` +
                       `the address of '${args[1]}', and would silently overwrite it. Name ` +
                       `it: \`${mn} ${args[0]}, ${args[1]}, t1\` assembles to ` +
-                      `\`lui t1, %hi(${args[1]})\` then \`${mn} ${args[0]}, %lo(${args[1]})(t1)\`. ` +
+                      `\`auipc t1, %pcrel_hi(${args[1]})\` then \`${mn} ${args[0]}, %pcrel_lo(${args[1]})(t1)\`. ` +
                       `Pick a register you do not need.`);
                   }
                 }
@@ -6365,6 +6516,8 @@
       oledFrontPage = 0;
       oledBackPage = 0;
       oledBuffer = oledPages[0];
+      oledSwapUnpolled = false;
+      oledRaceWarned = false;
     }
 
     // Present the page just drawn. The controller copies it into the new back
@@ -6382,7 +6535,28 @@
       }
       oledPages[oledBackPage].set(oledPages[oledFrontPage]);
       oledBuffer = oledPages[oledBackPage];
+      oledSwapUnpolled = true;
       updateOledCanvas();
+    }
+
+    // The board makes a present take time: it waits up to a whole frame for the
+    // scanout to reach a boundary, then 12288 clocks to copy the shown page
+    // back. Pixels written before the boundary land in the page about to be
+    // shown, and pixels written during the copy are discarded outright - the
+    // copy engine owns the write port for its duration. OLED_STATUS is how
+    // software stays out of that window, and it is free here because neither
+    // delay is modelled, so a program that never reads it looks correct. Saying
+    // so is the only warning this page can give.
+    function oledNotePixelWrite() {
+      if (!oledSwapUnpolled || oledRaceWarned) return;
+      oledRaceWarned = true;
+      log('OLED: pixels were written after a present, with no read of OLED_STATUS ' +
+          'in between. That works here, where a present lands at once. On the board ' +
+          'it waits up to a frame for the scanout boundary - 24,576 instructions at ' +
+          'the default clock divider - and then 192 more to copy the page back. ' +
+          'Pixels written before the boundary appear in the frame being presented, ' +
+          'and pixels written during the copy are lost. Poll OLED_STATUS until bit 0 ' +
+          'clears before drawing again.', 'warning');
     }
 
     // OLED_Col is a 7-bit register, so software can set a column the 96-wide
@@ -6439,6 +6613,7 @@
     }
 
     function writeOledPixel(val) {
+      oledNotePixelWrite();
       // `val` is already the resolved 24-bit OLED_Data register.
       const r = (val >>> 16) & 0xFF;
       const g = (val >>> 8) & 0xFF;
@@ -6757,9 +6932,14 @@
       // OLED_STATUS (0xFFFF0030 .. 0xFFFF0033) - bit 0 is the swap-pending
       // flag. Always clear here: with no scanout modelled a present has
       // already landed by the time software looks, so a polling loop passes
-      // straight through. On hardware it would spin until the next frame.
+      // straight through. On hardware it would spin until the next frame. The
+      // read is noted so that a program which never makes one can be told what
+      // it is relying on.
       const oledStatusBase = OLED_STATUS >>> 0;
-      if (u >= oledStatusBase && u < oledStatusBase + 4) return 0;
+      if (u >= oledStatusBase && u < oledStatusBase + 4) {
+        if (!peekOnly) oledSwapUnpolled = false;
+        return 0;
+      }
 
       // LED Output (0xFFFF0060 .. 0xFFFF0063)
       const ledBase = PERIPH_LED >>> 0;
@@ -9563,14 +9743,14 @@
       { name: 'sltiu', type: 'inst', format: 'sltiu rd, rs1, imm', desc: 'Set Less Than Unsigned Immediate: rd = (unsigned)rs1 < (unsigned)imm ? 1 : 0', meta: 'I-Type | Opcode: 0x13, Funct3: 3' },
 
       // --- RV32I Loads & Stores (Native & Pseudo) ---
-      { name: 'lb', type: 'inst', format: 'lb rd, offset(rs1) | lb rd, symbol', desc: 'Load Byte (signed): rd = sign_extend(M[rs1 + offset][7:0]) (Pseudo: loads from symbol address via lui + lb)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 0' },
-      { name: 'lbu', type: 'inst', format: 'lbu rd, offset(rs1) | lbu rd, symbol', desc: 'Load Byte Unsigned: rd = zero_extend(M[rs1 + offset][7:0]) (Pseudo: loads from symbol address via lui + lbu)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 4' },
-      { name: 'lh', type: 'inst', format: 'lh rd, offset(rs1) | lh rd, symbol', desc: 'Load Halfword (signed): rd = sign_extend(M[rs1 + offset][15:0]) (Pseudo: loads from symbol address via lui + lh)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 1' },
-      { name: 'lhu', type: 'inst', format: 'lhu rd, offset(rs1) | lhu rd, symbol', desc: 'Load Halfword Unsigned: rd = zero_extend(M[rs1 + offset][15:0]) (Pseudo: loads from symbol address via lui + lhu)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 5' },
-      { name: 'lw', type: 'inst', format: 'lw rd, offset(rs1) | lw rd, symbol', desc: 'Load Word: rd = M[rs1 + offset][31:0] (Pseudo: loads 32-bit word from symbol address via lui + lw)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 2' },
-      { name: 'sb', type: 'inst', format: 'sb rs2, offset(rs1) | sb rs2, symbol[, rt]', desc: 'Store Byte: M[rs1 + offset][7:0] = rs2[7:0] (Pseudo: stores byte to symbol address via lui + sb)', meta: 'S-Type / Pseudo | Opcode: 0x23, Funct3: 0' },
-      { name: 'sh', type: 'inst', format: 'sh rs2, offset(rs1) | sh rs2, symbol[, rt]', desc: 'Store Halfword: M[rs1 + offset][15:0] = rs2[15:0] (Pseudo: stores halfword to symbol address via lui + sh)', meta: 'S-Type / Pseudo | Opcode: 0x23, Funct3: 1' },
-      { name: 'sw', type: 'inst', format: 'sw rs2, offset(rs1) | sw rs2, symbol[, rt]', desc: 'Store Word: M[rs1 + offset][31:0] = rs2[31:0] (Pseudo: stores 32-bit word to symbol address via lui + sw)', meta: 'S-Type / Pseudo | Opcode: 0x23, Funct3: 2' },
+      { name: 'lb', type: 'inst', format: 'lb rd, offset(rs1) | lb rd, symbol', desc: 'Load Byte (signed): rd = sign_extend(M[rs1 + offset][7:0]) (Pseudo: loads from symbol address via auipc + lb)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 0' },
+      { name: 'lbu', type: 'inst', format: 'lbu rd, offset(rs1) | lbu rd, symbol', desc: 'Load Byte Unsigned: rd = zero_extend(M[rs1 + offset][7:0]) (Pseudo: loads from symbol address via auipc + lbu)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 4' },
+      { name: 'lh', type: 'inst', format: 'lh rd, offset(rs1) | lh rd, symbol', desc: 'Load Halfword (signed): rd = sign_extend(M[rs1 + offset][15:0]) (Pseudo: loads from symbol address via auipc + lh)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 1' },
+      { name: 'lhu', type: 'inst', format: 'lhu rd, offset(rs1) | lhu rd, symbol', desc: 'Load Halfword Unsigned: rd = zero_extend(M[rs1 + offset][15:0]) (Pseudo: loads from symbol address via auipc + lhu)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 5' },
+      { name: 'lw', type: 'inst', format: 'lw rd, offset(rs1) | lw rd, symbol', desc: 'Load Word: rd = M[rs1 + offset][31:0] (Pseudo: loads 32-bit word from symbol address via auipc + lw)', meta: 'I-Type / Pseudo | Opcode: 0x03, Funct3: 2' },
+      { name: 'sb', type: 'inst', format: 'sb rs2, offset(rs1) | sb rs2, symbol[, rt]', desc: 'Store Byte: M[rs1 + offset][7:0] = rs2[7:0] (Pseudo: stores byte to symbol address via auipc + sb)', meta: 'S-Type / Pseudo | Opcode: 0x23, Funct3: 0' },
+      { name: 'sh', type: 'inst', format: 'sh rs2, offset(rs1) | sh rs2, symbol[, rt]', desc: 'Store Halfword: M[rs1 + offset][15:0] = rs2[15:0] (Pseudo: stores halfword to symbol address via auipc + sh)', meta: 'S-Type / Pseudo | Opcode: 0x23, Funct3: 1' },
+      { name: 'sw', type: 'inst', format: 'sw rs2, offset(rs1) | sw rs2, symbol[, rt]', desc: 'Store Word: M[rs1 + offset][31:0] = rs2[31:0] (Pseudo: stores 32-bit word to symbol address via auipc + sw)', meta: 'S-Type / Pseudo | Opcode: 0x23, Funct3: 2' },
 
       // --- RV32I Branches & Jumps ---
       { name: 'beq', type: 'inst', format: 'beq rs1, rs2, label', desc: 'Branch if Equal: if (rs1 == rs2) PC += offset', meta: 'B-Type | Opcode: 0x63, Funct3: 0' },
@@ -9599,7 +9779,7 @@
 
       // --- Pseudo-Instructions ---
       { name: 'li', type: 'pseudo', format: 'li rd, immediate', desc: 'Load Immediate: Loads 32-bit constant into rd (expands to addi / lui+addi)', meta: 'Pseudo-instruction -> addi or lui + addi' },
-      { name: 'la', type: 'pseudo', format: 'la rd, label', desc: 'Load Address: Loads memory address of symbol/label into rd (auipc + addi / lui + addi)', meta: 'Pseudo-instruction -> auipc + addi' },
+      { name: 'la', type: 'pseudo', format: 'la rd, label', desc: 'Load Address: Loads memory address of symbol/label into rd (auipc + addi)', meta: 'Pseudo-instruction -> auipc + addi' },
       { name: 'lla', type: 'pseudo', format: 'lla rd, label', desc: 'Load Local Address: Loads position-independent PC-relative address of symbol into rd', meta: 'Pseudo-instruction -> auipc + addi' },
       { name: 'lga', type: 'pseudo', format: 'lga rd, label', desc: 'Load Global Address: Loads global address of symbol into rd', meta: 'Pseudo-instruction -> auipc + addi' },
       { name: 'mv', type: 'pseudo', format: 'mv rd, rs', desc: 'Move Register: Copies rs into rd (addi rd, rs, 0)', meta: 'Pseudo-instruction -> addi rd, rs, 0' },
@@ -11802,6 +11982,30 @@
         });
       }
 
+      // The operand text is untouched; an immediate that reads more than one
+      // way just gains a marker carrying the other readings. Any label badge
+      // annotateLabels would have added stays outside the marker, so the
+      // underline covers the number alone.
+      function renderNativeCell(item, native) {
+        const readings = nativeImmReadings(item.imm);
+        if (!readings.length || item.immFrom < 0 || item.immTo > native.length) {
+          return annotateLabels(escapeHtml(native));
+        }
+        const tok = escapeHtml(native.slice(item.immFrom, item.immTo));
+        const badge = annotateLabels(tok).slice(tok.length);
+        const tip = readings.map(r => r[0] + ' ' + r[1]).join(' · ');
+        // No `title`: the browser would draw its own tooltip alongside the
+        // popover, and two tooltips for one token is worse than either. The
+        // same text stays on aria-label for anything that reads the page.
+        // escapeHtml() does not touch quotes, and this value is full of them,
+        // so it travels percent-encoded rather than as raw JSON.
+        const data = encodeURIComponent(JSON.stringify(readings));
+        return annotateLabels(escapeHtml(native.slice(0, item.immFrom))) +
+          `<span class="disasm-imm" tabindex="0" aria-label="${escapeHtml(tip)}" data-imm="${data}">${tok}</span>` +
+          badge +
+          annotateLabels(escapeHtml(native.slice(item.immTo)));
+      }
+
       // C mode only: annotate a stack-relative load/store's Native cell with
       // the C variable name it corresponds to, using the same best-effort
       // location table the Locals panel and the source hover use.
@@ -11932,7 +12136,7 @@
           }
         }
 
-        const nativeRendered = annotateLabels(escapeHtml(native)) + annotateCVar(native, item.address);
+        const nativeRendered = renderNativeCell(item, native) + annotateCVar(native, item.address);
         const sourceRendered = annotateLabels(escapeHtml(source));
 
         html += `<tr${rowClass ? ` class="${rowClass}"` : ''}>
@@ -11959,6 +12163,76 @@
         }
       }
     }
+
+    // `title` is the desktop affordance and shows nothing on a touch screen, so
+    // the same readings also open in a small popover. Bound to click rather
+    // than touchstart: a scroll gesture does not fire click, so dragging the
+    // disassembly still scrolls it instead of opening a bubble every time.
+    let immPopoverFor = null;
+
+    function immPopover() {
+      let el = document.getElementById('immPopover');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'immPopover';
+        el.hidden = true;
+        document.body.appendChild(el);
+      }
+      return el;
+    }
+
+    function hideImmPopover() {
+      immPopoverFor = null;
+      const el = document.getElementById('immPopover');
+      if (el) el.hidden = true;
+    }
+
+    function showImmPopover(span) {
+      let readings;
+      try { readings = JSON.parse(decodeURIComponent(span.dataset.imm || '')) || []; } catch (e) { return; }
+      if (!readings.length) return;
+      const el = immPopover();
+      el.innerHTML = readings
+        .map(r => `<div class="imm-row"><span class="imm-key">${escapeHtml(r[0])}</span> <span class="imm-val">${escapeHtml(r[1])}</span></div>`)
+        .join('');
+      el.hidden = false;
+      immPopoverFor = span;
+
+      // Measured after it is visible, then clamped so it stays on screen at
+      // phone width, where the panel is nearly as wide as the viewport.
+      const r = span.getBoundingClientRect();
+      const w = el.offsetWidth, h = el.offsetHeight;
+      let left = r.left;
+      let top = r.bottom + 6;
+      if (left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - w - 8);
+      if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+      el.style.left = left + 'px';
+      el.style.top = top + 'px';
+    }
+
+    document.addEventListener('mouseover', e => {
+      const span = e.target.closest && e.target.closest('.disasm-imm');
+      if (span) showImmPopover(span);
+      else if (immPopoverFor && !(e.target.closest && e.target.closest('#immPopover'))) hideImmPopover();
+    });
+
+    document.addEventListener('click', e => {
+      const span = e.target.closest && e.target.closest('.disasm-imm');
+      if (span) {
+        if (immPopoverFor === span) hideImmPopover();
+        else showImmPopover(span);
+        return;
+      }
+      hideImmPopover();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') hideImmPopover();
+    }, true);
+
+    // Capture, so a scroll inside the panel closes it too, not just the page.
+    document.addEventListener('scroll', hideImmPopover, true);
+    window.addEventListener('resize', hideImmPopover);
 
     // Alias kept for callers that expect a tab interface. Panels are independent,
     // and a caller of switchTab() wants the named panel shown, so this makes it
@@ -12820,14 +13094,6 @@ int main()
       dmem: {
         ready: () => machineCode.some(i => !i.error && i.bytes && i.address >= dataBase),
         save: () => dumpDataSegment()
-      },
-      wrapper: {
-        ready: () => !!hdlFindWrapper(),
-        save: () => {
-          const w = hdlFindWrapper();
-          hdlSaveText(w.src, w.name || 'Wrapper.v');
-          setStatus('Saved ' + (w.name || 'Wrapper.v'), 'success');
-        }
       },
       tb: {
         ready: () => !!hdlFindWrapper(),
@@ -13965,6 +14231,9 @@ int main()
         running = false;
         if (runTimerId) { clearTimeout(runTimerId); runTimerId = null; }
         assembled = true;
+        // Where the run stopped, for the highlight. The branches below override
+        // it only when there is no instruction to point at.
+        currentExecLine = sourceLineForPc(pc);
 
         if (cycleCount >= INFINITE_LOOP_CAP) {
           log('Max cycles reached (possible infinite loop).', 'warn');
@@ -14051,7 +14320,6 @@ int main()
         if (running && count < INFINITE_LOOP_CAP && count < maxRunLimit && !stopReason) {
           runTimerId = setTimeout(runBatch, 0);
         } else {
-          currentExecLine = sourceLineForPc(pc);
           finishRun(stopReason || (count >= maxRunLimit ? 'paused' : null), count);
         }
       }
@@ -14075,6 +14343,9 @@ int main()
       if (running) {
         running = false;
         if (runTimerId) { clearTimeout(runTimerId); runTimerId = null; }
+        // Cancelling the pending batch means the run loop never reaches its own
+        // exit path, so the highlight is moved to the paused instruction here.
+        currentExecLine = sourceLineForPc(pc);
         setStatus('Paused', 'info');
         log('Execution paused by user.', 'info');
         updateRegisters();
@@ -15552,8 +15823,8 @@ int main()
       if (w.src === before) return false;
       hdlDiscardTrace();
       hdlLog('Set the prebuilt Wrapper to IROM_DEPTH_BITS ' + need.irom +
-        ', DMEM_DEPTH_BITS ' + need.dmem + ' for this program. Take the matching file ' +
-        'from ⭳ Download → Wrapper.v.', 'sys');
+        ', DMEM_DEPTH_BITS ' + need.dmem + ' for this program. Set the same two ' +
+        'localparams in your own Wrapper.v.', 'sys');
       setStatus('Prebuilt Wrapper sized for this program: IROM ' + need.irom +
         ', DMEM ' + need.dmem, 'info');
       renderHdlFileList();
@@ -15668,8 +15939,14 @@ int main()
       const dbufPorts = dbuf
         ? '    .OLED_Swap(OLED_Swap), .OLED_SwapPending(OLED_SwapPending),\n'
         : '';
+      // dec_OLED_STATUS and MemRead are both combinational in the fixed
+      // Wrapper, so together they name the cycle in which software read the
+      // swap-pending flag. That is the only way the page can tell a program
+      // that polls from one that does not.
       const dbufReport = dbuf
-        ? '      if (OLED_Swap && !OLED_Swap_d) $display("@@B %0d", cyc - 1);\n      OLED_Swap_d <= OLED_Swap;'
+        ? '      if (OLED_Swap && !OLED_Swap_d) $display("@@B %0d", cyc - 1);\n' +
+          '      OLED_Swap_d <= OLED_Swap;\n' +
+          '      if (dut.MemRead && dut.dec_OLED_STATUS) $display("@@P %0d", cyc - 1);'
         : '';
       const arch = rb
         ? `  // Architectural register file, reached by hierarchical reference.
@@ -16249,7 +16526,7 @@ endmodule
       const userLines = [];
       let cur = null, final = null, next = null, preAcks = 0;
       for (const line of String(stdout || '').split('\n')) {
-        const m = /^@@([ILSTOMWFNAB])\s+(.*)$/.exec(line);
+        const m = /^@@([ILSTOMWFNABP])\s+(.*)$/.exec(line);
         if (!m) { if (line.trim()) userLines.push(line); continue; }
         const k = m[1];
         const f = m[2].trim().split(/\s+/);
@@ -16404,6 +16681,7 @@ endmodule
       uartTxBuffer = '';
       uartTxBytes = [];
       oledPages.forEach(oledBlankPage);
+      oledSwapUnpolled = false;
     }
 
     function hdlApplyPer(kind, f) {
@@ -16420,7 +16698,12 @@ endmodule
         // scanout boundary is not simulated, so apply it now - the same model
         // the JS engine uses, which keeps the two engines in step.
         oledPresent();
+      } else if (kind === 'P') {
+        // Software read OLED_STATUS, so it is waiting the present out rather
+        // than racing it.
+        oledSwapUnpolled = false;
       } else if (kind === 'O') {
+        oledNotePixelWrite();
         // The Wrapper has already resolved the colour mode into a 24-bit
         // value on OLED_Data, so paint straight into the frame buffer. The
         // column still needs the panel's fold, since OLED_Col is 7 bits and

@@ -1,8 +1,5 @@
 # RISC-V Simulator User Guide
 
-!!! danger
-    This is a work in progress. While it can be a useful resource to get started, its correspondence with actual hardware has not been tested yet. The C/asm/HDL codes will need modifications including, but not limited to, appropriate delays , ensuring that all instructions produced by the compiler are implemented in your processor, adjustment of memory segment sizes, etc. for proper functionality.
-
 <p align="center">
   <a href="../riscv_simulator.html" target="_blank" rel="noopener">
     <img alt="Start the Simulator" src="https://img.shields.io/badge/▶%20Start%20the%20Simulator-2ea44f?style=for-the-badge">
@@ -14,7 +11,7 @@ or run it against either a fast JS functional model or your own synthesizable Ve
 Registers, memory, the disassembly and a simulated Nexys 4 board (LEDs, switches, buttons,
 7-segment, OLED, UART, accelerometer) all update as it executes.
 
-Click the button above, or open [`riscv_simulator.html`](riscv_simulator.html)
+Click the button above, or open [`riscv_simulator.html`](https://nus-cg3207.github.io/labs/rv_resources/web_sim/riscv_simulator.html)
 yourself: nothing to install.
 ---
 
@@ -141,7 +138,7 @@ the ±/U switch in the column header.
 - Orange **labels** sit above the word they name, with a trailing `:`, like `main:`.
   Yellow bytes were written at runtime.
 - **⭳ Download** in the toolbar exports `AA_IROM.mem` / `AA_DMEM.mem` for Vivado, and in
-  HDL mode the Wrapper, the generated testbench and the recorded waveform.
+  HDL mode the generated testbench and the recorded waveform.
 
 ### Disassembly
 
@@ -154,6 +151,13 @@ The **Native instruction** column names registers as the encoding does: `x0` to 
 so `add t0, t0, t1` reads `add x5, x5, x6`. ABI names stay in **Original source** beside
 it. Only rows where a real pseudo-instruction was expanded are coloured as such; a
 register renamed from `t0` to `x5` is not an expansion.
+
+An immediate with a dotted underline reads more than one way. Hover it, or tap it on a
+phone, for the others: `-1` is also `0xffffffff` and `4294967295`, which is what makes
+`sltiu x1, x2, -1` a comparison against the largest unsigned value. A branch target gives
+the address it resolves to and the distance from the instruction. Only spellings an
+assembler would accept are offered, so a shift amount and a `lui` immediate have no
+signed reading — those fields are unsigned, and `slli x11, x5, -1` is not an instruction.
 
 ### Locals (C mode)
 
@@ -244,10 +248,17 @@ for (;;) {
 }
 ```
 
-That poll is what makes it tear-free on the board. Here it returns immediately: the
-simulator paints the whole canvas at once, with no scan to be caught mid-frame. So a
-program that skips the wait looks right here and tears on hardware, and one that paces
-itself off the poll needs its own delay to run at a sensible speed here.
+Skipping that poll is the OLED's one silent failure on the board. A present waits for the
+scanout to reach the end of a frame, up to 24,576 instructions at the default clock
+divider, and then spends 192 more copying the page back. Pixels written before the
+boundary appear in the frame being presented, and pixels written during the copy are
+discarded, because the copy owns the write port while it runs. Neither leaves a trace you
+can read.
+
+Here the poll returns immediately: the whole canvas is painted at once, so neither delay
+exists and a program that skips the wait looks correct. The console says so if you draw
+after a present without reading `OLED_STATUS`. The flip side: a program that paces itself
+off the poll needs its own delay to run at a sensible speed here.
 
 ---
 
@@ -334,7 +345,9 @@ things about the Wrapper non-negotiable:
 - **It owns an IROM and a DMEM, sized by two localparams** (`IROM_DEPTH_BITS`,
   `DMEM_DEPTH_BITS`) it declares, and loads them itself with its own `$readmemh` calls.
   The simulator assembles your program and writes the two files to match; it doesn't
-  create the memories or a default size for you.
+  create the memories or a default size for you. Each program needs its own pair, so
+  check them every time: HDL mode refuses one that doesn't fit and names the two values
+  to raise.
 
 One more thing affects debugging, not simulation: the **Registers** panel wants a
 32-entry array of 32-bit registers reachable somewhere inside the core your Wrapper

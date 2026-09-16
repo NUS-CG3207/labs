@@ -287,8 +287,12 @@ setTimeout(async () => {
     }
     const dl = doc.getElementById('downloadSelect');
     const dlValues = [...dl.options].map(o => o.value).filter(Boolean);
-    if (!['irom', 'dmem', 'wrapper', 'tb', 'vcd'].every(v => dlValues.includes(v))) {
-      throw new Error('Download menu is missing entries: ' + dlValues.join(', '));
+    // The Wrapper is deliberately absent: a saved copy carries the depths of
+    // whichever program was loaded when it was saved, and is wrong for the next.
+    const expectDl = ['irom', 'dmem', 'tb', 'vcd'];
+    if (dlValues.join(',') !== expectDl.join(',')) {
+      throw new Error('Download menu should offer exactly ' + expectDl.join(', ') +
+        ', got ' + dlValues.join(', '));
     }
     console.log('Download menu offers:', dlValues.join(', '));
     console.log('✅ Toolbar layout structure verified!');
@@ -315,6 +319,16 @@ setTimeout(async () => {
     // A store to a symbol has no register it may overwrite, so the scratch
     // register has to be named.
     assembleText('.text\nmain:\nsw t0, var1\n.data\nvar1: .word 1\n');
+    // auipc holds the upper 20 bits relative to its own address and the
+    // load/store carries the signed remainder, so the pair is only right if
+    // the two together land on the symbol.
+    const pcRelTarget = rows => {
+      const i = rows.findIndex(m => /^auipc /.test(m.native));
+      if (i < 0 || !rows[i + 1]) return -1;
+      const hi20 = parseInt(rows[i].native.match(/^auipc x\d+, (-?\d+)/)[1], 10);
+      const lo = parseInt(rows[i + 1].native.match(/, (-?\d+)\(/)[1], 10);
+      return ((rows[i].address + (hi20 << 12) + lo) >>> 0);
+    };
     if (win.eval('assembled')) throw new Error('`sw t0, var1` still assembles without a scratch register');
     if (!/scratch register/.test(doc.getElementById('console').textContent)) {
       throw new Error('No scratch-register diagnostic for a 2-operand store to a symbol');
@@ -322,23 +336,33 @@ setTimeout(async () => {
     // Naming it works, and the named register is the one that gets used.
     assembleText('.text\nmain:\nsw t0, var1, t2\n.data\nvar1: .word 1\n');
     if (!win.eval('assembled')) throw new Error('`sw t0, var1, t2` failed to assemble');
-    const storeNatives = win.eval('machineCode').filter(m => m.native).map(m => m.native);
-    if (!storeNatives.some(n => /^lui x7,/.test(n)) || !storeNatives.some(n => /^sw x5, \d+\(x7\)$/.test(n))) {
+    const storeRows = win.eval('machineCode').filter(m => m.native);
+    const storeNatives = storeRows.map(m => m.native);
+    if (!storeNatives.some(n => /^auipc x7,/.test(n)) || !storeNatives.some(n => /^sw x5, -?\d+\(x7\)$/.test(n))) {
       throw new Error('Store expansion did not use the named register: ' + JSON.stringify(storeNatives));
     }
-    console.log('Store to a symbol requires the scratch register, and honours the one named');
+    if (pcRelTarget(storeRows) !== win.eval('dataBase') >>> 0) {
+      throw new Error('Store expansion addressed 0x' + pcRelTarget(storeRows).toString(16) +
+                      ', not the symbol at 0x' + (win.eval('dataBase') >>> 0).toString(16));
+    }
+    console.log('Store to a symbol is PC-relative, honours the named register, and lands on the symbol');
 
     // A load has one - rd itself - so no other register is touched.
     assembleText('.text\nmain:\nlw s3, delay_val\n.data\ndelay_val: .word 4\n');
     if (!win.eval('assembled')) throw new Error('`lw s3, delay_val` failed to assemble');
-    const loadNatives = win.eval('machineCode').filter(m => m.native).map(m => m.native);
+    const loadRows = win.eval('machineCode').filter(m => m.native);
+    const loadNatives = loadRows.map(m => m.native);
     if (!loadNatives.every(n => !/x5|x6/.test(n))) {
       throw new Error('Load expansion clobbered a scratch register: ' + JSON.stringify(loadNatives));
     }
-    if (!loadNatives.some(n => /^lui x19,/.test(n)) || !loadNatives.some(n => /^lw x19, \d+\(x19\)$/.test(n))) {
+    if (!loadNatives.some(n => /^auipc x19,/.test(n)) || !loadNatives.some(n => /^lw x19, -?\d+\(x19\)$/.test(n))) {
       throw new Error('Load expansion did not build the address in rd: ' + JSON.stringify(loadNatives));
     }
-    console.log('Load from a symbol builds the address in rd, clobbering nothing else');
+    if (pcRelTarget(loadRows) !== win.eval('dataBase') >>> 0) {
+      throw new Error('Load expansion addressed 0x' + pcRelTarget(loadRows).toString(16) +
+                      ', not the symbol at 0x' + (win.eval('dataBase') >>> 0).toString(16));
+    }
+    console.log('Load from a symbol is PC-relative, builds the address in rd, and lands on the symbol');
 
     // The Native column is a disassembly: x0-x31, never ABI names. And a row
     // whose only difference from the source is that naming is NOT marked as a
