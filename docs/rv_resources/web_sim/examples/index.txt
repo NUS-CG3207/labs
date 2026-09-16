@@ -17,6 +17,7 @@ the baked copy to match.
 | dip_led | asm | DIP to LED (start here) | DIP_to_LED.asm | 9 | 9 | DIP to LED — the one example baked into the page, works with no server |
 | dip_led_c | c | DIP to LED (start here) | DIP_to_LED.c | 9 | 9 | DIP switches mirrored to LEDs — the one C example baked into the page, works with no server |
 | week6example | asm | Week 6 Example | Week6Sample.asm | 9 | 9 | Week 6 Example |
+| week6quiz | asm | Week 6 Quiz | Week6Quiz.asm | 9 | 9 | Week 6 Quiz |
 | rars_syscalls | asm | RARS Syscalls | rars_syscalls.asm | 9 | 9 | RARS ecall syscalls demo |
 | fib | asm | Fibonacci | fibonacci.asm | 9 | 9 | Fibonacci sequence |
 | hello_world | asm | Hello World | HelloWorld.asm | 9 | 9 | Hello World |
