@@ -79,7 +79,7 @@ module ALU(
 	assign Z = (ALUResult == 0) ? 1 : 0 ;
     
 	assign ALUFlags = {Z, 1'b0, 1'b0} ; 	//{eq, lt, ltu} - all except eq are placeholders. 
-    						// todo: Will need to be modified in lab 3 to support blt, bltu, bge, bgeu.
+    						// todo: Will need to be modified in to support blt, bltu, bge, bgeu.
     
     
 	// todo: make shifter connections here
@@ -88,7 +88,7 @@ module ALU(
     
 	// Instantiate Shifter        
 	Shifter Shifter1(
-                Sh,
+            Sh,
         	Shamt5,
         	ShIn,
         	ShOut

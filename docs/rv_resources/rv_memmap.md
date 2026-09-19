@@ -54,7 +54,7 @@ The RARS default memory configuration is as follows.
 * `DMEM_BASE` = 0x10010000. This should be the same as the `.data` address based on the Memory Configuration set in the assembler/linker, `Wrapper.v`, C program.
 * `MMIO_BASE` = 0xFFFFF0000. This should be the same as the `.mmio` address based on the Memory Configuration set in the assembler/linker, `Wrapper.v`, C program.
 
-It is possible to change the configuration to others supported by RARS, such as compact with `.txt` at 0. MMIO base can be changed freely in any configuration, though if you need to use RARS simulated peripherals, it to be the default value.
+It is possible to change the configuration to others supported by RARS, such as compact with `.txt` at 0. MMIO base can be changed freely in any configuration, though if you need to use RARS simulated peripherals, set it to be the default value.
 
 Instruction and data memory sizes can be bigger than 128 words. Be mindful of the potentially increased synthesis time though, especially if not using synch read (block RAM).
 

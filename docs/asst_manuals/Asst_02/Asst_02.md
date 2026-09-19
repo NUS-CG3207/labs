@@ -4,7 +4,10 @@
 
     Assignment 2 consists of 1 task, with 2 subtasks, for a total of **30 points**. 
 
-    Assignment 2 is a group exercise. You will be assessed as a group, but scored individually. 
+    Assignment 2 is a group exercise. You will be assessed as a group, but scored individually.
+
+    There could still be minor updates, which will be <span style="color: brown;">highlighted</span>
+    
 
 ## Objective
 
@@ -112,15 +115,13 @@ When simulating, the `test_Wrapper` -> `Wrapper` -> `RV` relationship is analogo
 
 ## What code to modify
 
-There are basically 4 files we need to populate / modify  - **PC_Logic.v** , **Decoder.v** , **RV.v** ; we will also need to add our code / constant memories hex values into **Wrapper.v**. A 5th file, **ALU.v** should also be modified to incorporate shifts.
-
 There are 5 files we must populate/modify:
 
-1. `ALU.v`: we must modify the ALU to incorporate shifts.
+1. `ALU.v`: we must modify the ALU to incorporate shifts. <span style="color: brown;">ALUFlags need to be modified in to support blt, bltu, bge, bgeu</span>.
 2. `Decoder.v`
 3. `PC_Logic.v`
 4. `RV.v`
-5. `Wrapper.v`: we need to add our Instruction and Data ROMs here. This can be done in the same way as [Assignment 1](../../Asst_01/Asst_01/#design-guide).
+5. `Wrapper.v`: we need to add our Instruction and Data memories here. This can be done in the same way as [Assignment 1](../../Asst_01/Asst_01/#design-guide).
 6. `TOP_Nexys.vhd`: we may need to modify `CLK_DIV_BITS` depending on the processor clock speed we want to achieve (we can keep it to a low number like 5 if we are using UART). This need not be changed for simulation as `TOP_Nexys.vhd` is not simulated. Changing CLK_DIV_BITS to 0 causes the frequency to be 100 MHz, but unless you do lots of optimizations such as pipelining.
 
 You are expected to know the functionality of all components of the RISC-V processor (RV module and its sub-modules*), irrespective of who wrote it - you or your teammate or provided as a part of the templates or assisted by AI (in which case you should declare the prompts used as a comment, and also verbally to the evaluator). You need not understand `TOP`. A fair understanding of `Wrapper` is essential; a deeper understanding is recommended though not mandatory.
