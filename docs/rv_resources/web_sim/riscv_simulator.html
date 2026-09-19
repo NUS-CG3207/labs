@@ -4844,11 +4844,15 @@
     let maxInstructionsPerRun = 100000000;
 
     // Step history for "back step". Each entry stores CPU state + memory writes for one executed instruction.
-    let execHistory = [];       // stack of {pc, regs, fregs, dregs, writes, line}
+    let execHistory = [];       // stack of {pc, regs, fregs, dregs, writes, pixels, periph, line}
     let historyCap = 5000;
     // Journal of memory writes performed during the current step (used to build undoable history).
     let stepWriteLog = [];
     let journalEnabled = false;
+    // Peripheral writes never reach writeMem's byte journal. The scalars are
+    // snapshotted whole once per step; the OLED pages are too big for that,
+    // so the bytes a step touches are journalled here instead.
+    let stepPixelLog = [];
 
     // Memory-mapped I/O: Standard 16550/RISC-V UART Serial Console (115200 8N1)
     let MMIO_BASE = mmioBase;
@@ -6377,6 +6381,7 @@
       initializeState();
       execHistory = [];
       stepWriteLog = [];
+      stepPixelLog = [];
       buildPcToLineMap(mc);
       for (let k = 0; k < mc.length; k++) {
         const item = mc[k];
@@ -6533,6 +6538,7 @@
         oledFrontPage = oledBackPage;
         oledBackPage = t;
       }
+      if (journalEnabled) stepPixelLog.push({ page: oledBackPage, full: oledPages[oledBackPage].slice() });
       oledPages[oledBackPage].set(oledPages[oledFrontPage]);
       oledBuffer = oledPages[oledBackPage];
       oledSwapUnpolled = true;
@@ -6622,6 +6628,7 @@
       const c = oledPanelCol(oledCol);
       const rIdx = oledRow & 0x3F;
       const pixelIdx = (rIdx * 96 + c) * 4;
+      if (journalEnabled) stepPixelLog.push({ page: oledBackPage, idx: pixelIdx, old: oledBuffer.slice(pixelIdx, pixelIdx + 4) });
       oledBuffer[pixelIdx] = r;
       oledBuffer[pixelIdx + 1] = g;
       oledBuffer[pixelIdx + 2] = b;
@@ -6692,6 +6699,47 @@
         uartNextDeliveryInstr = instructionCount + uartGapInstr();
       }
       uartReportDrops();
+    }
+
+    // Everything one step can change on the peripheral side, bar the OLED
+    // pages. Snapshotting the scalars whole keeps the undo in one place
+    // instead of a hook at every write site, so a new peripheral only has to
+    // be listed here; the cost is one small object per single-step.
+    function capturePeriphState() {
+      return {
+        ledState, sevsegState,
+        oledCol, oledRow, oledCtrl, oledDataVal, oledAdvCol, oledAdvRow,
+        oledFrontPage, oledBackPage, oledSwapUnpolled, oledRaceWarned,
+        uartPending: uartPending.slice(),
+        uartRxByte, uartRxFull, uartRxDropped, uartRxDroppedTotal,
+        uartNextDeliveryInstr,
+        uartTxBuffer, uartTxLen: uartTxBytes.length
+      };
+    }
+
+    function restorePeriphState(s) {
+      ledState = s.ledState; sevsegState = s.sevsegState;
+      oledCol = s.oledCol; oledRow = s.oledRow;
+      oledCtrl = s.oledCtrl; oledDataVal = s.oledDataVal;
+      oledAdvCol = s.oledAdvCol; oledAdvRow = s.oledAdvRow;
+      oledFrontPage = s.oledFrontPage; oledBackPage = s.oledBackPage;
+      oledBuffer = oledPages[oledBackPage];
+      oledSwapUnpolled = s.oledSwapUnpolled; oledRaceWarned = s.oledRaceWarned;
+      uartPending = s.uartPending.slice();
+      uartRxByte = s.uartRxByte; uartRxFull = s.uartRxFull;
+      uartRxDropped = s.uartRxDropped; uartRxDroppedTotal = s.uartRxDroppedTotal;
+      uartNextDeliveryInstr = s.uartNextDeliveryInstr;
+      uartTxBuffer = s.uartTxBuffer; uartTxBytes.length = s.uartTxLen;
+    }
+
+    // Undo one step's OLED page edits, newest first: a whole-page entry is a
+    // present's copy, a short one is a single pixel.
+    function restoreOledPages(log) {
+      for (let i = log.length - 1; i >= 0; i--) {
+        const e = log[i];
+        if (e.full) oledPages[e.page].set(e.full);
+        else oledPages[e.page].set(e.old, e.idx);
+      }
     }
 
     function handleMMIOWrite(addr, val, size) {
@@ -8551,6 +8599,7 @@
       initializeState();
       execHistory = [];
       stepWriteLog = [];
+      stepPixelLog = [];
       assembled = false;
       running = false;
       machineCode = [];
@@ -13941,6 +13990,8 @@ int main()
 
       journalEnabled = true;
       stepWriteLog = [];
+      stepPixelLog = [];
+      const prePeriph = capturePeriphState();
       const preRegs = Int32Array.from(regs);
       const preFregs = Float32Array.from(fregs);
       const preDregs = Float64Array.from(dregs);
@@ -13977,7 +14028,8 @@ int main()
       const instructionsExecuted = instructionCount - instrBefore;
       execHistory.push({
         pc: prePc, regs: preRegs, fregs: preFregs, dregs: preDregs,
-        writes: stepWriteLog.slice(), cycles: totalCycles - cycBefore, instr: instructionsExecuted, line: line
+        writes: stepWriteLog.slice(), pixels: stepPixelLog.slice(), periph: prePeriph,
+        cycles: totalCycles - cycBefore, instr: instructionsExecuted, line: line
       });
       if (execHistory.length > historyCap) execHistory.shift();
       highlightCurrentLine();
@@ -14010,6 +14062,8 @@ int main()
         const w = st.writes[i];
         setMemByte(w.addr, w.old);
       }
+      restoreOledPages(st.pixels);
+      restorePeriphState(st.periph);
       regs.set(st.regs);
       fregs.set(st.fregs);
       dregs.set(st.dregs);
@@ -14020,6 +14074,7 @@ int main()
       lastChangedReg = -1;
       highlightCurrentLine();
       updateRegisters(); updateMemoryView(); updateMachineCode(); updateDisassembly(); updateStats();
+      updatePeripherals(); updateOledCanvas();
       setStatus(`Stepped back to line ${currentExecLine > 0 ? currentExecLine : '?'}`);
       log(`Back to 0x${st.pc.toString(16)}`, 'info');
       updateToolbarButtonStates();
@@ -14408,6 +14463,7 @@ int main()
       initializeState();
       execHistory = [];
       stepWriteLog = [];
+      stepPixelLog = [];
       // Reset all peripheral state
       ledState = 0;
       sevsegState = '00000000';

@@ -1,7 +1,7 @@
 # RISC-V Simulator User Guide
 
 <p align="center">
-  <a href="../riscv_simulator.html" target="_blank" rel="noopener">
+  <a href="https://nus-cg3207.github.io/labs/rv_resources/web_sim/riscv_simulator.html" target="_blank" rel="noopener">
     <img alt="Start the Simulator" src="https://img.shields.io/badge/▶%20Start%20the%20Simulator-2ea44f?style=for-the-badge">
   </a>
 </p>
@@ -90,7 +90,7 @@ wrong logic.
 |---|---|---|
 | **▶ Run** / **⏸ Pause** / **▶ Resume** | `F5` | Run to the end, a breakpoint, or the instruction limit |
 | **⏭ Step** | `F8` | One instruction (or one statement, see below) |
-| **⏮ Back** | `Shift+F8` | Undo the last step, registers and memory included |
+| **⏮ Back** | `Shift+F8` | Undo the last step, registers, memory and peripherals included |
 | **⟲ Reset** | | Back to the start, keeping the assembled program |
 
 **Breakpoints** go in the gutter, or on `F9`. Set one on a comment, a blank or a `}` and
