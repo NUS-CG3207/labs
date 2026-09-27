@@ -1,7 +1,7 @@
 # RISC-V Simulator User Guide
 
 <p align="center">
-  <a href="https://nus-cg3207.github.io/labs/rv_resources/web_sim/riscv_simulator.html" target="_blank" rel="noopener">
+  <a href="../riscv_simulator.html" target="_blank" rel="noopener">
     <img alt="Start the Simulator" src="https://img.shields.io/badge/▶%20Start%20the%20Simulator-2ea44f?style=for-the-badge">
   </a>
 </p>
@@ -11,7 +11,7 @@ or run it against either a fast JS functional model or your own synthesizable Ve
 Registers, memory, the disassembly and a simulated Nexys 4 board (LEDs, switches, buttons,
 7-segment, OLED, UART, accelerometer) all update as it executes.
 
-Click the button above, or open [`riscv_simulator.html`](https://nus-cg3207.github.io/labs/rv_resources/web_sim/riscv_simulator.html)
+Click the button above, or open [`riscv_simulator.html`](riscv_simulator.html)
 yourself: nothing to install.
 ---
 
@@ -89,7 +89,7 @@ wrong logic.
 | Button | Key | What it does |
 |---|---|---|
 | **▶ Run** / **⏸ Pause** / **▶ Resume** | `F5` | Run to the end, a breakpoint, or the instruction limit |
-| **⏭ Step** | `F8` | One instruction (or one statement, see below) |
+| **⏭ Step** | `F8` | One instruction (or one statement, see below); one clock cycle when pipelined |
 | **⏮ Back** | `Shift+F8` | Undo the last step, registers, memory and peripherals included |
 | **⟲ Reset** | | Back to the start, keeping the assembled program |
 
@@ -110,8 +110,8 @@ instead of one machine instruction at a time. **Back** undoes exactly the same d
 
 ## 4. Reading the panels
 
-On a narrow screen the panels become tabs, the waveform among them, so stepping and
-watching the waves do not compete for the screen.
+On a narrow screen the panels become tabs, the waveform and the datapath among them, so
+stepping and watching do not compete for the screen.
 
 The 🔍 in a panel header narrows it to matching rows: one register out of 32, or every
 `jal` in a few hundred instructions. Labels match too, so filtering Disassembly by `loop`
@@ -121,7 +121,8 @@ it filters the rows already on screen, so move the address window first.
 ### Registers
 
 All 32 integer registers, hex and decimal, editable. Decimal is signed unless you flip
-the ±/U switch in the column header.
+the ±/U switch in the column header. In the double-click editor, and the Memory word
+editor, `0x…` is hex and plain digits are decimal.
 
 ### Memory
 
@@ -155,9 +156,78 @@ register renamed from `t0` to `x5` is not an expansion.
 An immediate with a dotted underline reads more than one way. Hover it, or tap it on a
 phone, for the others: `-1` is also `0xffffffff` and `4294967295`, which is what makes
 `sltiu x1, x2, -1` a comparison against the largest unsigned value. A branch target gives
-the address it resolves to and the distance from the instruction. Only spellings an
-assembler would accept are offered, so a shift amount and a `lui` immediate have no
-signed reading — those fields are unsigned, and `slli x11, x5, -1` is not an instruction.
+the address it resolves to and the distance from the instruction. Every operand the
+column prints, and every reading it offers, is one this assembler would take back, so a
+shift amount and a `lui` immediate have no signed reading — those fields are unsigned,
+and `slli x11, x5, -1` is not an instruction.
+
+### Datapath
+
+The single-cycle datapath from the lecture, with the instruction at the PC going through
+it. **⧉ Datapath** in the toolbar shows or hides it along the bottom of the window (a panel
+on a phone), and ⤢ gives it the whole window.
+
+The diagrams draw RV32I's ALU, jump and branch instructions, `lw` and `sw`. A program
+using anything else (`mul`/`div`, `lbu`, `ecall`, floating point, atomics) runs as usual,
+but the button is off and its tooltip names the first such line.
+
+**▶** takes the instruction one phase further: fetch, decode, the Decoder's control
+signals, register read, execute, memory, write-back, next PC, and the clock edge. Values
+travel along their wires and stay beside them. **▶** at the clock edge executes the
+instruction, which is the only point where registers, memory and the PC change, as in the
+hardware. **▶▶** plays the rest of the phases and then executes; **◀** goes back a phase.
+Step, Back and Run carry on working as usual.
+
+Beside it, the instruction is laid out in its format (R, I, S, B, U or J): all 32 bits,
+grouped into fields coloured by where they go (Decoder, register file, Extend), with what
+each field means and the immediate Extend builds from the scattered bits. Below that is the
+Decoder's control table from the lecture, with the row this instruction selects lit.
+
+Red wires carry data, purple the instruction's fields, blue the control signals. A dashed
+wire has a value on it that nothing uses: `addi` still reads a second register, and a
+store still has a Result, but no mux or enable lets them through. A dotted grey control
+signal is a don't-care.
+
+The values are worked out from the lecture's control tables, as `RV/Decoder.v`,
+`Extend.v`, `ALU.v` and `PC_Logic.v` implement them, not taken from the simulator. So
+what you see is what that hardware does, and your own processor should do the same.
+
+### The 5-stage pipeline
+
+Choose **Pipelined** in the datapath header, or *Microarchitecture* in ⚙ Settings → JS
+Simulation, to run the program on a 5-stage pipeline instead. Switching
+resets the program. **Step** and **Back** then move one clock cycle, the toolbar shows
+cycles, instructions retired and CPI, and the editor gutter and Disassembly mark which
+stage holds each instruction. PC is PCF, the address being fetched. A breakpoint stops the
+run once its instruction reaches Execute; from there nothing can flush it.
+
+The datapath becomes the pipelined one, one clock cycle per **▶** (**◀** goes back one,
+**▶▶** keeps clocking until pressed again). Each stage's wires are in its own colour with
+its instruction above it, and a forwarded value keeps the colour of the stage it came
+from. The hazard unit's active signals are lit, and the caption says why. Beside the
+drawing are the five instructions' encodings, oldest first. **Timeline** in the header
+swaps the drawing for the pipeline chart, one row per instruction and one column per
+cycle, with stalls hatched and flushed instructions struck out.
+
+The pipeline runs all of RV32IM: `mul`/`div` take one cycle in Execute, and floating
+point, atomics and `ecall` wait in Decode until the stages ahead have emptied, then run
+there. None of those can be drawn, so a program using them runs without the diagram.
+
+Each part of the hazard unit can be switched off: forwarding to Execute, W to D
+forwarding, the mem-mem copy, the load-use stall and branch flushing. Off means the
+hardware without it, so the program computes what that hardware would, wrong answers
+included. The load-use stall only stalls for a register the instruction in Decode really
+reads, and not for a store's data, which the mem-mem copy delivers.
+
+**Branch prediction** (off by default, in the same Settings card) adds a BHT to Fetch,
+indexed by PC[k+1:2] with 4 to 256 entries and no tags. Each entry holds a predicted
+PCSrc (the last outcome, or a 2-bit saturating counter) and a predicted target. Fetch
+cannot tell what it has fetched, so every instruction is predicted, and instructions whose
+PCs share an entry disturb each other. Execute checks the prediction against PCSrcE and
+the real target; a wrong one flushes D and E, sends the PC to the right address and updates
+the entry. The toolbar counts mispredicts and the Timeline marks them. The diagram gains a
+Branch Predictor block and a Mispredict mux in front of the PC, and the side column lists
+the BHT with the entries Fetch and Execute read marked.
 
 ### Locals (C mode)
 
@@ -270,7 +340,7 @@ off the poll needs its own delay to run at a sensible speed here.
 |---|---|
 | **⚡ Compiler** | C compiler, `-O` level, `-march`/`-mabi`, M-extension toggle (off by default) |
 | **🗺 Linker** | Segment bases and sizes, stack top, MMIO base |
-| **⏱ JS Simulation** | Statement Stepping · max instructions per run · cycles per instruction |
+| **⏱ JS Simulation** | Statement Stepping · single-cycle or 5-stage pipeline, and the hazard switches · max instructions per run · cycles per instruction |
 | **🔌 HDL Simulation** | Statement Stepping · your Verilog sources · everything for the hardware engine |
 
 Changing anything on the **Compiler** tab clears the compiled program: what was loaded
@@ -412,9 +482,8 @@ both values. That is almost always where the RTL bug is.
 
 ### Watching the waveform
 
-In HDL mode a waveform strip sits along the bottom of the page, folded to its title bar
-until there is something to show. The first Run after a Reset opens it; after that it stays
-where you put it, and the `▸` on the bar brings it back. On a narrow screen it is a panel
+In HDL mode **∿ Waveform** in the toolbar shows or hides a waveform strip along the bottom
+of the page. The first Run after a Reset opens it. On a narrow screen it is a panel
 alongside Registers and the rest instead.
 
 Its cursor sits on the cycle you are stopped at, so Step and Back walk it with you. That is
@@ -482,7 +551,7 @@ both open it.
 | [`riscv_simulator_specs.md`](riscv_simulator_specs.md) | Full reference: MMIO map, ISA, syscalls, architecture, changelog |
 | `examples/` | Every example but DIP to LED, one file each, listed in `index.txt` with the memory depths each needs; add one by adding a row and a file, no HTML edit (needs the page served over `http://`) |
 | `riscv_simulator_tests/` | The automated test suite |
-| [`vendor/`](vendor/README.md) | Local copies of CodeMirror, Icarus Verilog and Yosys, used when the CDN cannot be reached (needs the page served over `http://`) |
+| [`vendor/`](vendor/README.md) | Local copies of CodeMirror (loaded from here first), Icarus Verilog and Yosys (used when the CDN cannot be reached, which needs the page served over `http://`) |
 
 ---
 

@@ -129,12 +129,12 @@ setTimeout(async () => {
     console.log('\n[1] HDL setup lives in Settings, not in a panel of its own');
     check('There is no HDL panel', !doc.getElementById('tab-hdl'));
     check('There is no HDL panel chip', !doc.getElementById('panelChip-hdl'));
-    // Waveforms is a panel (on mobile, where the bottom dock cannot be reached
-    // without scrolling the run controls away); HDL setup is not.
+    // Waveforms and Datapath are panels (on mobile, where the bottom dock
+    // cannot be reached without scrolling the run controls away); HDL setup is not.
     check('The panel dock holds exactly its known panels',
       [...doc.querySelectorAll('#panelStack > .tab-content')]
         .map(e => e.id.replace('tab-', '')).sort().join(',') ===
-      'disassembly,locals,memory,peripherals,registers,waveform');
+      'datapath,disassembly,locals,memory,peripherals,registers,waveform');
     check('Settings has a dedicated HDL tab',
       !!doc.getElementById('settingsTabBtn-hdl') && !!doc.getElementById('settingsContent-hdl'));
     check('Engine toggle has JS and HDL buttons',

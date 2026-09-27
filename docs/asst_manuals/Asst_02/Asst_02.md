@@ -17,7 +17,7 @@ In this assignment, we will be implementing the basic RISC-V processor supportin
 
 #### Task 1: Implement the following instructions [20 points]
 
-The instructions required are:
+The basic instructions required are:
 
 * `add`, `addi`, `sub`, `and`, `andi`, `or`, `ori`
 * `lw`, `sw`
@@ -117,16 +117,16 @@ When simulating, the `test_Wrapper` -> `Wrapper` -> `RV` relationship is analogo
 
 There are 5 files we must populate/modify:
 
-1. `ALU.v`: we must modify the ALU to incorporate shifts. <span style="color: brown;">ALUFlags need to be modified in to support blt, bltu, bge, bgeu</span>.
+1. `ALU.v`: we must modify the ALU to incorporate shifts. <span style="color: brown;">ALUFlags need to be modified to support blt, bltu, bge, bgeu</span>.
 2. `Decoder.v`
 3. `PC_Logic.v`
 4. `RV.v`
 5. `Wrapper.v`: we need to add our Instruction and Data memories here. This can be done in the same way as [Assignment 1](../../Asst_01/Asst_01/#design-guide).
-6. `TOP_Nexys.vhd`: we may need to modify `CLK_DIV_BITS` depending on the processor clock speed we want to achieve (we can keep it to a low number like 5 if we are using UART). This need not be changed for simulation as `TOP_Nexys.vhd` is not simulated. Changing CLK_DIV_BITS to 0 causes the frequency to be 100 MHz, but unless you do lots of optimizations such as pipelining.
+6. `TOP_Nexys.vhd`: we may need to modify `CLK_DIV_BITS` depending on the processor clock speed we want to achieve (we can keep it to a low number like 5 if we are using UART). This need not be changed for simulation as `TOP_Nexys.vhd` is not simulated. Changing CLK_DIV_BITS to 0 causes the frequency to be 100 MHz, but unless you do lots of optimizations such as pipelining, it likely won't run at that speed.
 
 You are expected to know the functionality of all components of the RISC-V processor (RV module and its sub-modules*), irrespective of who wrote it - you or your teammate or provided as a part of the templates or assisted by AI (in which case you should declare the prompts used as a comment, and also verbally to the evaluator). You need not understand `TOP`. A fair understanding of `Wrapper` is essential; a deeper understanding is recommended though not mandatory.
 
-*For assignment #2, a deeper understanding of the shifter component is not essential. For future assignments, it is.
+*For assignment #2, a deeper understanding of the shifter component <span style="color: brown;"> or ALUFlags generation</span> is not essential. For future assignments, it is.
 
 !!! tip
     Read the comments (especially about the input and output ports / interfaces) in the `Wrapper.v` carefully.
@@ -225,7 +225,9 @@ The following section details some tips and tricks that will make your life a lo
 
 ### Simulation tips and tricks
 
-* Please **SIMULATE** your design before spending your time on bitstream generation. Make sure your design synthesizes without warnings (if at all there are warnings, you should know the reasons, and you should ensure that the warnings do not affect the functionality). If you don't simulate and click 'generate bitstream' hoping it would work on the board, you are probably wasting your time. This can't be emphasized enough.
+* Please **SIMULATE** your design before spending your time on bitstream generation. Debugging via simulation = learning.
+
+* Make sure your design synthesizes without warnings (if at all there are warnings, you should know the reasons, and you should ensure that the warnings do not affect the functionality). If you don't simulate and click 'generate bitstream' hoping it would work on the board, you are probably wasting your time. This can't be emphasized enough.
 
 * You can get a very good sense of whether your design will work on hardware by doing a **post-synthesis functional simulation** by Simulation > Run Simulation > Post-synthesis functional simulation (Instead of the usual Behavioural Simulation).
   * The same testbench can be used, so it requires zero extra effort.
@@ -236,7 +238,7 @@ The following section details some tips and tricks that will make your life a lo
 
 * Relaunch simulation after changing .mem.
 
-* A self-checking testbench can be quite useful. You may use LLM tools for that. Tools such as Claude tends to do a better job than ChatGPT for this (in our experience). Declare LLM tool+version, and prompts used as a comment. For example, the [test_Wrapper_DIP_to_LED.v](../../code_templates/Asst_02/test_Wrapper_DIP_to_LED.v) is convereted to sel-checking [test_Wrapper_DIP_to_LED_self_checking.v](../../code_templates/Asst_02/test_Wrapper_DIP_to_LED_self_checking.v) via a prompt that is declared as a comment in the latter file.
+* A self-checking testbench can be quite useful. You may use LLM tools for that. Declare LLM tool+version, and prompts used as a comment. For example, the [test_Wrapper_DIP_to_LED.v](../../code_templates/Asst_02/test_Wrapper_DIP_to_LED.v) is convereted to sel-checking [test_Wrapper_DIP_to_LED_self_checking.v](../../code_templates/Asst_02/test_Wrapper_DIP_to_LED_self_checking.v) via a prompt that is declared as a comment in the latter file.
 
 * You can go into the subunits and see their value for each instruction (Scope-Objects) - this is much easier than what most of you think. This is more powerful than dragging the various signals into the waveform. Note that the values you see are those at the time the simulation has stopped/paused, not the time corresponding to the yellow vertical bar in the waveforms window. Double-clicking the Scope-Objects will lead you to the source code - you can then hover the mouse pointer above various objects to see their values.
 
@@ -244,7 +246,10 @@ The following section details some tips and tricks that will make your life a lo
 
 * Have the RARS simulator side by side so that you can compare the register/memory values between that in RARS and HDL register/memory objects. While you single step in RARS, you can also run by 10 more ns to have the same effect in HDL simulation. It helps to have the PC and Instr values in the waveform window to see the correspondence between RARS and HDL simulations, i.e., to ensure that you are looking at the same instruction on the two tools.
 
-* Don't forget to **Relaunch** simulation (not just Restart) once you have made any changes to your HDL.
+* Don't forget to **Relaunch** simulation (not just Restart) once you have made any changes to your HDL Relaunch causes recompilation. Restart only causes re-running of the compiled testbench.
+
+* Open-source simulators such as Verilator and iVerilog runs significantly faster than Vivado. When used along with Yosys, you can do post-synthesis functional simulation too! These are light-weight tools and are more amenable to agentic workflows than Vivado. While open-source workflows exist for implementation and bitstream generation too, they are not as stable or optimised as Vivado.
+
 
 ### Expected warnings
 

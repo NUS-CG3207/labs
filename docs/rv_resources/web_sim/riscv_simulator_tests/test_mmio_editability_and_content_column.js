@@ -86,9 +86,9 @@ setTimeout(() => {
     console.log('✅ MMIO write to DIP/PB (RO) is ignored, matching real hardware');
 
     // --- [4] The registry drives read-only-ness correctly, with the UART_RX exception ---
-    if (win.eval('isMMIOReadOnlyAddr(0xFFFF0064)') !== true) throw new Error('DIP should report read-only');
-    if (win.eval('isMMIOReadOnlyAddr(0xFFFF0060)') !== false) throw new Error('LED should report writable');
-    if (win.eval('isMMIOReadOnlyAddr(0xFFFF0004)') !== false) throw new Error('UART_RX is a deliberate exception and should report writable');
+    if (win.eval('mmioReadOnlyMessage(0xFFFF0064)') === null) throw new Error('DIP should report read-only');
+    if (win.eval('mmioReadOnlyMessage(0xFFFF0060)') !== null) throw new Error('LED should report writable');
+    if (win.eval('mmioReadOnlyMessage(0xFFFF0004)') !== null) throw new Error('UART_RX is a deliberate exception and should report writable');
     if (win.eval("mmioRegisterAt(0xFFFF0064).name") !== 'DIP') throw new Error('mmioRegisterAt(DIP) should resolve to the DIP entry');
     console.log('✅ MMIO_REGISTERS registry classifies RO/WO correctly, UART_RX exception included');
 

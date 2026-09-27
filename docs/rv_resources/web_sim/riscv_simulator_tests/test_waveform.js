@@ -226,15 +226,16 @@ setTimeout(async () => {
     // comes back.
     const dockEl = doc.getElementById('waveDock');
     const foldBtn = doc.getElementById('waveFoldBtn');
-    check('the strip has a fold control rather than a toolbar button',
-      !!foldBtn && !doc.getElementById('waveDockBtn'));
+    check('the toolbar button reads Waveform in HDL mode', (() => {
+      win.setSimEngineMode('hdl'); const t = doc.getElementById('btnViz').textContent; win.setSimEngineMode('js'); return /Waveform/.test(t);
+    })());
     win.setSimEngineMode('js');
     win.updateWaveAvailability();
     check('the strip is absent in JS mode', !doc.body.classList.contains('hdl-mode'));
     check('the strip is closed in JS mode', !doc.body.classList.contains('wave-open'));
     win.setSimEngineMode('hdl');
     check('present in HDL mode', doc.body.classList.contains('hdl-mode'));
-    check('folded leaves no inline height to fight the layout',
+    check('off leaves no inline height to fight the layout',
       doc.body.classList.contains('wave-open') || dockEl.style.flex === '');
 
     console.log('\n[4] Empty states say what to do instead of showing a blank canvas');

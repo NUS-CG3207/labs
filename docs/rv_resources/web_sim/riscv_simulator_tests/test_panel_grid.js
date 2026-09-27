@@ -279,7 +279,7 @@ setTimeout(() => {
     const stackM = Array.from(stack.children).filter(c => c.id && c.id.startsWith('tab-'));
     const stackIds = stackM.map(c => c.id.replace('tab-', '')).sort();
     check('Every panel is a direct stack child on mobile (' + stackIds.join(', ') + ')',
-      stackIds.join(',') === 'disassembly,locals,memory,peripherals,registers,waveform');
+      stackIds.join(',') === 'datapath,disassembly,locals,memory,peripherals,registers,waveform');
 
     // --- 9. Mobile tabbed view: exactly one panel visible at a time ---
     console.log('\n[9] Mobile tabbed view (≤800px) → single mutually-exclusive panel');

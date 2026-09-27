@@ -2,7 +2,8 @@
 
 `riscv_simulator.html` loads three things it does not carry inside itself. Each
 is fetched from a CDN first and falls back to the copy here, so the simulator
-keeps working when the CDN is blocked, throttled or down.
+keeps working when the CDN is blocked, throttled or down. CodeMirror is the
+exception, the other way round; see below.
 
 | Folder | What it is | Used for | Size |
 |---|---|---|---:|
@@ -25,7 +26,7 @@ that works. CodeMirror is the exception: it loads through a `<script>` tag, whic
 
 Each engine tries its sources in order and takes the first that answers:
 
-- **CodeMirror** — `CDN_SRC` (jsDelivr) → `vendor/codemirror/` → `riscv_simulator_tests/`
+- **CodeMirror** — `vendor/codemirror/` → `riscv_simulator_tests/` → jsDelivr (local first: jsDelivr can only serve this repository while it is public, and waiting for it to fail cost most of a second on every load)
 - **Icarus** — jsDelivr → `senolgulgonul.github.io/verisim/` → `vendor/verisim/` → `verisim/`
 - **Yosys** — jsDelivr → `vendor/yosys/`
 
