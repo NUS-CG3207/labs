@@ -65,12 +65,15 @@ To make the most of the labs, we recommend doing some reading before you come fo
 
 ## Fair Use of LLMs and Open Source Code
 
-Fair Use of LLMs and Open Source Code
-Use of AI/LLMs, agents, or other online code is permitted. However, you should
+Use of AI/LLMs, agents, or other code available online is permitted. However, you should
 
-* Understand the code in detail and be able to explain it. Do not resort to cognitive offloading.
-* Not infringe anyone's copyright, i.e., it should be code released under an open-source/permissive license. 
+* Declare their use. The declaration itself will not affect your grades.
+* Use them ethically, responsibly, and in moderation.
+* Avoid cognitive offloading. You learn much more by thinking through problems and completing the work yourself.
+* Remain responsible for everything you submit.
+* Be able to explain your work and code, answer questions about it, and debug it on the spot if requested by an examiner.
 * Demarcate such code clearly, and give proper attribution to the source/LLM, along with the prompts used. Using AI-generated code without attribution is considered plagiarism. You should also respond to a survey on Canvas which will open closer to the end of the course.
+* Not infringe anyone's copyright, i.e., any existing code you `borrow` should be released under an open-source/permissive license and should be done with proper attribution.
 
 Discussions are encouraged, but 'we had discussed' is not a valid excuse if your codes turn out to be uncomfortably similar to that of another group (except when you use online code with attribution as mentioned above).
 

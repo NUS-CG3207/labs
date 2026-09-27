@@ -198,15 +198,15 @@ setTimeout(async () => {
     if (!doc.body.classList.contains('dp-open')) win.toggleDpDock();
     ev('statementStepping = true');
     const phase = () => doc.getElementById('dpPhase').textContent;
-    check('a fresh instruction waits at phase 0', /^ready/.test(phase()), phase());
+    check('a fresh instruction waits at phase 0', (ev('dpPhase') === 0 && phase() === ''), phase());
     const advance = async () => { win.dpNext(); win.dpNext(); await sleep(5); };
     await advance();
-    check('the first ▶ fetches', /^1\/9 · Fetch/.test(phase()), phase());
+    check('the first ▶ fetches', phase() === '1/9 Fetch', phase());
     check('fetch lights the PC and Instr wires',
       ev('dpSvg().querySelectorAll(".dp-lit-data").length') >= 2);
     check('and parks their values beside them', ev('document.getElementById("dpOverlay").children.length') >= 2);
     for (let k = 2; k <= 9; k++) await advance();
-    check('the ninth phase is the clock edge', /^9\/9 · Clock edge/.test(phase()), phase());
+    check('the ninth phase is the clock edge', phase() === '9/9 Clock edge', phase());
     check('nothing has executed yet', ev('instructionCount') === 0 && ev('regs[5]') === 0);
     win.dpPrev();
     check('◀ goes back one phase without executing anything', /^8\/9/.test(phase()) && ev('instructionCount') === 0, phase());
@@ -214,7 +214,7 @@ setTimeout(async () => {
     win.dpNext();
     check('▶ at the edge executes exactly one instruction', ev('instructionCount') === 1 && ev('regs[5]') === 3,
       `count ${ev('instructionCount')}, t0 ${ev('regs[5]')}`);
-    check('and the next instruction starts at phase 0', /^ready/.test(phase()) &&
+    check('and the next instruction starts at phase 0', (ev('dpPhase') === 0 && phase() === '') &&
       /addi x5, x5, 4/.test(doc.getElementById('dpInstr').textContent), doc.getElementById('dpInstr').textContent);
     ev('statementStepping = false');
 
@@ -227,9 +227,9 @@ setTimeout(async () => {
     console.log('\n[5] Step, Back and register edits reach the diagram');
     await advance(); await advance();
     win.stepOnce();
-    check('a toolbar Step resets to the new instruction', /^ready/.test(phase()) && ev('dpModel.pc') === ev('pc'));
+    check('a toolbar Step resets to the new instruction', (ev('dpPhase') === 0 && phase() === '') && ev('dpModel.pc') === ev('pc'));
     win.stepBack();
-    check('a toolbar Back resets to the instruction before', ev('dpModel.pc') === ev('pc') && /^ready/.test(phase()));
+    check('a toolbar Back resets to the instruction before', ev('dpModel.pc') === ev('pc') && (ev('dpPhase') === 0 && phase() === ''));
     await advance(); await advance(); await advance(); await advance();
     ev('commitRegEditModal')(5, '100');
     check('a register edit re-evaluates in place, keeping the phase',

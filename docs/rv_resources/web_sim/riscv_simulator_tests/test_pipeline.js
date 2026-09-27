@@ -513,9 +513,9 @@ setTimeout(async () => {
     win.dpNext();
     check('▶ clocks exactly one cycle', ev('totalCycles') === 1);
     win.dpNext(); win.dpNext();
-    check('and the new cycle is drawn at once, with no phases to step through',
+    check('and the new cycle is drawn at once, with no phases to step through, and no second cycle count in the header',
       lit() > 20 && doc.getElementById('dpPhase').textContent === '' &&
-      doc.getElementById('dpInstr').textContent === 'Cycle 4');
+      doc.getElementById('dpInstr').textContent === '');
     win.dpNext();
     check('the load-use stall is explained as soon as the cycle is shown', /lwStall/.test(doc.getElementById('dpCaption').textContent),
       doc.getElementById('dpCaption').textContent.slice(0, 200));
@@ -529,7 +529,19 @@ setTimeout(async () => {
     await sleep(1000);
     check('▶▶ keeps clocking until pressed again', played >= 5 && ev('totalCycles') === played, played + ' then ' + ev('totalCycles'));
 
+    check('the strip header shows the pipeline controls: settings and a Diagram/Timeline switch',
+      !!doc.getElementById('dpPipeCfgBtn') && doc.getElementById('dpViewDiagram').classList.contains('active'));
+    win.pipePopToggle(true);
+    check('⚙ pops up the Settings card\'s own switches beside it',
+      !doc.getElementById('pipePop').hidden && !!doc.querySelector('#pipePop #pipeHazBox'));
+    win.pipePopToggle(false);
+    check('and closing puts them back in Settings', !!doc.querySelector('#settingsContent-simulator #pipeHazBox'));
     win.dpToggleView();
+    check('Timeline highlights its half of the switch', doc.getElementById('dpViewTimeline').classList.contains('active'));
+    check('rows no longer in the pipeline are dimmed, the ones in it are not',
+      doc.querySelectorAll('#dpTimeline tr.pdp-tl-gone').length >= 1 &&
+      doc.querySelectorAll('#dpTimeline tbody tr:not(.pdp-tl-gone)').length >= 1 &&
+      doc.querySelectorAll('#dpTimeline tbody tr:not(.pdp-tl-gone)').length <= 5);
     check('Timeline replaces the diagram', doc.body.classList.contains('dp-view-timeline'));
     const cyc0 = ev('totalCycles');
     win.dpNext();
@@ -539,11 +551,78 @@ setTimeout(async () => {
     check('the stalled cycle is marked', doc.querySelectorAll('#dpTimeline .pdp-tl-stall').length >= 2);
     win.dpPrev();
     check('and ◀ steps back a cycle', ev('totalCycles') === cyc0);
+    const liveTh = doc.querySelector('#dpTimeline th.pdp-tl-live');
+    check('the live column is headed "next", so the numbered cycles match the log',
+      liveTh && liveTh.textContent === 'next' &&
+      Number(liveTh.previousElementSibling.textContent) === ev('totalCycles'),
+      liveTh && liveTh.previousElementSibling.textContent);
+    for (let i = 0; i < 8; i++) win.dpNext();
+    const tlRows = () => Array.from(doc.querySelectorAll('#dpTimeline tbody tr'));
+    const bubCells = tr => Array.from(tr.querySelectorAll('.pdp-tl-bub')).map(td => td.textContent).join('');
+    const nopRow = tlRows().find(tr => tr.firstElementChild.textContent === 'bubble (nop)');
+    check('the load-use stall\'s nop has a row of its own, through E, M and W',
+      nopRow && bubCells(nopRow) === 'EMW', nopRow && bubCells(nopRow));
+    const quashed = tlRows().filter(tr => / → bubble \(nop\)$/.test(tr.firstElementChild.textContent));
+    check('the two instructions the taken branch quashed carry on as bubbles',
+      quashed.length === 2 && bubCells(quashed[0]) === 'EMW' && bubCells(quashed[1]) === 'DEMW' &&
+      /addi x10/.test(quashed[0].firstElementChild.textContent),
+      quashed.map(tr => tr.firstElementChild.textContent + ':' + bubCells(tr)).join(' | '));
+    for (let i = 0; i < 8; i++) win.dpPrev();
     win.dpToggleView();
+
 
     const marks = ev('Array.from(document.querySelectorAll(".cm-pipe-stage")).map(e => e.textContent)');
     check('the editor marks the stages in its gutter', marks.length >= 3, JSON.stringify(marks));
     check('the disassembly badges them too', doc.querySelectorAll('#disassemblyDisplay .disasm-stage').length >= 3);
+
+    // On a phone the step controls float.
+    win.innerWidth = 700;
+    ev('applyPanelDock(); updateDatapathPanelAvailability()');
+    win.toggleVisualisation();
+    const bar = doc.getElementById('floatSteps');
+    const barBtns = () => Array.from(bar.querySelectorAll('button'));
+    check('phone, datapath tab: ◀ ▶ ▶▶ float, and the strip header drops its own',
+      ev('mobileTab') === 'datapath' && !bar.hidden && bar.dataset.mode === 'dp' &&
+      doc.body.classList.contains('float-dp') && barBtns().every(b => !b.hidden),
+      `${ev('mobileTab')} hidden=${bar.hidden} mode=${bar.dataset.mode}`);
+    const cyc1 = ev('totalCycles');
+    barBtns()[1].click();
+    check('the floating ▶ clocks one cycle', ev('totalCycles') === cyc1 + 1);
+    barBtns()[0].click();
+    check('and ◀ goes back one', ev('totalCycles') === cyc1);
+    win.dpSetView('timeline');
+    const phoneRows = Array.from(doc.querySelectorAll('#dpTimeline tbody tr'));
+    const firstCells = phoneRows.map(tr => Array.from(tr.children).slice(1).findIndex(td => td.textContent));
+    check('phone timeline: only what is in flight, from the cycle the oldest entered, without addresses',
+      phoneRows.length >= 1 && phoneRows.length <= 6 && !doc.querySelector('#dpTimeline .pdp-tl-gone') &&
+      !doc.querySelector('#dpTimeline .pdp-tl-addr') && Math.min(...firstCells) === 0,
+      phoneRows.map(tr => tr.firstElementChild.textContent).join(' | '));
+    win.dpSetView('diagram');
+    ev("setMobileTab('registers')");
+    check('another tab with the toolbar in view: no floating bar, header controls back',
+      bar.hidden && !doc.body.classList.contains('float-dp'));
+    ev('floatStepsWanted = true; updateFloatSteps()');
+    check('toolbar Step scrolled away while pipelined: the strip\'s cycle controls float',
+      !bar.hidden && bar.dataset.mode === 'dp');
+    ev('pipeSetMode(false)');
+    ev('floatStepsWanted = true; updateFloatSteps()');
+    check('single-cycle, same: the toolbar\'s Back and Step, with no ▶▶',
+      !bar.hidden && bar.dataset.mode === 'tb' && barBtns()[1].textContent === '⏭' && barBtns()[2].hidden);
+    const pc0 = ev('pc');
+    barBtns()[1].click();
+    check('and ⏭ steps an instruction', ev('pc') !== pc0 && ev('totalCycles') === 1);
+    ev('floatStepsWanted = false');
+    win.innerWidth = 1400;
+    ev('applyPanelDock(); updateDatapathPanelAvailability(); updateFloatSteps()');
+    check('desktop: no floating bar', bar.hidden && !doc.body.classList.contains('float-dp'));
+    ev('pipeSetMode(true)');
+
+    doc.querySelector('#dpPipeBpSvg [data-e="bp"]').dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+    const bpOv = doc.getElementById('bpFigOverlay');
+    check('clicking the Branch Predictor block opens the drawing of what is inside it',
+      bpOv.classList.contains('open') && !!bpOv.querySelector('svg[viewBox]') && /BHT/.test(bpOv.textContent));
+    doc.dispatchEvent(new win.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    check('and Escape closes it', !bpOv.classList.contains('open'));
 
     // Switching back is a reset; the single-cycle strip returns.
     win.pipeSetMode(false);

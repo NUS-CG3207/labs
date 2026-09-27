@@ -165,7 +165,8 @@ and `slli x11, x5, -1` is not an instruction.
 
 The single-cycle datapath from the lecture, with the instruction at the PC going through
 it. **⧉ Datapath** in the toolbar shows or hides it along the bottom of the window (a panel
-on a phone), and ⤢ gives it the whole window.
+on a phone), and ⤢ gives it the whole window. On a phone its step buttons float at the
+bottom right, as the toolbar's do once it scrolls out of view.
 
 The diagrams draw RV32I's ALU, jump and branch instructions, `lw` and `sw`. A program
 using anything else (`mul`/`div`, `lbu`, `ecall`, floating point, atomics) runs as usual,
@@ -205,9 +206,14 @@ The datapath becomes the pipelined one, one clock cycle per **▶** (**◀** goe
 **▶▶** keeps clocking until pressed again). Each stage's wires are in its own colour with
 its instruction above it, and a forwarded value keeps the colour of the stage it came
 from. The hazard unit's active signals are lit, and the caption says why. Beside the
-drawing are the five instructions' encodings, oldest first. **Timeline** in the header
-swaps the drawing for the pipeline chart, one row per instruction and one column per
-cycle, with stalls hatched and flushed instructions struck out.
+drawing are the five instructions' encodings, oldest first. **Diagram | Timeline** in the
+header swaps the drawing for the pipeline chart, one row per instruction and one column per
+cycle, with stalls hatched, flushed instructions struck out and those no longer in the
+pipeline dimmed. Bubbles are drawn dashed: the nop a stall inserts has a row of its own,
+and a flushed instruction carries on in its row as a bubble. The last column, **next**, is
+the cycle the next ▶ clocks, so the numbered columns match the log. The chart shows as many
+cycles as fit across, and on a phone only the instructions in flight. The ⚙ beside
+**Pipelined** pops up the hazard switches and branch prediction without opening Settings.
 
 The pipeline runs all of RV32IM: `mul`/`div` take one cycle in Execute, and floating
 point, atomics and `ecall` wait in Decode until the stages ahead have emptied, then run
@@ -227,7 +233,7 @@ PCs share an entry disturb each other. Execute checks the prediction against PCS
 the real target; a wrong one flushes D and E, sends the PC to the right address and updates
 the entry. The toolbar counts mispredicts and the Timeline marks them. The diagram gains a
 Branch Predictor block and a Mispredict mux in front of the PC, and the side column lists
-the BHT with the entries Fetch and Execute read marked.
+the BHT with the entries Fetch and Execute read marked. Click the block to see its insides.
 
 ### Locals (C mode)
 

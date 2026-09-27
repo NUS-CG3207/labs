@@ -6,7 +6,7 @@
 
     Assignment 2 is a group exercise. You will be assessed as a group, but scored individually.
 
-    There could still be minor updates, which will be <span style="color: brown;">highlighted</span>
+    There could still be minor updates, which will be <span style="color: brown;">highlighted</span>.
     
 
 ## Objective
@@ -117,7 +117,7 @@ When simulating, the `test_Wrapper` -> `Wrapper` -> `RV` relationship is analogo
 
 There are 5 files we must populate/modify:
 
-1. `ALU.v`: we must modify the ALU to incorporate shifts. <span style="color: brown;">ALUFlags need to be modified to support blt, bltu, bge, bgeu</span>.
+1. `ALU.v`: we must modify the ALU to incorporate shifts, <span style="color: brown;">`xor`, etc</span>. <span style="color: brown;">ALUFlags need to be modified to support blt, bltu, bge, bgeu</span>.
 2. `Decoder.v`
 3. `PC_Logic.v`
 4. `RV.v`
@@ -185,11 +185,14 @@ Byte (`sb`) and half-word (`sh`) writes are supported for data memory and periph
 !!! tip
     Byte and half-word read don't require any Wrapper support - you can simply read the whole byte, extract the byte/half-word, and extend as necessary.
 
-The provided assembly language programs are neither meant to be comprehensive programs that test everything. Do not use the programs under Optional_Stuff as your first program. Use the DIP_to_LED.asm instead. Even this will need appropriate modifications to include instructions such as **DP reg type**, **bne**, and shifts in a meaningful manner.
+The provided assembly language programs are neither meant to be comprehensive programs that test everything. Do not use the programs under Optional_Stuff as your first program. Use the DIP_to_LED.asm instead. Even this will need appropriate modifications to include instructions such as **DP reg type**, **bne**, shifts, etc. in a meaningful manner.
 
-Use your own, well-crafted programs for a convincing demo (to demonstrate that all the required instructions and variants work). **One single program demonstrating all the features is desirable**. Conversely, make sure that your program only uses the features that you have already implemented; notably, we cannot use any multiplication operations, nor many shift operations or `xor`. If you were unable to implement some required instructions, make sure your assembly program doesn't use those; otherwise, the demo will be quite disappointing.
+Use your own, well-crafted programs for a convincing demo (to demonstrate that all the required instructions and variants work). **One single program demonstrating all the features is desirable**. Conversely, make sure that your program only uses the features that you have already implemented; notably, we cannot use any multiplication operations, byte/half-word load and store, etc. If you were unable to implement some required instructions, make sure your assembly program doesn't use those; otherwise, the demo will be quite disappointing.
 
-By 'convincing demo', what we mean is having an assembly language program that tests all the features of all instructions of a particular type. For example, if you demonstrate `addi`, you don't really have to show `andi`, `ori`, as it can be expected to work, as the datapath activated is the same, and the control signals are derived in a manner that is unlikely to be wrong for one if it is correct for the other (this isn't the case, for example, for `srl` and `sra`). Instructions such as conditional branches should be used, such that both possibilities - i.e., branch taken and branch not taken should be demonstrated. In other words, it should provide an exhaustive 'coverage' of your HDL code. Your program should be crafted such that if one instruction misbehaves, the overall behavior of the program should be different - this is the case for most programs, as long as you use the result from every instruction in a subsequent instruction - i.e., there is no 'dead code' or have pairs/groups of instructions that cancel each others' effect (e.g., addition and subtraction by the same amount - which could have correct results even if both instructions misbehave).
+By 'convincing demo', what we mean is having an assembly language program that tests all the features of all instructions of a particular type. For example, if you demonstrate `addi`, you don't really have to show `andi`, `ori`, as it can be expected to work, as the datapath activated is the same, and the control signals are derived in a manner that is unlikely to be wrong for one if it is correct for the other (this isn't the case, for example, for `srl` and `sra`). Instructions such as conditional branches should be used, such that both possibilities - i.e., branch taken and branch not taken should be demonstrated. In other words, it should provide an exhaustive 'coverage' of your HDL code <span style="color: brown;">and assembly code</span>. Your program should be crafted such that if one instruction misbehaves, the overall behavior of the program should be different - this is the case for most programs, as long as you use the result from every instruction in a subsequent instruction. Some points to watch out for:
+
+* There should be no 'dead code', i.e, code that is never reached. This can happen when there is code beyond the dead-end `halt j halt`, or code that is executed conditionally, but the condition is never reached.
+* Do not have pairs/groups of instructions that cancel each others' effect (e.g., addition and subtraction by the same amount - which could have correct results even if both instructions misbehave).
 
 The `test_Wrapper.v` you use is specific to the assembly language program being run. It simulates the scenario of giving inputs externally manually/from sensors, and getting the output on various displays/UART. Depending on the inputs your .asm program expects, the stimuli of your testbench will have to change too.
 
@@ -250,7 +253,6 @@ The following section details some tips and tricks that will make your life a lo
 
 * Open-source simulators such as Verilator and iVerilog runs significantly faster than Vivado. When used along with Yosys, you can do post-synthesis functional simulation too! These are light-weight tools and are more amenable to agentic workflows than Vivado. While open-source workflows exist for implementation and bitstream generation too, they are not as stable or optimised as Vivado.
 
-
 ### Expected warnings
 
 * **Warning about `indices_reg`**: This is related to the seven-segment display and can be ignored.
@@ -270,7 +272,7 @@ The following section details some tips and tricks that will make your life a lo
 The following needs to be checked and should correspond for every run.
 
 * The .mem files. This is your application.
-* The test_Wrapper file. This is the one testing your system - hardware + application. 
+* The test_Wrapper file. This is the one testing your system - hardware + application.
 * Memory layout/configuration - this should correspond everywhere - in RARS / simulator (linker), PC initalisation value, in your program (if there are absolute addresses) etc.
 * Memory segment sizes - in the Wrapper, in the simulator (linker), and the stack pointer initalisation value in your assembly application program (and C if using inline assembly), etc. Programs exceeding 127 instructions will need to have higher IROM_DEPTH_BITS - this can often be the case when you compile a C program with optimisations turned off. DMEM_DEPTH_BITS needs to be high for programs that display images. One pitfall - do not underestimate memory consumption due to non-static variables if you program is modular, i.e., has a lot of functions.
 
