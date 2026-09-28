@@ -113,7 +113,7 @@ instead of one machine instruction at a time. **Back** undoes exactly the same d
 On a narrow screen the panels become tabs, the waveform and the datapath among them, so
 stepping and watching do not compete for the screen.
 
-The 🔍 in a panel header narrows it to matching rows: one register out of 32, or every
+The 🔍 in a panel header (on a phone, at the end of the tab strip) narrows it to matching rows: one register out of 32, or every
 `jal` in a few hundred instructions. Labels match too, so filtering Disassembly by `loop`
 gives you the whole block under `loop:`, not just the instruction sitting on it. In Memory
 it filters the rows already on screen, so move the address window first.

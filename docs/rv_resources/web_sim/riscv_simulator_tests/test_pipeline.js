@@ -585,6 +585,15 @@ setTimeout(async () => {
       ev('mobileTab') === 'datapath' && !bar.hidden && bar.dataset.mode === 'dp' &&
       doc.body.classList.contains('float-dp') && barBtns().every(b => !b.hidden),
       `${ev('mobileTab')} hidden=${bar.hidden} mode=${bar.dataset.mode}`);
+    doc.body.classList.remove('dp-open');
+    ev('updateFloatSteps()');
+    check('it does not depend on the desktop strip having been opened', !bar.hidden && doc.body.classList.contains('float-dp'));
+    const findBtn = doc.getElementById('mobileFindBtn');
+    ev("setPanelVisible('registers', true); setMobileTab('registers')");
+    const regsFind = !findBtn.hidden;
+    ev("setPanelVisible('peripherals', true); setMobileTab('peripherals')");
+    check('the tab strip\'s 🔍 filters the tabs that have rows, and is gone from the others', regsFind && findBtn.hidden);
+    ev("setMobileTab('datapath')");
     const cyc1 = ev('totalCycles');
     barBtns()[1].click();
     check('the floating ▶ clocks one cycle', ev('totalCycles') === cyc1 + 1);

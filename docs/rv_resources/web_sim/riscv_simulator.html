@@ -2109,6 +2109,8 @@
     /* A phone keeps the header to one row: smaller type, no address, and the
        instruction gives way (ellipsis) before anything wraps. */
     body.dp-in-panel #tab-datapath .dp-hdr { flex-wrap: nowrap; }
+    .dp-hdr .dp-instr:empty, .dp-hdr .dp-phase:empty { display: none; }
+    .dp-hdr .dp-instr:empty + .dp-phase:empty + .dp-hdr-actions { margin-left: 0; }
     body.dp-in-panel #tab-datapath .dp-instr { font-size: 11px; }
     body.dp-in-panel #tab-datapath .dp-instr-addr { display: none; }
     body.dp-in-panel #tab-datapath .dp-phase { font-size: 10.5px; }
@@ -2376,8 +2378,7 @@
     .dp-chip.dp-parked { opacity: 0.9; }
     .dp-chip.dp-parked text { font-size: 26px; }
 
-    /* On a phone the diagram keeps a readable size and the panel scrolls
-       sideways, rather than shrinking the labels past legibility. */
+    /* On a phone the strip is a panel tab of its own. */
     body.dp-in-panel #tab-datapath .dp-dock {
       display: flex;
       flex: 1 1 auto;
@@ -2398,6 +2399,9 @@
       border: 1px solid #45475a;
     }
     body.dp-in-panel #tab-datapath .dp-body { justify-content: flex-start; min-height: 300px; }
+    /* The timeline is only as tall as its rows. */
+    body.dp-in-panel.dp-view-timeline #tab-datapath .dp-dock,
+    body.dp-in-panel.dp-view-timeline #tab-datapath .dp-body { min-height: 0; flex: 0 0 auto; }
     /* Centred, a diagram wider than the panel would overflow to the left,
        where scrolling cannot reach. */
     body.dp-in-panel #tab-datapath .dp-svg { width: 100%; height: auto; }
@@ -3769,16 +3773,27 @@
         cursor: default;
       }
 
-      /* In the tabbed mobile view the header's float/hide actions are not
-         needed — the chip strip is the navigation. The filter is the
-         exception: a short viewport is exactly where narrowing a long list
-         pays off most. */
-      .panel-hdr-btn {
+      /* One panel at a time, named by the lit tab above it, so no panel
+         header: the filter moves to the end of the tab strip. */
+      .tab-content > .panel-hdr {
         display: none;
       }
 
-      .panel-hdr-btn[data-panel-act="find"] {
-        display: inline-flex;
+      .right-panel { position: relative; }
+      .right-panel > .tab-bar { padding-right: 44px; }
+      .mobile-find-btn:not([hidden]) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 44px;
+        height: 39px;
+        border: none;
+        background: #181825;
+        font-size: 16px;
+        cursor: pointer;
       }
 
       /* A bounded, independently-scrollable body — instead of growing to
@@ -4425,6 +4440,7 @@
           <button id="panelChip-waveform" type="button" style="display:none;"><span class="tab-chip-dot"></span>Waveforms</button>
           <button id="panelChip-datapath" type="button" style="display:none;"><span class="tab-chip-dot"></span>Datapath</button>
         </div>
+        <button class="mobile-find-btn" id="mobileFindBtn" type="button" title="Filter rows" onclick="togglePanelFind(mobileTab)" hidden>🔍</button>
         <div class="panel-stack" id="panelStack">
         <div class="tab-content" id="tab-registers">
           <div id="hdlRegNotice" class="hdl-reg-notice" style="display:none"></div>
@@ -8972,6 +8988,11 @@
       if (typeof updateFloatSteps === 'function') updateFloatSteps();
     }
 
+    function updateMobileFindBtn() {
+      const b = document.getElementById('mobileFindBtn');
+      if (b) b.hidden = !(mobileMode() && PANEL_FIND.has(mobileTab));
+    }
+
     function currentDockWidth() {
       const rp = document.querySelector('.right-panel');
       if (!rp) return 0;
@@ -9671,6 +9692,7 @@
       // console) now that the panels have been moved/re-appended, so the mobile
       // soft keyboard is not dismissed by the relayout.
       restoreFocusNow();
+      updateMobileFindBtn();
     }
 
     function keepFloatInView(name) {
@@ -20323,8 +20345,8 @@ endmodule
     // waveform), or the strip's in pipelined mode, where those step cycles.
     let floatStepsWanted = false;
     function floatOnDpTab() {
-      const b = document.body.classList;
-      return simEngineMode !== 'hdl' && b.contains('dp-open') && b.contains('dp-in-panel') &&
+      return simEngineMode !== 'hdl' && document.body.classList.contains('dp-in-panel') &&
+        !!(panelDock && panelDock.datapath && panelDock.datapath.visible) &&
         typeof mobileTab !== 'undefined' && mobileTab === 'datapath';
     }
     function floatStepsMode() {
