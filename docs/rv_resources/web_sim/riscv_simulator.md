@@ -139,7 +139,9 @@ editor, `0x…` is hex and plain digits are decimal.
 - Orange **labels** sit above the word they name, with a trailing `:`, like `main:`.
   Yellow bytes were written at runtime.
 - **⭳ Download** in the toolbar exports `AA_IROM.mem` / `AA_DMEM.mem` for Vivado, and in
-  HDL mode the generated testbench and the recorded waveform.
+  HDL mode the recorded waveform and a testbench that replays the run: the switch, button
+  and accelerometer inputs, every change you made to them and every UART byte you typed,
+  each at its cycle. Simulate it with the two `.mem` files beside it.
 
 ### Disassembly
 
@@ -195,9 +197,13 @@ what you see is what that hardware does, and your own processor should do the sa
 
 ### The 5-stage pipeline
 
-Choose **Pipelined** in the datapath header, or *Microarchitecture* in ⚙ Settings → JS
-Simulation, to run the program on a 5-stage pipeline instead. Switching
-resets the program. **Step** and **Back** then move one clock cycle, the toolbar shows
+*Microarchitecture* in ⚙ Settings → JS Simulation sets what a cycle is: Single-cycle
+takes one per instruction, Multi-cycle takes each instruction category's count from the
+table below it (there is no datapath drawing for it), and 5-stage pipeline counts clock
+edges. Switching resets the program. The datapath header offers Single-cycle and
+**Pipelined** too.
+
+Pipelined, **Step** and **Back** move one clock cycle, the toolbar shows
 cycles, instructions retired and CPI, and the editor gutter and Disassembly mark which
 stage holds each instruction. PC is PCF, the address being fetched. A breakpoint stops the
 run once its instruction reaches Execute; from there nothing can flush it.

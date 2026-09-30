@@ -1,58 +1,92 @@
-# Assignment 3: Multiplication / Division units
+# Assignment 3: Multiplication / Division Units
 
-!!! danger
-    This page is a work in progress; major updates may be made for AY26/27. Feel free to read for a general idea, but do not start working on the assignment until it is specified as ready.
+!!! info
 
-!!! info 
+    Assignment 2 consists of 1 task, with 2 subtasks, for a total of **30 points**. 
 
-    Assignment 3 involves 2 compulsory tasks worth 13 and 7 points, and one open-ended task worth 5 points.
+    Assignment 2 is a group exercise. You will be assessed as a group, but scored individually.
 
-### Task 1: Implementing division (13 points)
+    There could still be minor updates, which will be <span style="color: brown;">highlighted</span>.
 
-For Task 1, we will incorporate division (both signed and unsigned) into the MCycle unit given \[HDL simulation only\] (13 marks).
 
-* The design files can be found [here](https://github.com/NUS-CG3207/lab-skeletons/tree/main/lab3/vhdl) (VHDL) and [here](https://github.com/NUS-CG3207/lab-skeletons/tree/main/lab3/verilog) (Verilog - please do not change the non-blocking assignments in the IDLE\_PROCESS to blocking, as it is necessary to circumvent a certain non-deterministic behaviour from Verilog simulator). Please go through the comments carefully to understand its operation.
-* Simulate it using a good testbench, and synthesize the MCycle unit by setting it as the top-level module to make sure it synthesizes without warnings (unless you are sure it can be ignored) before doing the next task (incorporating it into the processor).
+### Task 1: Implementing Division (10 points)
+
+For Task 1, we will incorporate **both signed and unsigned division** into the given `MCycle` unit [HDL simulation only].
+
+* The design files can be found [here](https://github.com/NUS-CG3207/nus-cg3207.github.io/tree/main/docs/code_templates/Asst_03). Please go through the comments carefully to understand the operation of the unit. There are 2 versions of `MCycle` provided - you may use either. `MCycle_alt.v` is more systematic (separate combinational and sequential parts), but may be a bit harder to comprehend.
+* Implement both **signed and unsigned division** in the `MCycle` unit.
+* Simulate the unit using a good testbench covering appropriate corner cases.
+* Synthesize the `MCycle` unit by setting it as the top-level module and make sure it synthesizes without warnings (unless you are sure a warning can be safely ignored) before proceeding to the next task of incorporating it into the processor.
 * We can assume that the divisor is never zero.
 
-### Task 2: Incorporating MCycle into our CPU (7 points)
+### Task 2: Incorporating MCycle into Our CPU (5 points)
 
-For Task 2, we must incorporate the `MCycle` unit into our processor so that it can execute 32-bit variants of `mul` and `divu` for RISC-V (`MUL` and `DIV` for ARMv3). **HDL simulation and hardware implementation are both required.**
+For Task 2, we must incorporate the `MCycle` unit into our processor so that it can execute the 32-bit RISC-V `mul`, `div`, and `divu` instructions. **HDL simulation and hardware implementation are both required.**
 
-* For RISC-V, `mul` and `divu`  are available in the Multiply extension instruction set - implement the word (32-bit) versions. There is no `DIV` instruction in ARMv3, so `DIV` can be done by cannibalizing `MLA` instruction. The idea is to just use the format of `MLA` instruction, but the machine will be doing division instead. This will limit our ability to simulate in Keil assembler though. 
-* The destination register should contain quotient. The remainder can be discarded.
-* For RISC-V, `divu` performs unsigned division. (For ARMv3 assume `DIV` performs unsigned division.)
-* Since `mul`/`MUL` writes only the 32-bit result, there is no difference between signed and unsigned variants.
-* In ARMv3, multiplication instruction can set `Z` and `N` flags, but this functionality is not a requirement for Assignment 3.
-* The control unit will need to be modified to generate `Start` and `MCycleOp` control signals.
+* `mul`, `div`, and `divu` are part of the RISC-V M extension. Implement their 32-bit versions.
+* `div` performs signed division, while `divu` performs unsigned division.
+* The destination register should contain the quotient for `div` and `divu`. The remainder can be discarded.
+* Since `mul` writes only the lower 32 bits of the result, there is no difference between signed and unsigned multiplication for this instruction.
+* The control unit will need to be modified to generate the `Start` and `MCycleOp` control signals.
 * `!Busy` can be used as the write enable for the PC. This will stall the processor until the multicycle operation is complete.
-* The datapath should be modified to make the appropriate connections to and from the MCycle unit. We will need a multiplexer and a control signal to combine the outputs from ALU and MCycle.
-* `div` (signed division) `mulh` variants (upper word) and `rem` variants (remainder) are not required to be implemented for RISC-V, though it takes very little extra effort (except maybe `mulhsu`). For ARM implementing instructions that generate 64-bit results (`SMULL`, `UMULL`, etc) is not a requirement.
-* We can refer to the ARM Architecture Reference Manual (uploaded on Canvas), page A4-66 for MUL instruction format and page A4-54 for MLA instruction format. 
+* The datapath should be modified to make the appropriate connections to and from the `MCycle` unit. We will need a multiplexer and a control signal to combine the outputs from the ALU and `MCycle`.
+* `mulh` variants (upper word) and `rem` variants (remainder) are not required, though you may implement them if you wish.
 
-### Task 3: Enhancements (5 points)
+### Task 3: Enhancement (5 points)
 
-Improve the given **signed multiplier** implemented in step 1 to score points for performance enhancement \[Post-synthesis simulation; showing on hardware is left to your discretion\].
+Improve **one** of the following units in the `MCycle` implementation:
 
-Some suggestions for improvement are given below. You need not do all of them. **Keep in mind that performance improvement carries only 5 marks**, and we will be evaluating only one improvement. The purpose is to incentivize some exploration. However, **spending too much time on this is not recommended**.
+* signed multiplication; *or*
+* signed division; *or*
+* unsigned division.
 
-* Try different techniques to strike a good trade-off between hardware complexity and the number of cycles required for multiplication (for example, 16 cycles instead of 32 or 16, but with more hardware) - the multiplication implemented in the sample code is _very_ inefficient (intentionally).
-* Use a single adder for multiplication and division within the MCycle unit. You could even take it one step further by reusing the same adder from the ALU (thus saving one additional adder, but will take a lot of effort, not worth 5 marks). The latter will need to modify the ports for the MCycle unit.
-* Implement Booth's multiplication algorithm or other efficient algorithms you can find on the internet.
-* DO NOT implement a single cycle multiplier - FPGAs have built in multipliers/DSP units, which are inferred when we use the `*` operator. This is much more efficient than any array adder based multipliers we can implement, but we don't want to be using it in CG3207.
+The objective is to explore a meaningful improvement in **execution time, hardware cost, or the trade-off between the two** [post-synthesis simulation; showing the enhancement on hardware is left to your discretion].
+
+Some suggestions for improvement are given below. You need not do all of them. **We will evaluate only one improvement.** The purpose of this task is to incentivize some exploration, and **spending too much time on it is not recommended**, as the task carries only 5 points.
+
+* Explore techniques that trade additional hardware for fewer execution cycles. For example, an implementation might process more than one bit per iteration, reducing the number of cycles required for multiplication or division.
+* Reduce hardware cost by sharing a single adder between multiplication and division within the `MCycle` unit. You could take this one step further by reusing the adder from the ALU, thus saving another adder, although this will require substantially more effort and is unlikely to be worthwhile for 5 points. The latter approach will also require modifications to the ports of the `MCycle` unit.
+* Implement Booth's multiplication algorithm or another efficient multiplication/division algorithm that you find in the literature or online.
+* Other meaningful architectural or algorithmic improvements are welcome. You should be able to explain clearly what has been improved and demonstrate the effect of the enhancement.
+* **DO NOT implement a single-cycle multiplier using the `*` operator.** FPGAs contain built-in multipliers/DSP units that are inferred when we use the `*` operator. These are much more efficient than array-adder-based multipliers that we could implement ourselves, but using them defeats the learning objectives of this assignment.
+
+### Task 4: Visualisation of Enhancement (5 points)
+
+Use AI/LLMs to build an interactive visualisation tool for **the specific multiplier or division enhancement that you implemented in Task 3**. The tool should be implemented as a **single HTML file containing HTML, CSS, and JavaScript** and should serve as a learning aid for understanding the enhanced unit.
+
+The visualisation should be designed for someone who is not already familiar with the algorithm or implementation. It should help the user understand both the underlying computation and how the hardware performs it. The emphasis should therefore be on an **interactive and visual explanation**, rather than simply presenting the algorithm as text.
+
+Users should be able to enter operands and step through the computation **cycle by cycle or iteration by iteration, as appropriate to your implementation**. The visualisation should clearly show:
+
+* the state of the relevant registers and other important datapath elements;
+* the operation being performed at each step;
+* how the state changes from one step to the next; and
+* how your enhancement affects the computation or hardware compared with the baseline implementation.
+
+The visualisation should correspond to the **actual enhancement implemented for Task 3**, rather than being a generic visualisation of multiplication or division.
+
+Provide the complete history of prompts used to create the visualisation, together with any skills files or other relevant Markdown files used.
 
 ## Design Instructions
 
-* You are required to have your own, comprehensive program to have a convincing demo. **Only one assembly language program (and hence one bitstream) will be allowed for demo**.
-* If you are using the UART console, you can set the radix to hexadecimal in the 'Display' tab of RealTerm.
-* Remember to use plenty of test cases to make sure your multiplier works as intended. 
+* You are required to have your own, comprehensive program to have a convincing demo. **Only one assembly language program (and hence one bitstream) will be allowed for the demo.**
+* While not a formal requirement, we suggest converting test_MCycle into a self-checking testbench, possibly with AI assistance (but understand the generated code).
+* If you are using the UART console, you can set the radix to hexadecimal in the "Display" tab of RealTerm which may make things easier.
+* Remember to use plenty of test cases to verify that your multiplication and division implementations work as intended.
 
 ## Submission Info
-* Assignment 3 will be evaluated in **Week 9**. The presentation schedule can be found on Canvas. 
-* Please upload the Assignment 3 files to Canvas by the deadline stipulated (generally, before your lab time), including the following files:
-    * `.v`/`vhd` files you have created/modified \[ RTL Sources, Testbench(es) \] 
-    * `.bit` files 
-    * `.s`/`.asm` files (assembly programs)
-    * `.ppt` or `.pdf` file - 1 to 4 slides showing performance enhancement techniques you have implemented as task (3) above.
 
-in an archive with the filename **GroupXX****\_Monday/Friday\_Asst3.zip** (replace XX with your group number) and upload it to Canvas. One submission per group is sufficient – if there are multiple submissions, the file with the latest timestamp will be taken as the final submission. **_Do not_** zip and upload the complete project folder – only those files mentioned above should be included. **The files should be the exact same files that you used for the demo**.
+* Assignment 3 will be evaluated in **Week 9**. The presentation schedule can be found on Canvas.
+* Please upload the Assignment 3 files to Canvas by the stipulated deadline (generally before your lab time), including the following files:
+  * `.v`/`.vhd` files you have created or modified [RTL sources and testbench(es)];
+  * `.bit` file;
+  * `.s`/`.asm` file containing your assembly program;
+  * `.ppt` or `.pdf` file — 1 to 4 slides explaining and demonstrating the enhancement implemented for Task 3;
+  * the single-file `.html` visualisation developed for Task 4; and
+  * a text/Markdown file containing the complete prompt history used for Task 4, together with any other relevant Markdown files (skills, etc.), if any.
+
+Place these files in an archive with the filename **`GroupXX_Monday/Friday_Asst3.zip`** (replace `XX` with your group number) and upload it to Canvas.
+
+One submission per group is sufficient. If there are multiple submissions, the file with the latest timestamp will be taken as the final submission.
+
+**Do not zip and upload the complete project folder.** Only the files mentioned above should be included. **The submitted implementation files should be the exact same files used for the demo.**

@@ -58,7 +58,10 @@ module MCycle
     reg [7:0] count = 0 ; // assuming no computation takes more than 256 cycles.
     reg [2*width-1:0] temp_sum = 0 ;
     reg [2*width-1:0] shifted_op1 = 0 ;
-    reg [2*width-1:0] shifted_op2 = 0 ;     
+    reg [2*width-1:0] shifted_op2 = 0 ;
+    wire [7:0] n_count ;
+    wire [2*width-1:0] n_temp_sum, n_shifted_op1, n_shifted_op2 ;
+    wire n_done ;
    
     always @(*) begin : IDLE_PROCESS
         // Busy is a Mealy output: Start asserts it while the state is IDLE.
@@ -73,44 +76,50 @@ module MCycle
     end
 
 
-    always@( posedge CLK ) begin : STATE_UPDATE_PROCESS // state updating
-        state <= n_state ;    
-    end
+    // Choose the values used at the start of this cycle.
+    wire load_operands = RESET || (n_state == COMPUTING && state == IDLE) ;
+    wire [7:0] step_count = load_operands ? 8'd0 : count ;
+    wire [2*width-1:0] step_sum = load_operands ? {2*width{1'b0}} : temp_sum ;
+    wire [2*width-1:0] step_op1 = load_operands ?
+        {{width{~MCycleOp[0] & Operand1[width-1]}}, Operand1} : shifted_op1 ;
+    wire [2*width-1:0] step_op2 = load_operands ?
+        {{width{~MCycleOp[0] & Operand2[width-1]}}, Operand2} : shifted_op2 ;
 
-    
-    always@( posedge CLK ) begin : COMPUTING_PROCESS // process which does the actual computation
-        // n_state == COMPUTING and state == IDLE implies we are just transitioning into COMPUTING
-        if( RESET || (n_state == COMPUTING && state == IDLE) ) begin // 2nd condition is true during the very 1st clock cycle of the multiplication
-            count = 0 ;
-            temp_sum = 0 ;
-            shifted_op1 = { {width{~MCycleOp[0] & Operand1[width-1]}}, Operand1 } ; // sign extend the operands  
-            shifted_op2 = { {width{~MCycleOp[0] & Operand2[width-1]}}, Operand2 } ; 
-        end
-        done <= 1'b0 ;   
-        
-        if( ~MCycleOp[1] ) begin // Multiply
-            // if( ~MCycleOp[0] ), takes 2*'width' cycles to execute, returns signed(Operand1)*signed(Operand2)
-            // if( MCycleOp[0] ), takes 'width' cycles to execute, returns unsigned(Operand1)*unsigned(Operand2)        
-            if( shifted_op2[0] ) // add only if b0 = 1
-                temp_sum = temp_sum + shifted_op1 ; // partial product for multiplication
-                
-            shifted_op2 = {1'b0, shifted_op2[2*width-1 : 1]} ;
-            shifted_op1 = {shifted_op1[2*width-2 : 0], 1'b0} ;    
-                
-            if( (MCycleOp[0] && count == width-1) || (~MCycleOp[0] && count == 2*width-1) ) // last cycle?
-                done <= 1'b1 ;   
-               
-            count = count + 1;    
-        end    
-        else begin // Supposed to be Divide. The dummy code below takes 1 cycle to execute, just returns the operands. Change this to signed [ if(~MCycleOp[0]) ] and unsigned [ if(MCycleOp[0]) ] division.
-            temp_sum[2*width-1 : width] = Operand1 ;
-            temp_sum[width-1 : 0] = Operand2 ;
-            done <= 1'b1 ;          
-        end
-        
-        Result2 <= temp_sum[2*width-1 : width] ;
-        Result1 <= temp_sum[width-1 : 0] ;
-             
+    // One shift-and-add multiplication step.
+    wire multiply = ~MCycleOp[1] ;
+    wire [2*width-1:0] sum_after_add = step_op2[0] ?
+        step_sum + step_op1 : step_sum ;
+    wire [2*width-1:0] op1_after_shift = {step_op1[2*width-2:0], 1'b0} ;
+    wire [2*width-1:0] op2_after_shift = {1'b0, step_op2[2*width-1:1]} ;
+    // Signed multiplication takes 2*width cycles; unsigned takes width.
+    wire multiply_done = (MCycleOp[0] && step_count == width-1) ||
+                         (~MCycleOp[0] && step_count == 2*width-1) ;
+
+    // TODO (students): replace the one-cycle division placeholder.
+    // It currently returns Operand1 in Result2 and Operand2 in Result1.
+    assign n_count = multiply ? step_count + 1'b1 : step_count ;
+    assign n_temp_sum = multiply ? sum_after_add : {Operand1, Operand2} ;
+    assign n_shifted_op1 = multiply ? op1_after_shift : step_op1 ;
+    assign n_shifted_op2 = multiply ? op2_after_shift : step_op2 ;
+    assign n_done = multiply ? multiply_done : 1'b1 ;
+
+    always @(posedge CLK) begin : REGISTER_PROCESS
+        state <= n_state ;
+        count <= n_count ;
+        temp_sum <= n_temp_sum ;
+        shifted_op1 <= n_shifted_op1 ;
+        shifted_op2 <= n_shifted_op2 ;
+        done <= n_done ;
+        Result2 <= n_temp_sum[2*width-1 : width] ;
+        Result1 <= n_temp_sum[width-1 : 0] ;
     end
    
 endmodule
+
+
+
+
+
+
+
+

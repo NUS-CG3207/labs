@@ -4026,7 +4026,7 @@
         <div class="settings-tab-content" id="settingsContent-linker">
           <div class="cycle-hint" style="margin-bottom:10px;">Base addresses and segment sizes (hex). Stack top (sp) defaults to Data Base + Data Size, but can be customized. Applying reloads the program with the new layout.</div>
           <div style="font-size:11.5px;color:#fab387;background:rgba(250, 179, 135, 0.10);border:1px solid rgba(250, 179, 135, 0.35);padding:8px 10px;border-radius:5px;margin-bottom:12px;line-height:1.45;">
-            ⚠️ <strong>FPGA Hardware Notice:</strong> The segment sizes should not exceed the memory size provisioned in hardware.
+            ⚠️ The segment sizes should not exceed the memory size provisioned in hardware.
           </div>
           <div id="memSegmentsConfigBody">
             <div class="cycle-field"><label for="ms-code">Code (.text) base</label><input id="ms-code" type="text" value="0x400000" oninput="updateLinkerStackPreview()"></div>
@@ -4067,6 +4067,7 @@
                 <label for="simMicroarch" style="font-weight:600;color:#cba6f7;font-size:13px;">Microarchitecture</label>
                 <select id="simMicroarch" class="pipe-select" title="Switching resets the program">
                   <option value="single">Single-cycle</option>
+                  <option value="multi">Multi-cycle</option>
                   <option value="pipe">5-stage pipeline</option>
                 </select>
               </div>
@@ -4083,6 +4084,9 @@
                 <label title="BHT entries, indexed by PC[k+1:2] and untagged, so instructions whose PCs share those bits share an entry">
                   <select id="pipeBpEntries" class="pipe-select"><option>4</option><option>8</option><option>16</option><option>32</option><option>64</option><option>128</option><option>256</option></select> entries</label>
               </div>
+              <div id="cyclesTableBox">
+                <div class="c-body" id="cyclesConfigBody" style="padding:0;"></div>
+              </div>
             </div>
             <div class="sim-card">
               <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -4095,11 +4099,6 @@
               <span style="font-size:11.5px;color:#a6adc8;line-height:1.4;">
                 Maximum number of instructions executed per run before pausing. Default: <strong>100,000,000</strong>.
               </span>
-            </div>
-            <div id="cyclesTableBox">
-            <div class="cycle-hint" style="margin:10px 0 8px;">Cycles consumed per instruction category — the estimate
-              behind the <b>Cycles</b> readout in the toolbar. The pipeline and the hardware engine count real clock edges instead.</div>
-            <div class="c-body" id="cyclesConfigBody" style="padding:0;"></div>
             </div>
           </div>
 
@@ -13355,7 +13354,7 @@ int main()
       const addr = pc;
       const instr32 = fetchInstruction(addr);
       if (instr32 === 0) { pc += 4; return; }
-      totalCycles += instrCycles(instr32);
+      totalCycles += jsArch === 'multi' ? instrCycles(instr32) : 1;
       instructionCount++;
       pc = decodeAndExecute(instr32, addr);
       lastChangedReg = lastExecutedRd;
@@ -15709,6 +15708,17 @@ int main()
 
     function hdlBuildTestbench(opts) {
       opts = opts || {};
+      // opts.run bakes one run's inputs in as the defaults (the download);
+      // without it every setting arrives as a plusarg (the page's own runs).
+      const run = opts.run || null;
+      const h32 = v => "32'h" + hdlHex32(v);
+      const runInit = run
+        ? '\n  // The inputs recorded for this run, at the cycle each took effect.\n  initial begin\n' +
+          run.stim.map((e, i) => `    stim_mem[${3 * i}] = ${h32(e.cycle)}; stim_mem[${3 * i + 1}] = ${h32(e.code)}; ` +
+            `stim_mem[${3 * i + 2}] = ${h32(e.value)};\n`).join('') +
+          run.rx.map((e, i) => `    rx_mem[${2 * i}] = ${h32(e.cycle)}; rx_mem[${2 * i + 1}] = ${h32(e.byte & 0xFF)};\n`).join('') +
+          '  end\n'
+        : '';
       const rb = ('regBankPath' in opts) ? opts.regBankPath : hdlRegBankPath();
       const dbuf = ('doubleBuffer' in opts) ? opts.doubleBuffer : hdlHasDoubleBuffer();
       // OLED_SwapPending is tied low: the VHDL that would hold it high across a
@@ -15755,14 +15765,27 @@ ${ABI_NAMES.map((n, i) => `  wire [31:0] x${i}_${n} = ${rb}[${i}];`).join('\n')}
   // sources, so the architectural register view is unavailable. Name the
   // path explicitly under Settings > HDL to enable it.`;
 
-      return `\`timescale 1ns / 1ps
-//====================================================================
-// Generic testbench - RISC-V Simulator (HDL mode)
+      const about = run
+        ? `// Testbench for one run - RISC-V Simulator (HDL mode)
+//
+// It replays the inputs of the run it was saved from: the switch, button
+// and accelerometer values at the start, every change made to them, and
+// every byte typed into the UART console, each at the cycle it arrived,
+// for ${run.cycles} cycles. The program itself is in AA_IROM.mem and
+// AA_DMEM.mem, which your Wrapper reads; save them from the same Download
+// menu, alongside this file. The plusargs below still override any
+// setting.`
+        : `// Generic testbench - RISC-V Simulator (HDL mode)
 //
 // This file is program-independent. It holds no assembled code, no
 // switch settings and no input data: every one of those is read at RUN
 // time, so the same compiled binary is reused for each run, each
-// single-step and each change of an input.
+// single-step and each change of an input.`;
+      const stim = run ? run.stim : [], rx = run ? run.rx : [], base = run ? run.base : null;
+
+      return `\`timescale 1ns / 1ps
+//====================================================================
+${about}
 //
 //   plusargs     +CYCLES=<d> +TRACE=<d> +DIP=<h> +PB=<h> +ACCEL=<h>
 //                +ADRDY=<h> +NSTIM=<d> +NRX=<d> +VCD
@@ -15787,16 +15810,16 @@ module cg3207_hdl_tb;
   localparam integer STIM_MAX = 1024;
   localparam integer RX_MAX   = 4096;
 
-  integer max_cycles = 2000;
-  integer trace_lvl  = 2;
-  integer nstim      = 0;
-  integer nrx        = 0;
+  integer max_cycles = ${run ? run.cycles : 2000};
+  integer trace_lvl  = ${run ? 1 : 2};
+  integer nstim      = ${stim.length};
+  integer nrx        = ${rx.length};
 
   reg [31:0] stim_mem [0:3*STIM_MAX-1];
   reg [31:0] rx_mem   [0:2*RX_MAX-1];
-
-  reg  [15:0] DIP           = 16'h0000;
-  reg  [2:0]  PB            = 3'b000;
+${runInit}
+  reg  [15:0] DIP           = 16'h${((base ? base.dip : 0) & 0xFFFF).toString(16).padStart(4, '0')};
+  reg  [2:0]  PB            = 3'b${((base ? base.pb : 0) & 7).toString(2).padStart(3, '0')};
   wire [7:0]  LED_OUT;
   wire [6:0]  LED_PC;
   wire [31:0] SEVENSEGHEX;
@@ -15810,8 +15833,8 @@ module cg3207_hdl_tb;
   wire [6:0]  OLED_Col;
   wire [5:0]  OLED_Row;
   wire [23:0] OLED_Data;
-${dbufDecl}  reg  [31:0] ACCEL_Data    = 32'h19000040;
-  reg         ACCEL_DReady  = 1'b1;
+${dbufDecl}  reg  [31:0] ACCEL_Data    = ${base ? h32(base.accel) : "32'h19000040"};
+  reg         ACCEL_DReady  = 1'b${base && !base.adrdy ? 0 : 1};
   reg         RESET         = 1'b1;
   reg         CLK           = 1'b0;
 
@@ -16608,13 +16631,17 @@ endmodule
       updateWaveView();
     }
 
-    function hdlCaptureBaseInputs() {
-      hdlBase = {
+    function hdlCurrentInputs() {
+      return {
         dip: dipSwitches & 0xFFFF,
         pb: pbState & 0x7,
         accel: hdlAccelWord(),
         adrdy: !!accelDready
       };
+    }
+
+    function hdlCaptureBaseInputs() {
+      hdlBase = hdlCurrentInputs();
     }
 
     async function hdlWithBusy(fn) {
@@ -17804,11 +17831,17 @@ endmodule
       }
     }
 
-    // The testbench is program-independent, so what gets saved here is
-    // exactly what runs - no regeneration, no baked-in run settings.
+    // The saved testbench replays the last recorded run's inputs. Before any
+    // run, or in JS mode, it starts from the inputs as they are now.
     function hdlDownloadTestbench() {
-      downloadTextFile('cg3207_hdl_tb.v', hdlBuildTestbench({}));
-      setStatus('Saved the generic testbench to cg3207_hdl_tb.v', 'success');
+      let run;
+      if (simEngineMode === 'hdl' && hdlTrace) {
+        run = { cycles: hdlCycleBudget, base: hdlBase, stim: hdlStim.slice().sort((a, b) => a.cycle - b.cycle), rx: hdlRx };
+      } else {
+        run = { cycles: hdlCycleBudget, base: hdlCurrentInputs(), stim: [], rx: [] };
+      }
+      downloadTextFile('cg3207_hdl_tb.v', hdlBuildTestbench({ run }));
+      setStatus('Saved the testbench for this run to cg3207_hdl_tb.v; it needs AA_IROM.mem and AA_DMEM.mem beside it', 'success');
     }
 
     function setHdlCycles(v) {
@@ -18097,8 +18130,8 @@ endmodule
       }
     };
 
-    // "Cycles" is a CPI-table estimate in the functional engine and a count of
-    // real clock edges in HDL mode. Same number, very different provenance.
+    // "Cycles" depends on the model: one per instruction single-cycle, the
+    // table's count multi-cycle, clock edges pipelined and in HDL mode.
     const hdlBaseUpdateStats = updateStats;
     updateStats = function () {
       hdlBaseUpdateStats();
@@ -18106,18 +18139,21 @@ endmodule
       if (!el) return;
       const hdl = simEngineMode === 'hdl';
       const piped = !hdl && pipeMode;
+      const multi = !hdl && jsArch === 'multi';
       el.innerHTML = 'Cycles: ' + totalCycles +
-        ' <span class="stat-tag">' + (hdl ? 'hw' : piped ? 'pipe' : 'est') + '</span>' +
+        ' <span class="stat-tag">' + (hdl ? 'hw' : piped ? 'pipe' : multi ? 'multi' : 'single') + '</span>' +
         '&nbsp;|&nbsp; Instr: ' + instructionCount +
-        (piped && instructionCount ? '&nbsp;|&nbsp; CPI: ' + (totalCycles / instructionCount).toFixed(2) : '') +
+        ((piped || multi) && instructionCount ? '&nbsp;|&nbsp; CPI: ' + (totalCycles / instructionCount).toFixed(2) : '') +
         (piped && pipeBP.on && pipe ? '&nbsp;|&nbsp; Mispredicts: ' + pipe.mispredicts : '') +
         '&nbsp;|&nbsp; PC: <span class="stat-pc">' + formatPC() + '</span>';
       el.title = (hdl
         ? 'Clock cycles counted by your Verilog simulation, and instructions retired'
         : piped
         ? 'Clock cycles of the 5-stage pipeline, instructions retired, and cycles per instruction'
-        : 'Cycles estimated from the per-instruction table in Settings > Simulation, ' +
-          'and instructions executed') +
+        : multi
+        ? 'Cycles from the per-category table in Settings > Simulation, instructions executed, ' +
+          'and cycles per instruction'
+        : 'One cycle per instruction, and instructions executed') +
         '. PC is ' + (piped ? 'PCF, the address being fetched.' : 'the address of the instruction about to execute.');
     };
 
@@ -18375,7 +18411,8 @@ endmodule
     // drain and is then executed there by the functional model, the way a
     // trap would serialise it.
     // ================================================================
-    let pipeMode = false;
+    let jsArch = 'single';      // 'single' | 'multi' | 'pipe'
+    let pipeMode = false;       // jsArch === 'pipe'
     const PIPE_HAZ_DEFAULT = { fwdE: true, fwdD: true, fwdM: true, lwStall: true, flush: true };
     let pipeHaz = Object.assign({}, PIPE_HAZ_DEFAULT);
     let pipe = null;
@@ -18646,25 +18683,33 @@ endmodule
     // snapshot of them; the BHT is written in place and is copied whole.
 
     // Switching microarchitecture starts the program again: a pipeline
-    // cannot be conjured from the middle of a single-cycle run.
-    function pipeSetMode(on) {
-      on = !!on;
-      if (on === pipeMode) { pipeSyncControls(); return; }
+    // cannot be conjured from the middle of a single-cycle run, and the
+    // cycle count so far would belong to the other model.
+    const JS_ARCH_LOG = {
+      single: 'Single-cycle: one cycle per instruction.',
+      multi: 'Multi-cycle: cycles per instruction from the table in Settings.',
+      pipe: '5-stage pipeline: Step and Back move one clock cycle.'
+    };
+    function setJsArch(a) {
+      if (!JS_ARCH_LOG[a]) a = 'single';
+      if (a === jsArch) { pipeSyncControls(); return; }
       if (running) {
         running = false;
         if (runTimerId) { clearTimeout(runTimerId); runTimerId = null; }
       }
-      pipeMode = on;
+      jsArch = a;
+      pipeMode = a === 'pipe';
       resetAll();
-      log(on ? '5-stage pipeline: Step and Back move one clock cycle.'
-             : 'Single-cycle: Step and Back move one instruction.', 'info');
+      log(JS_ARCH_LOG[a], 'info');
       pipeSyncControls();
       if (typeof dpOnModeChange === 'function') dpOnModeChange();
+      if (typeof dpOnStateChange === 'function') dpOnStateChange();
     }
+    function pipeSetMode(on) { setJsArch(on ? 'pipe' : 'single'); }
 
     function pipeInitControls() {
       const arch = document.getElementById('simMicroarch');
-      if (arch) arch.onchange = () => pipeSetMode(arch.value === 'pipe');
+      if (arch) arch.onchange = () => setJsArch(arch.value);
       document.querySelectorAll('[data-haz]').forEach(el => {
         el.onchange = () => {
           pipeHaz[el.dataset.haz] = el.checked;
@@ -18725,7 +18770,7 @@ endmodule
 
     function pipeSyncControls() {
       const arch = document.getElementById('simMicroarch');
-      if (arch) arch.value = pipeMode ? 'pipe' : 'single';
+      if (arch) arch.value = jsArch;
       const stripArch = document.getElementById('dpArch');
       if (stripArch) stripArch.value = pipeMode ? 'pipe' : 'single';
       document.querySelectorAll('[data-haz]').forEach(el => {
@@ -18740,12 +18785,10 @@ endmodule
       const flushLbl = document.querySelector('[data-haz="flush"]');
       if (flushLbl && flushLbl.nextSibling) flushLbl.nextSibling.textContent = pipeBP.on ? ' Flush on misprediction' : ' Flush on taken branch';
       const box = document.getElementById('pipeHazBox');
-      if (box) box.classList.toggle('sim-dim', !pipeMode);
+      // Only the chosen model's settings are shown.
+      if (box) box.style.display = pipeMode ? '' : 'none';
       const table = document.getElementById('cyclesTableBox');
-      if (table) {
-        table.classList.toggle('sim-dim', pipeMode);
-        table.title = pipeMode ? 'Not used by the pipeline, which counts its own cycles' : '';
-      }
+      if (table) table.style.display = jsArch === 'multi' ? '' : 'none';
       const unit = document.getElementById('uartCharUnit');
       if (unit) unit.textContent = pipeMode ? 'cycles/char' : 'instr/char';
       const stmt = document.getElementById('simStatementStepCard');
@@ -20288,7 +20331,9 @@ endmodule
     // for both: no MCycle, word loads and stores only, nothing outside the
     // decoder table (FP, atomics, ecall, fence, CSRs).
     let dpBlockKey = null, dpBlockVal = null;
+    const DP_MULTI_BLOCK = { msg: 'The datapath is not available in Multi-cycle mode.' };
     function dpBlocker() {
+      if (jsArch === 'multi') return DP_MULTI_BLOCK;
       const key = assembled + ':' + machineCode.length + ':' + (lastAssembledCode || '').length + ':' + editorLanguageMode;
       if (key === dpBlockKey) return dpBlockVal;
       dpBlockKey = key;
@@ -20409,7 +20454,7 @@ endmodule
       b.classList.toggle('inactive', !!block);
       b.classList.toggle('viz-on', !block && vizShown());
       b.title = block
-        ? `The datapath diagram cannot show this program: line ${block.line}, ${block.text}. ${block.why}`
+        ? block.msg || `The datapath diagram cannot show this program: line ${block.line}, ${block.text}. ${block.why}`
         : hdl ? 'Show or hide the waveform of the recorded run'
               : 'Show or hide the datapath: the instruction at the PC, or the pipeline, one step at a time';
     }
