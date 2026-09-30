@@ -110,12 +110,12 @@ setTimeout(async () => {
     }
     console.log('✅ Disassembly label headers verified in C mode!');
 
-    // 4. Verify Linker Settings FPGA Hardware Notice Box
+    // 4. Verify the Linker tab's hardware-size notice
     const linkerNotice = doc.querySelector('#settingsContent-linker');
-    if (!linkerNotice || !linkerNotice.textContent.includes('FPGA Hardware Notice')) {
-      throw new Error('FPGA Hardware Notice box missing in Linker tab of settings modal!');
+    if (!linkerNotice || !linkerNotice.textContent.includes('should not exceed the memory size provisioned in hardware')) {
+      throw new Error('Hardware memory-size notice missing in Linker tab of settings modal!');
     }
-    console.log('✅ Linker tab FPGA Hardware Notice verified!');
+    console.log('✅ Linker tab hardware memory-size notice verified!');
 
     console.log('\n===========================================================');
     console.log('🎉 DISASSEMBLY LABELS & FPGA WARNING TESTS PASSED 100%!');

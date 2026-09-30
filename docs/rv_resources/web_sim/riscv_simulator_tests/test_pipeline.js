@@ -66,7 +66,7 @@ function assembleSrc(src) {
 }
 
 function setPipe(on, haz, bp) {
-  ev(`pipeMode = ${!!on}; pipeHaz = Object.assign({}, PIPE_HAZ_DEFAULT, ${JSON.stringify(haz || {})});
+  ev(`jsArch = '${on ? 'pipe' : 'single'}'; pipeMode = ${!!on}; pipeHaz = Object.assign({}, PIPE_HAZ_DEFAULT, ${JSON.stringify(haz || {})});
       pipeBP = Object.assign({}, PIPE_BP_DEFAULT, ${JSON.stringify(bp || {})})`);
 }
 
@@ -157,6 +157,21 @@ done:
 
 setTimeout(async () => {
   try {
+    // Before anything has opened Settings: its microarchitecture controls act
+    // from the start, including from the strip's ⚙ shortcut.
+    const bpBox = doc.getElementById('pipeBpOn');
+    bpBox.checked = true;
+    bpBox.dispatchEvent(new win.Event('change'));
+    const archSel = doc.getElementById('simMicroarch');
+    archSel.value = 'multi';
+    archSel.dispatchEvent(new win.Event('change'));
+    check('Settings\' pipeline and microarchitecture controls work before Settings is ever opened',
+      ev('pipeBP.on') === true && ev('jsArch') === 'multi');
+    bpBox.checked = false;
+    bpBox.dispatchEvent(new win.Event('change'));
+    archSel.value = 'single';
+    archSel.dispatchEvent(new win.Event('change'));
+
     // [1] All switches on: the pipeline computes what the functional model does.
     console.log('\n[1] With every hazard switch on, the pipeline matches the functional model');
     setPipe(false);
@@ -531,11 +546,11 @@ setTimeout(async () => {
 
     check('the strip header shows the pipeline controls: settings and a Diagram/Timeline switch',
       !!doc.getElementById('dpPipeCfgBtn') && doc.getElementById('dpViewDiagram').classList.contains('active'));
-    win.pipePopToggle(true);
-    check('⚙ pops up the Settings card\'s own switches beside it',
-      !doc.getElementById('pipePop').hidden && !!doc.querySelector('#pipePop #pipeHazBox'));
-    win.pipePopToggle(false);
-    check('and closing puts them back in Settings', !!doc.querySelector('#settingsContent-simulator #pipeHazBox'));
+    doc.getElementById('dpPipeCfgBtn').click();
+    check('⚙ opens Settings on the JS Simulation tab, where the pipeline\'s switches are',
+      doc.getElementById('settingsOverlay').classList.contains('open') &&
+      doc.getElementById('settingsContent-simulator').classList.contains('active'));
+    win.closeSettingsModal();
     win.dpToggleView();
     check('Timeline highlights its half of the switch', doc.getElementById('dpViewTimeline').classList.contains('active'));
     check('rows no longer in the pipeline are dimmed, the ones in it are not',
@@ -616,7 +631,8 @@ setTimeout(async () => {
     ev('pipeSetMode(false)');
     ev('floatStepsWanted = true; updateFloatSteps()');
     check('single-cycle, same: the toolbar\'s Back and Step, with no ▶▶',
-      !bar.hidden && bar.dataset.mode === 'tb' && barBtns()[1].textContent === '⏭' && barBtns()[2].hidden);
+      !bar.hidden && bar.dataset.mode === 'tb' && barBtns()[1].textContent === '⏭' && barBtns()[2].hidden,
+      `hidden=${bar.hidden} mode=${bar.dataset.mode} tab=${ev('mobileTab')} arch=${ev('jsArch')} dpVis=${ev('panelDock.datapath.visible')}`);
     const pc0 = ev('pc');
     barBtns()[1].click();
     check('and ⏭ steps an instruction', ev('pc') !== pc0 && ev('totalCycles') === 1);
@@ -639,6 +655,45 @@ setTimeout(async () => {
       ev('totalCycles') === 0 && !doc.body.classList.contains('dp-pipe') && ev('dpSvg().id') === 'dpSvg');
     check('with no stage marks left', doc.querySelectorAll('.cm-pipe-stage').length === 0);
     check('and the CPI readout gone', !/CPI/.test(doc.getElementById('statsBar').textContent));
+
+    // [6] The three JS microarchitectures.
+    console.log('\n[6] Single-cycle, multi-cycle and pipelined cycle counts');
+    const THREE = '.data\nbuf: .word 5\n.text\nmain: la s0, buf\n    lw t0, 0(s0)\n    sw t0, 4(s0)\n    addi t1, t0, 1\n';
+    const cyclesAfter = n => { ev('resetAll()'); for (let i = 0; i < n; i++) win.stepOnce(); return ev('totalCycles'); };
+    ev("setJsArch('single')");
+    assembleSrc(THREE);
+    check('single-cycle: one cycle per instruction', cyclesAfter(5) === 5 && ev('instructionCount') === 5);
+    ev("setJsArch('multi')");
+    check('multi-cycle: each category\'s count from the table (load 2, store 2)', cyclesAfter(5) === 7, String(ev('totalCycles')));
+    check('with its own tag and a CPI', /Cycles: 7 multi/.test(doc.getElementById('statsBar').textContent) &&
+      /CPI: 1\.40/.test(doc.getElementById('statsBar').textContent), doc.getElementById('statsBar').textContent);
+    win.updateToolbarButtonStates();
+    check('multi-cycle has no drawing: the Datapath button is off and says why',
+      viz.disabled && /not available in Multi-cycle/.test(viz.title) && !doc.body.classList.contains('dp-open'), viz.title);
+    check('and the settings select offers all three', ev("Array.from(document.getElementById('simMicroarch').options).map(o => o.value).join()") === 'single,multi,pipe');
+    ev("setJsArch('single')");
+    win.updateToolbarButtonStates();
+    check('back to single-cycle: the button returns', !viz.disabled);
+
+    // [7] Statement Stepping, pipelined: a step ends when the statement's
+    // last instruction has left Write-back.
+    console.log('\n[7] Statement Stepping in the pipeline');
+    ev("setJsArch('pipe')");
+    assembleSrc(THREE);
+    ev('resetAll(); statementStepping = true');
+    const s0buf = ev("labels['buf']") >>> 0;
+    win.stepOnce();
+    check('stepping over la (two instructions): 6 cycles, s0 set, the lw after it not yet retired',
+      ev('totalCycles') === 6 && (ev('regs[8]') >>> 0) === s0buf && ev('regs[5]') === 0,
+      `cycles=${ev('totalCycles')} s0=${(ev('regs[8]') >>> 0).toString(16)} t0=${ev('regs[5]')}`);
+    win.stepOnce();
+    check('the next step retires the lw, one cycle later, and t0 holds the loaded 5',
+      ev('totalCycles') === 7 && ev('regs[5]') === 5, `cycles=${ev('totalCycles')} t0=${ev('regs[5]')}`);
+    win.stepBack();
+    check('Back undoes the whole statement step', ev('totalCycles') === 6 && ev('regs[5]') === 0);
+    win.dpNext();
+    check('the strip\'s ▶ still clocks one cycle with Statement Stepping on', ev('totalCycles') === 7);
+    ev("statementStepping = false; setJsArch('single')");
   } catch (e) {
     console.log('  ❌ threw: ' + (e.stack || e.message));
     failed++;

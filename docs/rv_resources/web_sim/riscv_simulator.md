@@ -102,6 +102,8 @@ start.
 **Statement Stepping** (⚙ Settings → JS Simulation or HDL Simulation) makes one **Step**
 cover a whole C statement, or a whole pseudo-instruction like `li x1, 0x12345678`,
 instead of one machine instruction at a time. **Back** undoes exactly the same distance.
+Pipelined, a Step runs until the statement's last instruction has left Write-back, when
+its results show; the datapath's **▶** still moves one cycle.
 
 **A program that never ends** pauses itself after *Max Instructions Per Run*
 (⚙ Settings → JS Simulation, default 100,000,000) rather than freezing the browser.
@@ -219,7 +221,7 @@ pipeline dimmed. Bubbles are drawn dashed: the nop a stall inserts has a row of 
 and a flushed instruction carries on in its row as a bubble. The last column, **next**, is
 the cycle the next ▶ clocks, so the numbered columns match the log. The chart shows as many
 cycles as fit across, and on a phone only the instructions in flight. The ⚙ beside
-**Pipelined** pops up the hazard switches and branch prediction without opening Settings.
+**Pipelined** opens Settings at the hazard switches and branch prediction.
 
 The pipeline runs all of RV32IM: `mul`/`div` take one cycle in Execute, and floating
 point, atomics and `ecall` wait in Decode until the stages ahead have emptied, then run
@@ -261,11 +263,11 @@ down and it stays down until you assemble a different program.
 | Peripheral | Address | Notes |
 |---|---|---|
 | LEDs / DIP switches | `0xFFFF0060` / `0xFFFF0064` | Click a switch to flip it |
-| Push buttons | `0xFFFF0068` | L / C / R: click to **toggle**, or hold `←` `↓` `→` for a real **momentary** press (down = pressed, up = released) |
+| Push buttons | `0xFFFF0068` | L / C / R: click to **toggle**, or hold `J` `K` `L` for a real **momentary** press (down = pressed, up = released) |
 | 7-segment | `0xFFFF0080` | 32-bit value as 8 hex digits |
 | UART console | `0xFFFF0000`–`0xFFFF000C` | Type in the box and press **Send** |
 | OLED 96×64 | `0xFFFF0020`–`0xFFFF002C` | Colour and auto-advance modes, set through `OLED_CTRL`; see below |
-| Accelerometer + temp | `0xFFFF0040` | Sliders, Flat / Tilt / Shake presets, or hold `X`/`Y`/`Z`/`T` and press `←`/`→` to nudge that axis (T = temperature) |
+| Accelerometer + temp | `0xFFFF0040` | Sliders, Flat / Tilt / Shake presets, or hold `X`/`Y`/`Z`/`T` and press `,`/`.` to nudge that axis (T = temperature) |
 | Cycle counter | `0xFFFF00A0` | Cycles since reset |
 
 The UART box takes **ASCII** (including `\r`, `\n`, `\xHH`) or **Hex** (`0x41, 0x0D`).
@@ -352,7 +354,7 @@ off the poll needs its own delay to run at a sensible speed here.
 |---|---|
 | **⚡ Compiler** | C compiler, `-O` level, `-march`/`-mabi`, M-extension toggle (off by default) |
 | **🗺 Linker** | Segment bases and sizes, stack top, MMIO base |
-| **⏱ JS Simulation** | Statement Stepping · single-cycle or 5-stage pipeline, and the hazard switches · max instructions per run · cycles per instruction |
+| **⏱ JS Simulation** | Statement Stepping · single-cycle, multi-cycle (with its cycles per instruction) or 5-stage pipeline (with the hazard switches) · max instructions per run |
 | **🔌 HDL Simulation** | Statement Stepping · your Verilog sources · everything for the hardware engine |
 
 Changing anything on the **Compiler** tab clears the compiled program: what was loaded
@@ -488,9 +490,16 @@ memory and every peripheral are compared in full.
 ### Finding a bug in your processor
 
 Tick **Cross-check against the JS model** (⚙ Settings → 🔌 HDL Simulation). After each
-run, the same program is replayed on the functional model and you are told the **first
-instruction where the two disagree**, with the cycle, the PC, the instruction word and
-both values. That is almost always where the RTL bug is.
+run, the same program is replayed on the functional model and the two are compared by
+their effects: the order in which registers change and data memory is written. You are
+told the **first difference**, with its cycle, both values, and the instruction and line
+that produced the model's. That is almost always where the RTL bug is. It works the same
+for a single-cycle, multi-cycle or pipelined core. If an input changed during the run, the
+comparison stops at that cycle.
+
+Step, Back, breakpoints and the instruction count follow your Wrapper's `PC`, the address
+being fetched. In a pipelined core that runs a few instructions ahead of the results, and
+includes fetches a flush then discards; the console says so after a run.
 
 ### Watching the waveform
 

@@ -13,7 +13,7 @@
 
 For Task 1, we will incorporate **both signed and unsigned division** into the given `MCycle` unit [HDL simulation only].
 
-* The design files can be found [here](https://github.com/NUS-CG3207/nus-cg3207.github.io/tree/main/docs/code_templates/Asst_03). Please go through the comments carefully to understand the operation of the unit. There are 2 versions of `MCycle` provided - you may use either. `MCycle_alt.v` is more systematic (separate combinational and sequential parts), but may be a bit harder to comprehend.
+* The design files can be found [here](https://github.com/NUS-CG3207/nus-cg3207.github.io/tree/main/docs/code_templates/Asst_03). Please go through the comments carefully to understand the operation of the unit.
 * Implement both **signed and unsigned division** in the `MCycle` unit.
 * Simulate the unit using a good testbench covering appropriate corner cases.
 * Synthesize the `MCycle` unit by setting it as the top-level module and make sure it synthesizes without warnings (unless you are sure a warning can be safely ignored) before proceeding to the next task of incorporating it into the processor.

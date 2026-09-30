@@ -111,44 +111,57 @@ setTimeout(async () => {
     if (!mmioHtml.includes('DIP (RO):')) throw new Error('MMIO label should render as "DIP (RO):"');
     console.log('✅ MMIO register label renders with a trailing ":"');
 
-    // --- [3] Centre push button is ArrowDown, not ArrowUp ---
-    press('keydown', 'ArrowDown');
-    if (!(win.eval('pbState') & 0x2)) throw new Error('ArrowDown should press the centre push button (bit 1)');
-    press('keyup', 'ArrowDown');
-    if (win.eval('pbState') & 0x2) throw new Error('ArrowDown release should clear the centre push button');
-    press('keydown', 'ArrowUp');
-    if (win.eval('pbState') !== 0) throw new Error('ArrowUp should no longer press any push button');
-    press('keyup', 'ArrowUp');
-    console.log('✅ Centre push button responds to ArrowDown, not ArrowUp');
+    // --- [3] Push buttons are J K L, held ---
+    [['j', 0x4], ['k', 0x2], ['l', 0x1]].forEach(([key, bit]) => {
+      press('keydown', key);
+      if (win.eval('pbState') !== bit) throw new Error(`${key.toUpperCase()} should press only its button (0x${bit.toString(16)})`);
+      press('keyup', key);
+      if (win.eval('pbState') !== 0) throw new Error(`${key.toUpperCase()} release should clear its button`);
+    });
+    ['ArrowLeft', 'ArrowDown', 'ArrowRight'].forEach(key => {
+      press('keydown', key); press('keyup', key);
+    });
+    if (win.eval('pbState') !== 0) throw new Error('The arrow keys should press no push button');
+    console.log('✅ J, K and L press BTNL, BTNC and BTNR while held; the arrows press none');
 
-    // --- [4] Accelerometer axis shortcut (5 units per press) ---
+    // --- [4] Accelerometer axis shortcut: hold X/Y/Z/T, , and . (5 units per press) ---
     win.eval('accelX = 0; accelTemp = 25;');
+    const instr0 = win.eval('instructionCount');
     press('keydown', 'x');
-    press('keydown', 'ArrowRight');
-    if (win.eval('accelX') !== 5) throw new Error(`X + -> should increase accelX to 5, got ${win.eval('accelX')}`);
-    press('keydown', 'ArrowLeft');
-    press('keydown', 'ArrowLeft');
-    if (win.eval('accelX') !== -5) throw new Error(`X + <- x2 should net accelX to -5, got ${win.eval('accelX')}`);
+    press('keydown', '.');
+    if (win.eval('accelX') !== 5) throw new Error(`X + . should increase accelX to 5, got ${win.eval('accelX')}`);
+    press('keydown', ',');
+    press('keydown', ',');
+    if (win.eval('accelX') !== -5) throw new Error(`X + , x2 should net accelX to -5, got ${win.eval('accelX')}`);
     press('keyup', 'x');
-    press('keydown', 'ArrowLeft'); // X released: this should now be a plain push-button press (BTNL)
+    press('keydown', ',');
     if (win.eval('accelX') !== -5) throw new Error('accelX should not change once X is released');
-    if (!(win.eval('pbState') & 0x4)) throw new Error('With X released, ArrowLeft should press BTNL like before');
-    press('keyup', 'ArrowLeft');
-    console.log('✅ Hold X, ←/→ nudges accelX by 5; releasing X hands ←/→ back to the push buttons');
+    if (win.eval('instructionCount') !== instr0) throw new Error('The accelerometer keys should not step');
+    console.log('✅ Hold X, , and . nudge accelX by 5; releasing X ends it');
 
     press('keydown', 't');
-    press('keydown', 'ArrowRight');
-    if (win.eval('accelTemp') !== 30) throw new Error(`T + -> should increase accelTemp to 30, got ${win.eval('accelTemp')}`);
+    press('keydown', '.');
+    if (win.eval('accelTemp') !== 30) throw new Error(`T + . should increase accelTemp to 30, got ${win.eval('accelTemp')}`);
     press('keyup', 't');
-    console.log('✅ Hold T, ←/→ nudges accelTemp by 5');
+    console.log('✅ Hold T, , and . nudge accelTemp by 5');
 
-    // Clamped to slider range
     win.eval('accelZ = 127;');
     press('keydown', 'z');
-    press('keydown', 'ArrowRight');
+    press('keydown', '.');
     if (win.eval('accelZ') !== 127) throw new Error(`accelZ should clamp at 127, got ${win.eval('accelZ')}`);
     press('keyup', 'z');
     console.log('✅ Accelerometer axis shortcut clamps to the slider range');
+
+    // --- [5] → and ← are Step and Back ---
+    win.eval('resetAll()');
+    const pc0 = win.eval('pc');
+    press('keydown', 'ArrowRight'); press('keyup', 'ArrowRight');
+    if (win.eval('pc') === pc0 || win.eval('instructionCount') !== 1)
+      throw new Error('→ should step one instruction');
+    press('keydown', 'ArrowLeft'); press('keyup', 'ArrowLeft');
+    if (win.eval('pc') !== pc0 || win.eval('instructionCount') !== 0)
+      throw new Error('← should step back');
+    console.log('✅ → steps and ← steps back');
 
     console.log('\n===========================================================');
     console.log('🎉 ALL MEMORY ROW GRANULARITY & SHORTCUT TESTS PASSED!');

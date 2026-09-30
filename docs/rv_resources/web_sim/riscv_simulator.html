@@ -2110,7 +2110,7 @@
        instruction gives way (ellipsis) before anything wraps. */
     body.dp-in-panel #tab-datapath .dp-hdr { flex-wrap: nowrap; }
     .dp-hdr .dp-instr:empty, .dp-hdr .dp-phase:empty { display: none; }
-    .dp-hdr .dp-instr:empty + .dp-phase:empty + .dp-hdr-actions { margin-left: 0; }
+    body.dp-in-panel #tab-datapath .dp-hdr .dp-instr:empty + .dp-phase:empty + .dp-hdr-actions { margin-left: 0; }
     body.dp-in-panel #tab-datapath .dp-instr { font-size: 11px; }
     body.dp-in-panel #tab-datapath .dp-instr-addr { display: none; }
     body.dp-in-panel #tab-datapath .dp-phase { font-size: 10.5px; }
@@ -2266,18 +2266,6 @@
     }
     .dp-seg button + button { border-left: 1px solid #45475a; }
     .dp-seg button.active { background: #cba6f7; color: #11111b; }
-    /* Pipeline settings, popped up beside the strip's Pipelined dropdown. */
-    .pipe-pop {
-      position: fixed;
-      z-index: 1200;
-      width: min(360px, calc(100vw - 16px));
-      background: #1e1e2e;
-      border: 1px solid #45475a;
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      padding: 10px 12px;
-    }
-    .pipe-pop[hidden] { display: none; }
     .visit-count { color: #6c7086; font-size: 11.5px; }
     /* Step controls that stay in reach while a phone scrolls. */
     .float-steps {
@@ -2309,7 +2297,6 @@
     body.float-dp #tab-datapath #dpPrevBtn, body.float-dp #tab-datapath #dpNextBtn,
     body.float-dp #tab-datapath #dpPlayBtn { display: none; }
     .visit-count[hidden] { display: none; }
-    .pipe-pop-title { font-weight: 700; font-size: 12px; color: #cba6f7; margin-bottom: 6px; }
     .dp-svg [data-e].pl-lit { stroke: var(--pl) !important; stroke-width: 11px !important; }
     .dp-svg [data-e].pl-lit.pl-thin { stroke-width: 7px !important; }
     .pdp-stage-label {
@@ -4071,7 +4058,6 @@
                   <option value="pipe">5-stage pipeline</option>
                 </select>
               </div>
-              <span id="pipeHazHome" hidden></span>
               <div class="pipe-haz" id="pipeHazBox">
                 <label title="ForwardAE / ForwardBE: ALUResultM or ResultW into Execute"><input type="checkbox" data-haz="fwdE"> Forward M, W to E</label>
                 <label title="Forward1D / Forward2D: ResultW into the register file's outputs"><input type="checkbox" data-haz="fwdD"> Forward W to D</label>
@@ -4273,10 +4259,6 @@
       <button type="button" onclick="floatStep(0)"></button>
       <button type="button" onclick="floatStep(1)"></button>
       <button type="button" onclick="floatStep(2)"></button>
-    </div>
-
-    <div class="pipe-pop" id="pipePop" hidden role="dialog" aria-label="Pipeline settings">
-      <div class="pipe-pop-title">Pipeline</div>
     </div>
 
     <div class="cycles-overlay" id="bpFigOverlay" onclick="if(event.target===this)closeBpFigure()">
@@ -4533,12 +4515,12 @@
             <div class="periph-pair">
               <div class="periph-section" data-periph="pb">
                 <div class="periph-title" onclick="togglePeriphFold('pb')"
-                  title="Push Buttons: Read at 0xFFFF0068 RO [Bit 0: BTNL, Bit 1: BTNC, Bit 2: BTNR]. Click to toggle or use arrow keys (← ↓ →).">
+                  title="Push Buttons: Read at 0xFFFF0068 RO [Bit 0: BTNL, Bit 1: BTNC, Bit 2: BTNR]. Click to toggle, or hold J, K or L.">
                   Push Buttons <span class="periph-addr">0xFFFF0068 RO</span>
                 </div>
                 <div id="pbContainer"></div>
                 <div style="margin-top:8px;font-size:10px;color:#585b70;">
-                  BTNL | BTNC | BTNR — click to toggle or use arrow keys (← ↓ →)
+                  BTNL | BTNC | BTNR — click to toggle, or hold J K L
                 </div>
               </div>
               <div class="periph-section" data-periph="sevseg">
@@ -4622,7 +4604,7 @@
             <div class="periph-section" id="accelSection" data-periph="accel">
               <div class="periph-title" onclick="togglePeriphFold('accel')"
                 style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;"
-                title="3-Axis Accelerometer &amp; Temp: 0xFFFF0040 ACCEL_DATA RO ([31:24] Temp, [23:16] Z, [15:8] Y, [7:0] X), 0xFFFF0044 ACCEL_DREADY RO (Bit 0). Hold X/Y/Z/T, then ← / → to adjust that axis.">
+                title="3-Axis Accelerometer &amp; Temp: 0xFFFF0040 ACCEL_DATA RO ([31:24] Temp, [23:16] Z, [15:8] Y, [7:0] X), 0xFFFF0044 ACCEL_DREADY RO (Bit 0). Hold X/Y/Z/T, then , / . to adjust that axis.">
                 <span>3-Axis Accelerometer &amp; Temp &nbsp;<span class="periph-addr"
                     style="margin-left:4px;">0xFFFF0040–0xFFFF0044</span></span>
                 <span style="font-size:10px;color:#a6adc8;">
@@ -4633,28 +4615,28 @@
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="width:50px;color:#89b4fa;font-weight:bold;">X Axis:</span>
                   <input type="range" id="accelXSlider" min="-128" max="127" value="0"
-                    title="Hold X, then ← / → to decrease/increase"
+                    title="Hold X, then , / . to decrease/increase"
                     style="flex:1;accent-color:#89b4fa;cursor:pointer;" oninput="updateAccelValues()">
                   <span id="accelXVal" style="width:130px;font-family:monospace;color:#cdd6f4;">0 (0x00, +0.00g)</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="width:50px;color:#a6e3a1;font-weight:bold;">Y Axis:</span>
                   <input type="range" id="accelYSlider" min="-128" max="127" value="0"
-                    title="Hold Y, then ← / → to decrease/increase"
+                    title="Hold Y, then , / . to decrease/increase"
                     style="flex:1;accent-color:#a6e3a1;cursor:pointer;" oninput="updateAccelValues()">
                   <span id="accelYVal" style="width:130px;font-family:monospace;color:#cdd6f4;">0 (0x00, +0.00g)</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <span style="width:50px;color:#fab387;font-weight:bold;">Z Axis:</span>
                   <input type="range" id="accelZSlider" min="-128" max="127" value="64"
-                    title="Hold Z, then ← / → to decrease/increase"
+                    title="Hold Z, then , / . to decrease/increase"
                     style="flex:1;accent-color:#fab387;cursor:pointer;" oninput="updateAccelValues()">
                   <span id="accelZVal" style="width:130px;font-family:monospace;color:#cdd6f4;">64 (0x40, +1.00g)</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
                   <span style="width:50px;color:#f38ba8;font-weight:bold;">Temp:</span>
                   <input type="range" id="accelTempSlider" min="-40" max="85" value="25"
-                    title="Hold T, then ← / → to decrease/increase"
+                    title="Hold T, then , / . to decrease/increase"
                     style="flex:1;accent-color:#f38ba8;cursor:pointer;" oninput="updateAccelValues()">
                   <span id="accelTempVal" style="width:130px;font-family:monospace;color:#cdd6f4;">25°C (0x19)</span>
                 </div>
@@ -4795,7 +4777,7 @@
             <option value="single">Single-cycle</option>
             <option value="pipe">Pipelined</option>
           </select>
-          <button class="panel-hdr-btn dp-pipe-only" type="button" id="dpPipeCfgBtn" onclick="pipePopToggle()" title="Pipeline settings: hazard unit and branch prediction">⚙</button>
+          <button class="panel-hdr-btn dp-pipe-only" type="button" id="dpPipeCfgBtn" onclick="openPipeSettings()" title="Pipeline settings: hazard unit and branch prediction">⚙</button>
           <span class="dp-seg dp-pipe-only" role="group" aria-label="View">
             <button type="button" id="dpViewDiagram" class="active" onclick="dpSetView('diagram')" title="The datapath diagram">Diagram</button>
             <button type="button" id="dpViewTimeline" onclick="dpSetView('timeline')" title="Which stage each instruction was in, cycle by cycle">Timeline</button>
@@ -10769,7 +10751,7 @@
       updatePeripherals();
     }
 
-    // Keyboard shortcut: hold X/Y/Z/T, tap ←/→ to nudge that axis by one
+    // Keyboard shortcut: hold X/Y/Z/T, tap , or . to nudge that axis by one
     // step, clamped to the same range as its slider - see the keydown
     // handler (heldAxisKeys) for where `axis`/`delta` come from.
     function bumpAccelAxis(axis, delta) {
@@ -12832,7 +12814,6 @@ int main()
     function openSettingsModal(initialTab = 'compiler') {
       const ov = document.getElementById('settingsOverlay');
       if (!ov) return;
-      if (typeof pipePopToggle === 'function') pipePopToggle(false);
       buildMemSegmentsPanel();
       buildCyclesPanel();
       refreshSimSettingsScope();
@@ -13954,7 +13935,7 @@ int main()
       let pipeSig = null;
       try {
         if (pipeMode) {
-          pipeSig = pipeStep();
+          pipeSig = statementStepping ? pipeStatementStep() : pipeStep();
         } else if (statementStepping && startSourceLine > 0) {
           let stepsTaken = 0;
           while (!programFinished && stepsTaken < 10000) {
@@ -14001,10 +13982,14 @@ int main()
           highlightCurrentLine();
           log(`Program completed after ${totalCycles} cycles, ${instructionCount} instructions.`, 'success');
           setStatus('Program finished', 'success');
+        } else if (statementStepping && totalCycles - cycBefore > 1) {
+          setStatus(`Statement step over line ${pipeStmtLine}: ${totalCycles - cycBefore} cycles, now at cycle ${totalCycles}`);
         } else {
           setStatus(`Cycle ${totalCycles}` + (ev ? ': ' + ev : ''));
         }
-        log(`Cycle ${totalCycles}` + (ev ? ': ' + ev : ''), 'info');
+        log(statementStepping && totalCycles - cycBefore > 1
+          ? `Cycles ${cycBefore + 1}-${totalCycles}: statement at line ${pipeStmtLine} retired (${instructionsExecuted} instructions)`
+          : `Cycle ${totalCycles}` + (ev ? ': ' + ev : ''), 'info');
       } else if (statementStepping && instructionsExecuted > 1) {
         setStatus(`Statement step over line ${startSourceLine} — ${instructionsExecuted} instruction` +
           `${instructionsExecuted === 1 ? '' : 's'}, now at line ${currentExecLine > 0 ? currentExecLine : '?'}`);
@@ -14764,6 +14749,7 @@ int main()
     // Accelerometer axis keys currently held (X/Y/Z/T) - see the keydown
     // handler below.
     let heldAxisKeys = new Set();
+    const PB_KEYS = { j: 2, k: 1, l: 0 };   // BTNL, BTNC, BTNR, left to right
 
     // --- Master Keyboard shortcuts for the Editor & Simulator ---
     document.addEventListener('keydown', (e) => {
@@ -14813,27 +14799,26 @@ int main()
         return;
       }
 
-      // Push-button keys (L/C/R = ←/↓/→ — ↓ rather than ↑ for the centre
-      // button since ←/↓/→ share a row on most keyboards), held like the
-      // real thing. Excluded while the editor has focus, where these keys
-      // move the cursor instead.
+      // One meaning per key, outside the editor (where they edit):
+      //   ← →            Back and Step
+      //   J K L (held)   push buttons L, C, R, pressed while held
+      //   X/Y/Z/T + , .  that accelerometer axis down or up by 5
       const inEditor = !!(t && cmEditor && cmEditor.contentDOM && cmEditor.contentDOM.contains(t));
       if (!inEditor && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-        // Accelerometer axis keys: hold X/Y/Z/T, then ←/→ to decrease/
-        // increase that axis (T = temperature) — the same held-key idiom
-        // as the push buttons, so a chord tweaks a value without reaching
-        // for its slider. Checked first so the chord doesn't also toggle
-        // a push button on the same keystroke.
         const lower = e.key.length === 1 ? e.key.toLowerCase() : e.key;
         if (['x', 'y', 'z', 't'].includes(lower)) heldAxisKeys.add(lower);
-        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && heldAxisKeys.size) {
+        if ((e.key === ',' || e.key === '.') && heldAxisKeys.size) {
           e.preventDefault();
-          const delta = e.key === 'ArrowLeft' ? -5 : 5;
+          const delta = e.key === ',' ? -5 : 5;
           heldAxisKeys.forEach(axis => bumpAccelAxis(axis, delta));
           return;
         }
-
-        const pbKey = { ArrowLeft: 2, ArrowDown: 1, ArrowRight: 0 }[e.key];
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          if (e.key === 'ArrowRight') stepOnce(); else stepBack();
+          return;
+        }
+        const pbKey = PB_KEYS[lower];
         if (pbKey !== undefined) {
           e.preventDefault();
           pbSetState(pbKey, true);
@@ -14855,9 +14840,9 @@ int main()
     // a key released after focus moved away (e.g. the user Tabbed elsewhere
     // mid-press) must still let go of the button / axis.
     document.addEventListener('keyup', (e) => {
-      const pbKey = { ArrowLeft: 2, ArrowDown: 1, ArrowRight: 0 }[e.key];
-      if (pbKey !== undefined) pbSetState(pbKey, false);
       const lower = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      const pbKey = PB_KEYS[lower];
+      if (pbKey !== undefined) pbSetState(pbKey, false);
       if (['x', 'y', 'z', 't'].includes(lower)) heldAxisKeys.delete(lower);
     });
 
@@ -16349,9 +16334,10 @@ endmodule
         // is what lets the console's FIFO - and with it RX_VALID - drain as
         // the recording is stepped through.
         if (k === 'A') { if (cur) cur.acks++; else preAcks++; continue; }
-        if (k === 'W') { if (cur) cur.regw.push([parseInt(f[1], 10), parseInt(f[2], 16) >>> 0]); continue; }
+        if (k === 'W') { if (cur) cur.regw.push([parseInt(f[1], 10), parseInt(f[2], 16) >>> 0, parseInt(f[0], 10)]); continue; }
         if (k === 'M') {
-          if (cur) cur.memw.push([parseInt(f[1], 16) >>> 0, parseInt(f[2], 16) & 0xF, parseInt(f[3], 16) >>> 0]);
+          if (cur) cur.memw.push([parseInt(f[1], 16) >>> 0, parseInt(f[2], 16) & 0xF, parseInt(f[3], 16) >>> 0,
+                                  parseInt(f[0], 10)]);
           continue;
         }
         // Peripheral activity, which is also captured when the
@@ -16704,6 +16690,10 @@ endmodule
         hdlSeek(hit >= 0 ? hit : t.steps.length);
         hdlLog('--- ' + t.steps.length + ' instructions, ' +
           uartTxBytes.length + ' UART bytes out ---', 'sys');
+        if (hdlLooksPipelined(t))
+          hdlLog('This core writes registers after its PC has moved on, as a pipeline does. Step, Back, ' +
+            'breakpoints and the instruction count follow the fetch PC, so they run ahead of the results; ' +
+            'registers, memory, peripherals and the cross-check are unaffected.', 'warn');
         if (hit >= 0) {
           hdlStatus('stopped at a breakpoint - line ' + currentExecLine, 'ok');
           setStatus('HDL (' + hdlModeLabel() + ') stopped at breakpoint (line ' +
@@ -16886,60 +16876,127 @@ endmodule
     // ================================================================
     // Off by default: it costs a second execution of the whole program, and
     // the point of HDL mode is usually to run the hardware, not to grade it.
+    // Compared as the architecture defines a program's effect: the order in
+    // which registers change and data memory is written, not instruction by
+    // instruction. A pipeline fetches down paths it later flushes and writes
+    // a result cycles after fetching it, so matching fetch PCs would fail
+    // every correct pipelined core. Registers start at 0 on both sides, as
+    // the hardware's do, so a first write of 0 is no change on either.
     async function hdlCompareWithJs() {
       if (!hdlTrace || !hdlTrace.steps.length) return;
       if (!hdlTrace.regBank)
-        hdlLog('Cross-check: register comparison unavailable (no register-file path); ' +
-          'comparing the PC sequence only.', 'warn');
-      const steps = hdlTrace.steps;
+        hdlLog('Cross-check: no register-file path, so only data memory writes are compared.', 'warn');
       const at = hdlIdx;
-      const hw = new Int32Array(32);
-      const known = new Uint8Array(32);
-      let bad = null;
+      const dmem0 = dataBase >>> 0;
+      const inDmem = a => a >= dmem0 && a < dmem0 + hdlDmemBytes;
+      // An input changed part-way through arrives on a clock the model does
+      // not have, so the comparison ends there.
+      const stop = hdlStim.length ? Math.min(...hdlStim.map(e => e.cycle)) : Infinity;
 
+      const hwReg = [], hwMem = [];
+      const hwShadow = new Int32Array(32);
+      for (const s of hdlTrace.steps) {
+        for (const w of s.regw) {
+          const cyc = w.length > 2 ? w[2] : s.cyc;
+          if (cyc >= stop || (hwShadow[w[0]] | 0) === (w[1] | 0)) continue;
+          hwShadow[w[0]] = w[1] | 0;
+          hwReg.push({ r: w[0], v: w[1] >>> 0, cyc });
+        }
+        for (const w of s.memw) {
+          const cyc = w.length > 3 ? w[3] : s.cyc;
+          if (cyc >= stop) continue;
+          const word = (w[0] & ~3) >>> 0;
+          for (let i = 0; i < 4; i++)
+            if ((w[1] >> i) & 1 && inDmem(word + i)) hwMem.push({ a: word + i, v: (w[2] >>> (i * 8)) & 0xFF, cyc });
+        }
+      }
+      const lastCyc = Math.min(stop, hdlTrace.final ? hdlTrace.final.cyc : hdlTrace.steps[hdlTrace.steps.length - 1].cyc);
+
+      // The model, from reset, with the inputs the run started with.
+      const saved = [dipSwitches, pbState, accelX, accelY, accelZ, accelTemp, accelDready];
+      const s8 = v => ((v & 0xFF) << 24) >> 24;
+      dipSwitches = hdlBase.dip; pbState = hdlBase.pb; accelDready = hdlBase.adrdy ? 1 : 0;
+      accelTemp = s8(hdlBase.accel >>> 24); accelX = s8(hdlBase.accel >>> 16);
+      accelY = s8(hdlBase.accel >>> 8); accelZ = s8(hdlBase.accel);
       const wasJournal = journalEnabled;
       journalEnabled = false;
       loadProgram(machineCode);
       programFinished = false;
-
-      for (let k = 0; k < steps.length; k++) {
-        if ((pc >>> 0) !== steps[k].pc) {
-          bad = { k: k, what: 'PC', js: pc >>> 0, hdl: steps[k].pc };
-          break;
-        }
-        try { executeOne(); } catch (e) {
-          bad = { k: k, what: 'the JS model faulted: ' + e.message };
-          break;
-        }
-        for (const w of steps[k].regw) { hw[w[0]] = w[1] | 0; known[w[0]] = 1; }
-        for (let r = 1; r < 32; r++) {
-          if (known[r] && (regs[r] | 0) !== hw[r]) {
-            bad = { k: k, what: 'x' + r, js: regs[r] >>> 0, hdl: hw[r] >>> 0 };
-            break;
+      const jsReg = [], jsMem = [];
+      const jsShadow = new Int32Array(32);
+      let curPc = 0, fault = null;
+      const baseWriteMem = writeMem;
+      writeMem = function (addr, val, size) {
+        const u = addr >>> 0;
+        for (let i = 0; i < size; i++)
+          if (inDmem(u + i)) jsMem.push({ a: (u + i) >>> 0, v: (val >>> (i * 8)) & 0xFF, pc: curPc });
+        return baseWriteMem(addr, val, size);
+      };
+      try {
+        // No core retires more than one instruction a cycle.
+        for (let n = 0; n <= lastCyc && !programFinished &&
+             (jsReg.length < hwReg.length || jsMem.length < hwMem.length); n++) {
+          curPc = pc >>> 0;
+          lastExecutedRd = -1;
+          executeOne();
+          const rd = lastExecutedRd;
+          if (rd > 0 && (regs[rd] | 0) !== jsShadow[rd]) {
+            jsShadow[rd] = regs[rd] | 0;
+            jsReg.push({ r: rd, v: regs[rd] >>> 0, pc: curPc });
           }
         }
-        if (bad || programFinished) break;
+      } catch (e) {
+        fault = e;
+      } finally {
+        writeMem = baseWriteMem;
+        journalEnabled = wasJournal;
+        [dipSwitches, pbState, accelX, accelY, accelZ, accelTemp, accelDready] = saved;
       }
-      journalEnabled = wasJournal;
 
-      if (!bad) {
-        hdlLog('Cross-check: your hardware matches the functional model over all ' +
-          steps.length + ' traced instructions.', 'sys');
-        setStatus('HDL matches the functional model (' + steps.length + ' instructions)', 'success');
+      const firstDiff = (hw, js, same) => {
+        for (let i = 0; i < hw.length; i++)
+          if (i >= js.length || !same(hw[i], js[i])) return { hw: hw[i], js: js[i] || null };
+        return null;
+      };
+      const dr = hdlTrace.regBank ? firstDiff(hwReg, jsReg, (a, b) => a.r === b.r && a.v === b.v) : null;
+      const dm = firstDiff(hwMem, jsMem, (a, b) => a.a === b.a && a.v === b.v);
+      const by = d => d && d.js ? ' by the instruction at 0x' + d.js.pc.toString(16) + ' (line ' + sourceLineForPc(d.js.pc) + ')' : '';
+      let msg = null;
+      if (dr && (!dm || dr.hw.cyc <= dm.hw.cyc)) {
+        msg = 'first difference at cycle ' + dr.hw.cyc + ': the hardware set x' + dr.hw.r + ' = 0x' + hdlHex32(dr.hw.v) +
+          (dr.js ? '; the model\'s next register change is x' + dr.js.r + ' = 0x' + hdlHex32(dr.js.v) + by(dr)
+                 : '; the model makes no further register change');
+      } else if (dm) {
+        msg = 'first difference at cycle ' + dm.hw.cyc + ': the hardware wrote 0x' + dm.hw.v.toString(16).padStart(2, '0') +
+          ' to 0x' + hdlHex32(dm.hw.a) +
+          (dm.js ? '; the model\'s next data-memory write is 0x' + dm.js.v.toString(16).padStart(2, '0') +
+                   ' to 0x' + hdlHex32(dm.js.a) + by(dm)
+                 : '; the model writes no more data memory');
+      }
+      if (fault && !msg) msg = 'the functional model faulted: ' + fault.message;
+      const upTo = isFinite(stop) ? ' (to cycle ' + stop + ', where an input changed)' : '';
+      if (!msg) {
+        hdlLog('Cross-check: your hardware matches the functional model: ' + hwReg.length + ' register changes and ' +
+          hwMem.length + ' data-memory byte writes' + upTo + '.', 'sys');
+        setStatus('HDL matches the functional model', 'success');
       } else {
-        const s = steps[bad.k];
-        let msg = 'Cross-check: first divergence at instruction ' + bad.k +
-          ' (cycle ' + s.cyc + ', PC 0x' + s.pc.toString(16) + ', instr 0x' +
-          hdlHex32(s.instr) + ') - ' + bad.what;
-        if (bad.js !== undefined)
-          msg += ': model 0x' + hdlHex32(bad.js) + ', hardware 0x' + hdlHex32(bad.hdl);
-        hdlLog(msg, 'err');
+        hdlLog('Cross-check: ' + msg + '.', 'err');
         hdlLog('If the program reads UART input, expect a divergence there: the two ' +
           'engines deliver input on different schedules. Otherwise this is where to ' +
           'start debugging your RTL.', 'warn');
-        setStatus('HDL diverges from the functional model at instruction ' + bad.k, 'error');
+        setStatus('HDL diverges from the functional model at cycle ' + ((dr && dr.hw.cyc) || (dm && dm.hw.cyc) || 0), 'error');
       }
       hdlSeek(at);
+    }
+
+    // A core whose register writes land after its PC has moved on: a
+    // pipeline, or a multi-cycle core that advances the PC in Fetch. The
+    // trace's steps follow the fetch PC, so each write sits in a later
+    // instruction's step than the one that made it.
+    function hdlLooksPipelined(t) {
+      let n = 0, off = 0;
+      for (const s of t.steps) for (const w of s.regw) { n++; if (((s.instr >>> 7) & 31) !== w[0]) off++; }
+      return n >= 8 && off * 2 > n;
     }
 
     // ================================================================
@@ -18291,7 +18348,7 @@ endmodule
     window.toggleDpMax = toggleDpMax;
     window.dpToggleView = dpToggleView;
     window.dpSetView = dpSetView;
-    window.pipePopToggle = pipePopToggle;
+    window.openPipeSettings = openPipeSettings;
     window.pipeSetMode = pipeSetMode;
     window.hdlRemoveFile = hdlRemoveFile;
     window.hdlClearFiles = hdlClearFiles;
@@ -18381,6 +18438,9 @@ endmodule
       hdlIdx = 0;
       return hdlTrace;
     };
+    window.hdlCompareWithJs = hdlCompareWithJs;
+    window.hdlLooksPipelined = hdlLooksPipelined;
+    window.hdlSetBase = (b) => { hdlBase = Object.assign({}, hdlBase, b); };
     window.hdlSetStim = (list) => { hdlStim = list.slice(); };
     window.hdlSetRx = (list) => { hdlRx = list.slice(); };
     window.uartTickDelivery = uartTickDelivery;
@@ -18669,6 +18729,30 @@ endmodule
 
     function pipeEmpty() { return !pipe.D && !pipe.E && !pipe.M && !pipe.W; }
 
+    // Statement Stepping, pipelined: clock until every instruction of the
+    // current statement has left Write-back, which is when its results show.
+    // The statement is the oldest instruction's. After that only W, M and E
+    // are looked at, since whatever is in D or F may yet be flushed.
+    let pipeStmtLine = -1;
+    function pipeStatementStep() {
+      const lineOf = r => r ? sourceLineForPc(r.pc) : -1;
+      const oldest = () => pipe.W || pipe.M || pipe.E;
+      const first = oldest() || pipe.D;
+      pipeStmtLine = first ? lineOf(first) : sourceLineForPc(pc);
+      if (pipeStmtLine <= 0) return pipeStep();
+      let sig = null, retired = false;
+      for (let n = 0; n < 10000; n++) {
+        if (lineOf(pipe.W) === pipeStmtLine) retired = true;
+        sig = pipeStep();
+        if (pipeDone()) break;
+        const next = oldest();
+        if (retired && next && lineOf(next) !== pipeStmtLine) break;
+        const e = lineOf(pipe.E);
+        if (e > 0 && e !== pipeStmtLine && breakpoints.has(e)) break;
+      }
+      return sig;
+    }
+
     // Finished once the exit call has run, or once everything in flight has
     // left and the PC points at no instruction.
     function pipeDone() {
@@ -18736,37 +18820,14 @@ endmodule
       pipeSyncControls();
     }
 
-    // The same switches as the Settings card, popped up from the strip's ⚙:
-    // the element itself moves, so there is only ever one set of controls.
-    function pipePopToggle(force) {
-      const pop = document.getElementById('pipePop');
-      const box = document.getElementById('pipeHazBox');
-      const btn = document.getElementById('dpPipeCfgBtn');
-      if (!pop || !box || !btn) return;
-      const open = force === undefined ? pop.hidden : force;
-      if (!open) {
-        if (pop.hidden) return;
-        pop.hidden = true;
-        const home = document.getElementById('pipeHazHome');
-        if (home) home.parentNode.insertBefore(box, home);
-        return;
-      }
-      pop.appendChild(box);
-      pop.hidden = false;
-      pipeSyncControls();
-      const r = btn.getBoundingClientRect(), w = pop.offsetWidth;
-      pop.style.top = Math.round(r.bottom + 6) + 'px';
-      pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - w - 8))) + 'px';
-      // A tall strip near the bottom of the window: open upwards instead.
-      if (r.bottom + 6 + pop.offsetHeight > window.innerHeight - 8) {
-        pop.style.top = Math.max(8, Math.round(r.top - 6 - pop.offsetHeight)) + 'px';
-      }
+    // The strip's ⚙: Settings, scrolled to the microarchitecture card.
+    function openPipeSettings() {
+      openSettingsModal('simulator');
+      const card = document.getElementById('simMicroarch').closest('.sim-card');
+      let sc = card.parentElement;
+      while (sc && sc.scrollHeight <= sc.clientHeight) sc = sc.parentElement;
+      if (sc) sc.scrollTop += card.getBoundingClientRect().top - sc.getBoundingClientRect().top - 8;
     }
-    document.addEventListener('pointerdown', e => {
-      const pop = document.getElementById('pipePop');
-      if (pop && !pop.hidden && !pop.contains(e.target) && !e.target.closest('#dpPipeCfgBtn')) pipePopToggle(false);
-    });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') pipePopToggle(false); });
 
     function pipeSyncControls() {
       const arch = document.getElementById('simMicroarch');
@@ -18791,12 +18852,6 @@ endmodule
       if (table) table.style.display = jsArch === 'multi' ? '' : 'none';
       const unit = document.getElementById('uartCharUnit');
       if (unit) unit.textContent = pipeMode ? 'cycles/char' : 'instr/char';
-      const stmt = document.getElementById('simStatementStepCard');
-      if (stmt) {
-        const off = pipeMode && simEngineMode !== 'hdl';
-        stmt.classList.toggle('sim-dim', off);
-        stmt.title = off ? 'The pipeline always steps one clock cycle' : '';
-      }
     }
 
     function pipeSnapshot() { return pipeCopy(pipe); }
@@ -20520,6 +20575,7 @@ endmodule
       if (body && typeof ResizeObserver !== 'undefined') new ResizeObserver(() => dpPlaceEncoding()).observe(body);
       try { dpWanted = localStorage.getItem(DP_OPEN_KEY) === '1'; } catch (e) { dpWanted = false; }
       initFloatSteps();
+      pipeInitControls();
       const bpBlock = document.querySelector('#dpPipeBpSvg [data-e="bp"]');
       if (bpBlock) {
         bpBlock.addEventListener('click', openBpFigure);
@@ -20557,7 +20613,6 @@ endmodule
       const arch = document.getElementById('dpArch');
       if (arch) arch.value = pipeMode ? 'pipe' : 'single';
       dpSetView(pipeMode ? dpView : 'diagram');
-      if (!pipeMode) pipePopToggle(false);
       pdpPlaying = false;
       dpClear();
       dpSync(true);

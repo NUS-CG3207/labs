@@ -609,6 +609,29 @@ setTimeout(async () => {
           'different run-time DIP: LED=0x' + lastLed(runB).toString(16),
           lastLed(runB) === 0x72);
 
+        // --- 7b. The saved testbench replays one run ---------------------
+        console.log('\n[7b] The downloaded testbench carries the run it was saved from');
+        const runRec = { cycles: 400, base: { dip: 0xbead, pb: 0, accel: 0x19000040, adrdy: true },
+                         stim: [{ cycle: 200, code: 1, value: 0x0072 }], rx: [] };
+        const baked = win.hdlBuildTestbench({ run: runRec });
+        check('It says what it replays and which files go beside it',
+          /Testbench for one run/.test(baked) && /AA_IROM\.mem/.test(baked) && !/Generic testbench/.test(baked));
+        const icarusBaked = await makeIcarus(baked);
+        check('It compiles with the design', icarusBaked.ok);
+        if (icarusBaked.ok) {
+          const progOnly = { 'AA_IROM.mem': mem.files['AA_IROM.mem'], 'AA_DMEM.mem': mem.files['AA_DMEM.mem'] };
+          const replay = await icarusBaked.run([], progOnly);
+          const leds = (replay.match(/@@L \d+ [0-9a-f]+/g) || []).map(l => parseInt(l.split(' ')[2], 16));
+          check('With only the program files and no plusargs, the LEDs show the starting DIP, then the change: ' +
+            leds.map(v => v.toString(16)).join(','), leds.indexOf(0xad) >= 0 && leds[leds.length - 1] === 0x72 &&
+            leds.indexOf(0xad) < leds.indexOf(0x72));
+          const viaFiles = await icarus.run(['+CYCLES=400', '+TRACE=1', '+DIP=bead', '+NSTIM=1'],
+            Object.assign({}, base, { 'stim.mem': '000000c8\n00000001\n00000072\n' }));
+          const periph = out => (out.match(/^@@[^IWM].*$/gm) || []).join('\n');
+          check('and match the same run driven through the generic testbench',
+            periph(replay) !== '' && periph(replay) === periph(viaFiles));
+        }
+
         // --- 8. Architectural trace ------------------------------------
         console.log('\n[8] Architectural trace and its replay');
         const t = win.hdlParseTrace(runA);
@@ -628,6 +651,52 @@ setTimeout(async () => {
         check('The store to the LED MMIO register was captured',
           allMem.some(w => w[0] === 0xFFFF0060 && w[2] === 0xbead));
         check('A final snapshot closes the trace', !!t.final && !!t.next);
+
+        // --- 8a. The cross-check compares effects, not fetch order -----
+        console.log('\n[8a] The cross-check compares effects, whatever the microarchitecture');
+        const crossCheck = async (stdout) => {
+          win.hdlLoadTrace(stdout, 400);
+          win.hdlSetBase({ dip: 0xbead });
+          const el = doc.getElementById('console'), n0 = el.children.length;
+          await win.hdlCompareWithJs();
+          return Array.from(el.children).slice(n0).map(d => d.textContent).join('\n');
+        };
+        const verdictA = await crossCheck(runA);
+        console.log('    ' + verdictA.split('\n')[0]);
+        check('A correct single-cycle core matches the functional model',
+          /matches the functional model/.test(verdictA), verdictA);
+        check('and its trace is not taken for a pipeline', !win.hdlLooksPipelined(win.hdlParseTrace(runA)));
+        // The same run as a pipeline would record it: every register write
+        // four fetches late, and wrong-path fetches that are never executed.
+        const asPipeline = (() => {
+          const out = [], tail = [];
+          let pending = [], fetched = 0;
+          for (const l of runA.split('\n')) {
+            if (/^@@W /.test(l)) { pending.push({ due: fetched + 4, l }); continue; }
+            if (/^@@[FN] /.test(l)) { tail.push(l); continue; }
+            out.push(l);
+            if (/^@@I /.test(l)) {
+              fetched++;
+              if (fetched % 5 === 0) {
+                const f = l.split(' ');
+                out.push(`@@I ${f[1]} ${(parseInt(f[2], 16) + 0x100).toString(16)} 00000013`);
+              }
+              out.push(...pending.filter(p => p.due <= fetched).map(p => p.l));
+              pending = pending.filter(p => p.due > fetched);
+            }
+          }
+          return out.concat(pending.map(p => p.l), tail).join('\n');
+        })();
+        const verdictP = await crossCheck(asPipeline);
+        check('The same effects recorded the way a pipeline would (writes late, wrong-path fetches) still match',
+          /matches the functional model/.test(verdictP), verdictP);
+        check('and that trace is recognised as a pipeline\'s', win.hdlLooksPipelined(win.hdlParseTrace(asPipeline)));
+        const wLine = runA.split('\n').find(l => /^@@W \d+ \d+ bead$/.test(l));
+        const wrong = runA.replace(wLine, wLine.replace(/bead$/, 'beaf'));
+        const verdictW = await crossCheck(wrong);
+        check('A wrong register value is reported at its own cycle, with the value the model expected',
+          new RegExp('first difference at cycle ' + wLine.split(' ')[1] + ': the hardware set x\\d+ = 0x0000beaf; ' +
+            'the model.s next register change is x\\d+ = 0x0000bead').test(verdictW), verdictW);
 
         // --- 8b. Seeking = stepping ------------------------------------
         // vvp cannot be paused, so stepping is navigation through the
