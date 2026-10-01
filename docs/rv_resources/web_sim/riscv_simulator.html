@@ -3330,13 +3330,6 @@
       gap: 2px;
     }
 
-    .pb-key-hint {
-      font-size: 9px;
-      line-height: 1;
-      color: #6c7086;
-      user-select: none;
-    }
-
     /* Push Button container */
     #pbContainer {
       display: flex;
@@ -4650,7 +4643,7 @@
                   <button onclick="setAccelPreset('zero')" style="padding:2px 6px;font-size:10px;">Zero All</button>
                 </div>
                 <div style="margin-top:4px;font-size:10px;color:#585b70;">
-                  X | Y | Z | T — hold, then ← → to adjust
+                  X | Y | Z | T — hold, then , . to adjust
                 </div>
               </div>
             </div>
@@ -10546,9 +10539,9 @@
         // does and a toggle cannot fake it without a second key press.
         pbCont.innerHTML =
           '<div class="btn-row">' +
-          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnL" title="BTNL (bit 2) — click to toggle; hold ← to press" onclick="pbToggle(' + SQ + '2' + SQ + ')">L</div><div class="pb-key-hint">←</div></div>' +
-          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnC" title="BTNC (bit 1) — click to toggle; hold ↓ to press" onclick="pbToggle(' + SQ + '1' + SQ + ')">C</div><div class="pb-key-hint">↓</div></div>' +
-          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnR" title="BTNR (bit 0) — click to toggle; hold → to press" onclick="pbToggle(' + SQ + '0' + SQ + ')">R</div><div class="pb-key-hint">→</div></div>' +
+          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnL" title="BTNL (bit 2) — click to toggle; hold J to press" onclick="pbToggle(' + SQ + '2' + SQ + ')">L</div></div>' +
+          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnC" title="BTNC (bit 1) — click to toggle; hold K to press" onclick="pbToggle(' + SQ + '1' + SQ + ')">C</div></div>' +
+          '<div class="pb-btn-wrap"><div class="pb-btn" id="pbBtnR" title="BTNR (bit 0) — click to toggle; hold L to press" onclick="pbToggle(' + SQ + '0' + SQ + ')">R</div></div>' +
           '</div>';
       }
 
@@ -14804,12 +14797,13 @@ int main()
       //   J K L (held)   push buttons L, C, R, pressed while held
       //   X/Y/Z/T + , .  that accelerometer axis down or up by 5
       const inEditor = !!(t && cmEditor && cmEditor.contentDOM && cmEditor.contentDOM.contains(t));
-      if (!inEditor && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+      if (!inEditor && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const lower = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+        const nudge = { ',': -5, '<': -5, '.': 5, '>': 5 }[e.key];
         if (['x', 'y', 'z', 't'].includes(lower)) heldAxisKeys.add(lower);
-        if ((e.key === ',' || e.key === '.') && heldAxisKeys.size) {
+        if (nudge && heldAxisKeys.size) {
           e.preventDefault();
-          const delta = e.key === ',' ? -5 : 5;
+          const delta = nudge;
           heldAxisKeys.forEach(axis => bumpAccelAxis(axis, delta));
           return;
         }

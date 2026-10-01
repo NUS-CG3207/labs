@@ -63,7 +63,7 @@ const dom = new JSDOM(htmlContent, {
 
 const win = dom.window;
 const doc = win.document;
-const press = (type, key) => doc.dispatchEvent(new win.KeyboardEvent(type, { key, bubbles: true, cancelable: true }));
+const press = (type, key, shiftKey = false) => doc.dispatchEvent(new win.KeyboardEvent(type, { key, shiftKey, bubbles: true, cancelable: true }));
 
 setTimeout(async () => {
   try {
@@ -122,6 +122,10 @@ setTimeout(async () => {
       press('keydown', key); press('keyup', key);
     });
     if (win.eval('pbState') !== 0) throw new Error('The arrow keys should press no push button');
+    press('keydown', 'K', true);
+    if (win.eval('pbState') !== 0x2) throw new Error('K in capitals should press BTNC too');
+    press('keyup', 'K', true);
+    if (win.eval('pbState') !== 0) throw new Error('K in capitals should release BTNC');
     console.log('✅ J, K and L press BTNL, BTNC and BTNR while held; the arrows press none');
 
     // --- [4] Accelerometer axis shortcut: hold X/Y/Z/T, , and . (5 units per press) ---
@@ -143,6 +147,10 @@ setTimeout(async () => {
     press('keydown', '.');
     if (win.eval('accelTemp') !== 30) throw new Error(`T + . should increase accelTemp to 30, got ${win.eval('accelTemp')}`);
     press('keyup', 't');
+    press('keydown', 'T', true);
+    press('keydown', '>', true);
+    if (win.eval('accelTemp') !== 35) throw new Error(`Shift+T with Shift+. should increase accelTemp to 35, got ${win.eval('accelTemp')}`);
+    press('keyup', 'T', true);
     console.log('✅ Hold T, , and . nudge accelTemp by 5');
 
     win.eval('accelZ = 127;');

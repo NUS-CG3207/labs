@@ -60,8 +60,8 @@ Users should be able to enter operands and step through the computation **cycle 
 
 * the state of the relevant registers and other important datapath elements;
 * the operation being performed at each step;
-* how the state changes from one step to the next; and
-* how your enhancement affects the computation or hardware compared with the baseline implementation.
+* how the state changes from one step to the next;
+* the cycle count, etc.
 
 The visualisation should correspond to the **actual enhancement implemented for Task 3**, rather than being a generic visualisation of multiplication or division.
 
