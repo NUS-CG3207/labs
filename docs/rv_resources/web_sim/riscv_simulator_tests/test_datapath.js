@@ -205,8 +205,19 @@ setTimeout(async () => {
     check('fetch lights the PC and Instr wires',
       ev('dpSvg().querySelectorAll(".dp-lit-data").length') >= 2);
     check('and parks their values beside them', ev('document.getElementById("dpOverlay").children.length') >= 2);
-    for (let k = 2; k <= 9; k++) await advance();
-    check('the ninth phase is the clock edge', phase() === '9/9 Clock edge', phase());
+    const clockSteps = () => Array.from(doc.querySelectorAll('#dpClock .dp-clk-step'));
+    check('the clock beside the drawing holds the nine steps, by pipeline stage, all in one period',
+      clockSteps().map(g => g.textContent).join('') === 'FDDDEMWWW', clockSteps().map(g => g.textContent).join(''));
+    check('with the current step lit', clockSteps()[0].classList.contains('now') &&
+      !doc.getElementById('dpClock').classList.contains('dp-clk-edge'));
+    const names = ['Fetch'];
+    for (let k = 2; k <= 9; k++) { await advance(); names.push(phase().replace(/^\d\/9 /, '')); }
+    check('the steps: Decode (Decoder, Register Read, Extend), Execute, Memory, Writeback (Register Write, PC Increment, Retire)',
+      names.join(' | ') === 'Fetch | Decode · Decoder | Decode · Register Read | Decode · Extend | Execute · ALU and PC Logic | ' +
+        'Memory | Writeback · Register Write | Writeback · PC Increment | Writeback · Retire', names.join(' | '));
+    check('the ninth phase is the clock edge', phase() === '9/9 Writeback · Retire', phase());
+    check('and there the clock\'s next rising edge is lit', doc.getElementById('dpClock').classList.contains('dp-clk-edge') &&
+      clockSteps()[8].classList.contains('now') && clockSteps()[7].classList.contains('done'));
     check('nothing has executed yet', ev('instructionCount') === 0 && ev('regs[5]') === 0);
     win.dpPrev();
     check('◀ goes back one phase without executing anything', /^8\/9/.test(phase()) && ev('instructionCount') === 0, phase());
@@ -230,6 +241,20 @@ setTimeout(async () => {
     check('a toolbar Step resets to the new instruction', (ev('dpPhase') === 0 && phase() === '') && ev('dpModel.pc') === ev('pc'));
     win.stepBack();
     check('a toolbar Back resets to the instruction before', ev('dpModel.pc') === ev('pc') && (ev('dpPhase') === 0 && phase() === ''));
+    const arrow = k => { doc.dispatchEvent(new win.KeyboardEvent('keydown', { key: k, bubbles: true }));
+                         doc.dispatchEvent(new win.KeyboardEvent('keyup', { key: k, bubbles: true })); };
+    const n0 = ev('instructionCount');
+    arrow('ArrowRight');
+    check('with the datapath shown, → takes one phase, not an instruction',
+      ev('dpPhase') === 1 && ev('instructionCount') === n0, `phase ${ev('dpPhase')}`);
+    arrow('ArrowLeft');
+    check('and ← one phase back', ev('dpPhase') === 0);
+    win.stepOnce();
+    const pcAfter = ev('pc');
+    arrow('ArrowLeft');
+    check('← at the first phase goes back to the instruction before, at its last phase',
+      ev('pc') !== pcAfter && ev('dpPhase') === ev('dpPhaseList.length') && ev('instructionCount') === n0);
+    win.stepOnce(); win.stepBack();
     await advance(); await advance(); await advance(); await advance();
     ev('commitRegEditModal')(5, '100');
     check('a register edit re-evaluates in place, keeping the phase',

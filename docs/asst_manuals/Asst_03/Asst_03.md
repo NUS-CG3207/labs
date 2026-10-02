@@ -67,6 +67,9 @@ The visualisation should correspond to the **actual enhancement implemented for 
 
 Provide the complete history of prompts used to create the visualisation, together with any skills files or other relevant Markdown files used.
 
+<span style="color: brown;">You are expected to understand the algorithm, but not the HTML/CSS/JavaScript code.</span>
+
+
 ## Design Instructions
 
 * You are required to have your own, comprehensive program to have a convincing demo. **Only one assembly language program (and hence one bitstream) will be allowed for the demo.**

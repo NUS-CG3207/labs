@@ -176,11 +176,13 @@ The diagrams draw RV32I's ALU, jump and branch instructions, `lw` and `sw`. A pr
 using anything else (`mul`/`div`, `lbu`, `ecall`, floating point, atomics) runs as usual,
 but the button is off and its tooltip names the first such line.
 
-**▶** takes the instruction one phase further: fetch, decode, the Decoder's control
-signals, register read, execute, memory, write-back, next PC, and the clock edge. Values
-travel along their wires and stay beside them. **▶** at the clock edge executes the
-instruction, which is the only point where registers, memory and the PC change, as in the
-hardware. **▶▶** plays the rest of the phases and then executes; **◀** goes back a phase.
+**▶** takes the instruction one step further, through the pipeline's five stages: Fetch;
+Decode (Decoder, Register Read, Extend); Execute (ALU and PC Logic); Memory; and Writeback
+(Register Write, PC Increment, Retire). Values travel along their wires and stay beside
+them. The clock at the left of the drawing shows all nine steps inside one clock period,
+coloured by stage as the pipeline colours them. **▶** at Retire is the rising edge: it
+executes the instruction, the only point where registers, memory and the PC change, as in
+the hardware. **▶▶** plays the rest of the phases and then executes; **◀** goes back a phase, from the first one into the instruction before.
 Step, Back and Run carry on working as usual.
 
 Beside it, the instruction is laid out in its format (R, I, S, B, U or J): all 32 bits,

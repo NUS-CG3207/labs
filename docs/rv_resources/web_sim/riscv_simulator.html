@@ -2103,9 +2103,22 @@
       min-height: 2.9em;
       flex-shrink: 0;
     }
-    .dp-caption:empty { display: none; }
+    /* On a phone an empty caption takes no space. On desktop it keeps its
+       height, or the drawing would rescale between instructions. */
+    body.dp-in-panel #tab-datapath .dp-caption:empty { display: none; }
     /* Below the drawing: the instruction and the picture belong together. */
     .dp-caption { order: 1; border-bottom: none; border-top: 1px solid #313244; }
+    #dpClock .dp-clk-wave { fill: none; stroke: #4c4f69; stroke-width: 9; }
+    #dpClock .dp-clk-next { fill: none; stroke: #4c4f69; stroke-width: 9; stroke-dasharray: 16 12; }
+    #dpClock .dp-clk-arrow { fill: #4c4f69; }
+    #dpClock .dp-clk-label { fill: #4c4f69; font: 700 56px Arial, sans-serif; }
+    #dpClock.dp-clk-edge .dp-clk-next { stroke: #df8e1d; stroke-width: 18; stroke-dasharray: none; }
+    #dpClock.dp-clk-edge .dp-clk-next-arrow { fill: #df8e1d; }
+    #dpClock .dp-clk-step rect { fill: var(--sc); opacity: 0.14; }
+    #dpClock .dp-clk-step.done rect { opacity: 0.4; }
+    #dpClock .dp-clk-step.now rect { opacity: 1; }
+    #dpClock .dp-clk-step text { fill: var(--sc); font: 700 72px Arial, sans-serif; }
+    #dpClock .dp-clk-step.now text { fill: #fff; }
     /* A phone keeps the header to one row: smaller type, no address, and the
        instruction gives way (ellipsis) before anything wraps. */
     body.dp-in-panel #tab-datapath .dp-hdr { flex-wrap: nowrap; }
@@ -2114,6 +2127,7 @@
     body.dp-in-panel #tab-datapath .dp-instr { font-size: 11px; }
     body.dp-in-panel #tab-datapath .dp-instr-addr { display: none; }
     body.dp-in-panel #tab-datapath .dp-phase { font-size: 10.5px; }
+    body.dp-in-panel #tab-datapath .dp-stage-name { display: none; }
     body.dp-in-panel #tab-datapath .dp-hdr-actions { flex-shrink: 0; }
 
     .dp-caption code {
@@ -4276,6 +4290,9 @@
           <p>The MMIO layout and <code>ecall</code> system call services follow the conventions of
             <a href="https://github.com/TheThirdOne/rars" target="_blank" rel="noopener noreferrer">RARS</a>,
             the RISC-V Assembler and Runtime Simulator.</p>
+          <p>The microarchitecture terminology and some of the general ideas follow Sarah L. Harris and
+            David Harris, <i>Digital Design and Computer Architecture: RISC-V Edition</i>. The datapaths
+            here are a different design from the book's.</p>
           <p>The code editor is <a href="https://codemirror.net/" target="_blank" rel="noopener noreferrer">CodeMirror
               6</a>, and C is compiled by <a href="https://godbolt.org/" target="_blank"
               rel="noopener noreferrer">Compiler Explorer</a>. HDL mode runs on <a href="https://github.com/steveicarus/iverilog" target="_blank"
@@ -14793,7 +14810,7 @@ int main()
       }
 
       // One meaning per key, outside the editor (where they edit):
-      //   ← →            Back and Step
+      //   ← →            Back and Step (phases, with the single-cycle datapath shown)
       //   J K L (held)   push buttons L, C, R, pressed while held
       //   X/Y/Z/T + , .  that accelerometer axis down or up by 5
       const inEditor = !!(t && cmEditor && cmEditor.contentDOM && cmEditor.contentDOM.contains(t));
@@ -14809,7 +14826,11 @@ int main()
         }
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
           e.preventDefault();
-          if (e.key === 'ArrowRight') stepOnce(); else stepBack();
+          // With the single-cycle datapath on screen, the arrows walk its
+          // phases, as its ▶ and ◀ do.
+          const phases = !pipeMode && simEngineMode !== 'hdl' && dpModel && vizShown() && !dpBlocker();
+          if (e.key === 'ArrowRight') phases ? dpNext() : stepOnce();
+          else phases ? dpPrev() : stepBack();
           return;
         }
         const pbKey = PB_KEYS[lower];
@@ -19122,7 +19143,7 @@ endmodule
       const hx = dpHex;
       const phases = [];
       const fetch = {
-        title: 'Fetch',
+        stage: 'F', title: 'Fetch',
         glow: ['pcReg', 'imem'],
         routes: [['pcImem', 'data', hx(m.pc)], ['instr', 'data', hx(m.instr)]],
         sequential: true,
@@ -19139,24 +19160,6 @@ endmodule
       const fmt = { 0x33: 'R', 0x13: 'I', 0x03: 'I', 0x67: 'I', 0x23: 'S', 0x63: 'B', 0x6F: 'J', 0x17: 'U', 0x37: 'U' }[m.op];
       const uses = { rs1: 'RISB'.includes(fmt), rs2: 'RSB'.includes(fmt), rd: 'RIUJ'.includes(fmt) };
       const bin = (v, n) => v.toString(2).padStart(n, '0');
-      phases.push({
-        title: 'Decode',
-        routes: [
-          ['opcode', 'field', 'op ' + bin(m.op, 7)],
-          ['funct3', 'field', 'f3 ' + bin(m.f3, 3)],
-          ['funct3PC', c.PCS === '01' ? 'field' : 'unused', bin(m.f3, 3)],
-          ['funct7', 'field', 'f7 ' + bin(m.f7, 7)],
-          ['rs1', uses.rs1 ? 'field' : 'unused', 'rs1 x' + m.rs1],
-          ['rs2', uses.rs2 ? 'field' : 'unused', 'rs2 x' + m.rs2],
-          ['rd', uses.rd ? 'field' : 'unused', 'rd x' + m.rd],
-          ['instrImm', fmt === 'R' ? 'unused' : 'field', '31:7'],
-        ],
-        caption: `A ${fmt}-type instruction. Its fields fan out: opcode, funct3 and funct7 to ` +
-          `the Decoder, register numbers to the register file, bits 31:7 to Extend. ` +
-          `Every field is wired every time; ` +
-          (fmt === 'R' ? 'here the immediate bits are simply not used.'
-            : 'fields this format does not have are read anyway and ignored (dashed).')
-      });
       const ctl = (name, text) => [name, /x/.test(c[name]) ? 'x' : 'ctrl', text || c[name]];
       // A 2-bit select bus: the trunk carries the value, and each bit's own
       // branch is a don't-care or not on its own account.
@@ -19166,19 +19169,29 @@ endmodule
         [name + '1', dpBit(c[name], 1) === 'x' ? 'x' : 'ctrl', '', 'nochip'],
       ];
       phases.push({
-        title: 'Control',
+        stage: 'D', title: 'Decoder',
         glow: ['decoder'],
         glowKind: 'ctrl',
         routes: [
+          ['opcode', 'field', 'op ' + bin(m.op, 7)],
+          ['funct3', 'field', 'f3 ' + bin(m.f3, 3)],
+          ['funct3PC', c.PCS === '01' ? 'field' : 'unused', bin(m.f3, 3)],
+          ['funct7', 'field', 'f7 ' + bin(m.f7, 7)],
+          ['rs1', uses.rs1 ? 'field' : 'unused', 'rs1 x' + m.rs1],
+          ['rs2', uses.rs2 ? 'field' : 'unused', 'rs2 x' + m.rs2],
+          ['rd', uses.rd ? 'field' : 'unused', 'rd x' + m.rd],
+          ['instrImm', fmt === 'R' ? 'unused' : 'field', '31:7'],
           ctl('PCS'), ctl('MemtoReg'), ctl('MemWrite'),
           ['ALUControl', 'ctrl', bin(c.ALUControl, 4)],
           ...ctlBus('ALUSrcA'), ...ctlBus('ALUSrcB'),
           ctl('ImmSrc', c.ImmSrc + (DP_IMM_NAMES[c.ImmSrc] ? ' ' + DP_IMM_NAMES[c.ImmSrc] : '')),
           ctl('RegWrite'),
         ],
-        caption: `Opcode <code>0x${m.op.toString(16).padStart(2, '0')}</code> is the <b>${c.row}</b> ` +
-          `row of the decoder table. ALUControl <code>${bin(c.ALUControl, 4)}</code> is ` +
-          `<b>${DP_ALU_OPS[c.ALUControl] || '?'}</b>. An x is a don't-care: no path depends on that bit.`
+        caption: `A ${fmt}-type instruction: its fields fan out to the Decoder, the register file and Extend` +
+          (fmt === 'R' ? '.' : ', and fields this format does not have are ignored (dashed).') +
+          ` Opcode <code>0x${m.op.toString(16).padStart(2, '0')}</code> is the <b>${c.row}</b> row; ` +
+          `ALUControl <code>${bin(c.ALUControl, 4)}</code> is <b>${DP_ALU_OPS[c.ALUControl] || '?'}</b>. ` +
+          'An x is a don\'t-care.'
       });
       const aSel0 = dpBit(c.ALUSrcA, 0), aSel1 = dpBit(c.ALUSrcA, 1);
       const bSel0 = dpBit(c.ALUSrcB, 0), bSel1 = dpBit(c.ALUSrcB, 1);
@@ -19186,15 +19199,13 @@ endmodule
       const used = (on) => on ? 'data' : 'unused';
       const ext = m.extImm === null ? 'x' : hx(m.extImm);
       phases.push({
-        title: 'Read registers',
-        glow: ['rf', 'extend'],
+        stage: 'D', title: 'Register Read',
+        glow: ['rf'],
         routes: [
           ['rd1ToA', used(aSel0 === '0'), hx(m.rd1)],
           ['rd1ToBase', used(p1 === '1'), hx(m.rd1)],
           ['rd2ToB', used(bSel0 === '0'), hx(m.rd2)],
           ['rd2ToWD', used(c.MemWrite === '1'), hx(m.rd2)],
-          ['extToB', m.extImm === null ? 'x' : used(bSel0 === '1' && bSel1 === '1'), ext],
-          ['extToOff', m.extImm === null ? 'x' : used(p0 === '1'), ext],
           ['pcToA', used(aSel0 === '1' && aSel1 === '1'), 'PC', 'static'],
           ['pcToBase', used(p1 !== '1'), 'PC', 'static'],
           ['zeroToA', used(aSel0 === '1' && aSel1 === '0'), '0', 'static'],
@@ -19202,15 +19213,25 @@ endmodule
           ['fourToOff', used(p0 !== '1'), '4', 'static'],
         ],
         caption: `The register file reads x${m.rs1} = <code>${hx(m.rd1)}</code> and ` +
-          `x${m.rs2} = <code>${hx(m.rd2)}</code> without waiting for a clock. Extend builds ` +
-          (m.extImm === null ? 'nothing meaningful - ImmSrc is a don\'t-care for this row.'
-            : `the ${DP_IMM_NAMES[c.ImmSrc]}-type immediate <code>${ext}</code> (${m.extImm | 0}).`) +
-          ' Every value arrives at every mux input; the muxes decide next.'
+          `x${m.rs2} = <code>${hx(m.rd2)}</code> without waiting for a clock.`
+      });
+      phases.push({
+        stage: 'D', title: 'Extend',
+        glow: ['extend'],
+        routes: [
+          ['extToB', m.extImm === null ? 'x' : used(bSel0 === '1' && bSel1 === '1'), ext],
+          ['extToOff', m.extImm === null ? 'x' : used(p0 === '1'), ext],
+        ],
+        caption: 'Extend builds ' +
+          (m.extImm === null ? 'nothing meaningful: ImmSrc is a don\'t-care for this row.'
+            : `the ${DP_IMM_NAMES[c.ImmSrc]}-type immediate <code>${ext}</code> (${m.extImm | 0}).`)
       });
       const aluName = DP_ALU_OPS[c.ALUControl];
+      const pcsName = { '00': 'not a control instruction', '01': 'a branch', '10': 'jal', '11': 'jalr' }[c.PCS];
       phases.push({
-        title: 'Execute',
-        glow: ['alu'],
+        stage: 'E', title: 'ALU and PC Logic',
+        glow: ['alu', 'pcLogic'],
+        glowKind: 'mixed',
         muxes: ['a1', 'a0', 'b1', 'b0'],
         routes: [
           ['aMid', used(aSel0 === '1'), '', 'nochip'],
@@ -19220,15 +19241,18 @@ endmodule
           ['aluToMem', used(c.MemWrite === '1' || c.MemtoReg === '1'), hx(m.aluResult)],
           ['aluToRes', used(c.MemtoReg === '0'), hx(m.aluResult)],
           ['flags', used(c.PCS === '01'), `eq ${m.flags.eq} lt ${m.flags.lt} ltu ${m.flags.ltu}`],
+          ['PCSrc', 'ctrl', m.pcSrc],
         ],
         caption: `The ALU does <b>${aluName}</b>: <code>${hx(m.srcA)}</code> ${aluName} ` +
           `<code>${m.srcB === null ? 'x' : hx(m.srcB)}</code> = <code>${hx(m.aluResult)}</code>. ` +
-          (c.PCS === '01' ? `Its flags {eq, lt, ltu} = {${m.flags.eq}, ${m.flags.lt}, ${m.flags.ltu}} go to PC Logic.`
-            : 'Its flags are produced too, but PC Logic ignores them for this instruction.')
+          `PC Logic: PCS ${c.PCS} is ${pcsName}` +
+          (c.PCS === '01' ? `, and funct3 ${bin(m.f3, 3)} with the flags {eq, lt, ltu} = ` +
+            `{${m.flags.eq}, ${m.flags.lt}, ${m.flags.ltu}} make it ` + (p0 === '1' ? 'taken' : 'not taken') : '') +
+          `, so PCSrc = ${m.pcSrc}.`
       });
       const isLoad = c.MemtoReg === '1', isStore = c.MemWrite === '1';
       phases.push({
-        title: 'Memory',
+        stage: 'M', title: 'Memory',
         glow: isLoad || isStore ? ['dmem'] : [],
         routes: [['readData', used(isLoad), hx(m.readData)]],
         caption: isLoad
@@ -19241,7 +19265,7 @@ endmodule
       });
       const writes = c.RegWrite === '1';
       phases.push({
-        title: 'Write-back',
+        stage: 'W', title: 'Register Write',
         muxes: c.MemtoReg === 'x' ? [] : ['res'],
         routes: [['result', writes ? 'data' : 'unused', hx(m.result)]],
         caption: writes
@@ -19251,37 +19275,30 @@ endmodule
           : 'RegWrite is 0: Result reaches WD, but the register file will not take it.'
       });
       const pcExplain = {
-        '00': 'PCSrc 00: PC_IN = PC + 4.',
-        '01': 'PCSrc 01: PC_IN = PC + ExtImm, the taken target.',
-        '11': 'PCSrc 11: PC_IN = RD1 + ExtImm, jalr\'s target.',
+        '00': 'PC_IN = PC + 4.',
+        '01': 'PC_IN = PC + ExtImm, the taken target.',
+        '11': 'PC_IN = RD1 + ExtImm, jalr\'s target.',
       }[m.pcSrc];
-      const pcsName = { '00': 'not a control instruction', '01': 'a branch', '10': 'jal', '11': 'jalr' }[c.PCS];
       phases.push({
-        title: 'Next PC',
-        glow: ['pcLogic', 'adder'],
-        glowKind: 'mixed',
+        stage: 'W', title: 'PC Increment',
+        glow: ['adder'],
         muxes: ['off', 'base'],
         routes: [
-          ['PCSrc', 'ctrl', m.pcSrc],
           ['offset', 'data', '', 'nochip'],
           ['base', 'data', '', 'nochip'],
           ['pcIn', 'data', hx(m.pcIn)],
         ],
-        caption: `PC Logic: PCS ${c.PCS} is ${pcsName}` +
-          (c.PCS === '01' ? `, and funct3 ${bin(m.f3, 3)} with the flags decides it is ` +
-            (p0 === '1' ? 'taken' : 'not taken') : '') +
-          `. ${pcExplain} <code>${hx(m.base)}</code> + <code>${hx(m.offset)}</code> = ` +
+        caption: `PCSrc ${m.pcSrc}: ${pcExplain} <code>${hx(m.base)}</code> + <code>${hx(m.offset)}</code> = ` +
           `<code>${hx(m.pcIn)}</code>.`
       });
       const edge = [`PC ← <code>${hx(m.pcIn)}</code>`];
       if (writes && m.rd !== 0) edge.push(`${DP_REG_NAME(m.rd)} ← <code>${hx(m.result)}</code>`);
       if (isStore) edge.push(`M[<code>${hx(m.aluResult)}</code>] ← <code>${hx(m.rd2)}</code>`);
       phases.push({
-        title: 'Clock edge',
+        stage: 'W', title: 'Retire',
         edge: true,
         routes: [],
-        caption: 'At the rising clock edge, everything is written at once: ' + edge.join(', ') +
-          '. Press ▶ to let the edge happen.'
+        caption: 'At the rising clock edge, everything is written at once: ' + edge.join(', ') + '.'
       });
       return phases;
     }
@@ -19625,6 +19642,47 @@ endmodule
       body.classList.add(body.clientWidth >= 900 ? 'dp-enc-side' : 'dp-enc-below');
     }
 
+    // One clock period down the single-cycle drawing's left margin: the nine
+    // steps, each in the colour of the pipeline stage it belongs to, all
+    // inside a single cycle; the rising edge at the bottom starts the next.
+    const DP_STAGE_NAME = { F: 'Fetch', D: 'Decode', E: 'Execute', M: 'Memory', W: 'Writeback' };
+    const DP_CLK = { left: 320, y0: 120, y1: 1640, wLow: -300, wHigh: -195, bx0: -165, bx1: -25 };
+    function dpClockInit() {
+      const svg = document.getElementById('dpSvg');
+      if (!svg || svg.querySelector('#dpClock')) return;
+      const [vx, vy, vw, vh] = svg.getAttribute('viewBox').split(/[\s,]+/).map(Number);
+      svg.setAttribute('viewBox', `${vx - DP_CLK.left} ${vy} ${vw + DP_CLK.left} ${vh}`);
+      const { y0, y1, wLow, wHigh, bx0, bx1 } = DP_CLK, mid = (y0 + y1) / 2;
+      const NS = 'http://www.w3.org/2000/svg';
+      const g = document.createElementNS(NS, 'g');
+      g.id = 'dpClock';
+      const arrow = (y, cls) => `<path class="${cls}" d="M${(wLow + wHigh) / 2 - 18} ${y - 16}L${(wLow + wHigh) / 2 + 18} ${y}L${(wLow + wHigh) / 2 - 18} ${y + 16}Z"/>`;
+      g.innerHTML =
+        '<title>One clock period: in a single-cycle processor every stage happens within it</title>' +
+        `<text class="dp-clk-label" x="${(wLow + wHigh) / 2}" y="${y0 - 50}" text-anchor="middle">CLK</text>` +
+        `<path class="dp-clk-wave" d="M${wLow} ${y0 - 30}V${y0}H${wHigh}V${mid}H${wLow}V${y1}"/>` +
+        arrow(y0, 'dp-clk-arrow') +
+        `<path class="dp-clk-next" d="M${wLow} ${y1}H${wHigh}V${y1 + 50}"/>` +
+        arrow(y1, 'dp-clk-arrow dp-clk-next-arrow');
+      svg.appendChild(g);
+    }
+    function dpClockUpdate() {
+      const g = document.getElementById('dpClock');
+      if (!g) return;
+      const steps = dpPhaseList.filter(p => p.stage);
+      const { y0, y1, bx0, bx1 } = DP_CLK, h = (y1 - y0) / Math.max(steps.length, 1);
+      g.querySelectorAll('.dp-clk-step').forEach(el => el.remove());
+      steps.forEach((p, i) => {
+        const state = i + 1 === dpPhase ? ' now' : i + 1 < dpPhase ? ' done' : '';
+        const y = y0 + i * h;
+        g.insertAdjacentHTML('beforeend',
+          `<g class="dp-clk-step${state}" style="--sc:${PDP_COLOUR[p.stage]}">` +
+          `<rect x="${bx0}" y="${y + 6}" width="${bx1 - bx0}" height="${h - 12}" rx="12"/>` +
+          `<text x="${(bx0 + bx1) / 2}" y="${y + h / 2 + 24}" text-anchor="middle">${p.stage}</text></g>`);
+      });
+      g.classList.toggle('dp-clk-edge', steps.length > 0 && dpPhase === steps.length);
+    }
+
     function dpRender(animate) {
       const instrEl = document.getElementById('dpInstr');
       const phaseEl = document.getElementById('dpPhase');
@@ -19658,7 +19716,15 @@ endmodule
       }
       if (instrEl) instrEl.innerHTML = `<span class="dp-instr-addr">${dpHex(dpModel.pc)}  </span>` +
         escapeHtml(dpModel.text || dpHex(dpModel.instr));
-      if (phaseEl) phaseEl.textContent = dpPhase ? `${dpPhase}/${total} ${dpPhaseList[dpPhase - 1].title}` : '';
+      if (phaseEl) {
+        const ph = dpPhase ? dpPhaseList[dpPhase - 1] : null;
+        const stage = ph && ph.stage ? DP_STAGE_NAME[ph.stage] : '';
+        phaseEl.innerHTML = !ph ? '' : `${dpPhase}/${total} ` + (stage
+          ? (ph.title !== stage ? `<span class="dp-stage-name" style="color:${PDP_COLOUR[ph.stage]}">${stage} · </span>` + ph.title
+                                : `<span style="color:${PDP_COLOUR[ph.stage]}">${stage}</span>`)
+          : escapeHtml(ph.title));
+      }
+      dpClockUpdate();
       if (capEl) capEl.innerHTML = dpPhase ? dpPhaseList[dpPhase - 1].caption : '';
       if (!animate || !dpPhase) { dpDrawStatic(dpPhase); dpUpdateButtons(); return; }
       dpAnimatePhase(dpPhase);
@@ -19685,7 +19751,7 @@ endmodule
         return;
       }
       const ok = !!dpModel && !running && simEngineMode !== 'hdl';
-      set('dpPrevBtn', ok && dpPhase > 0);
+      set('dpPrevBtn', ok && (dpPhase > 0 || execHistory.length > 0));
       set('dpNextBtn', ok && !programFinished);
       set('dpPlayBtn', ok && !programFinished);
     }
@@ -19761,10 +19827,19 @@ endmodule
 
     function dpPrev() {
       if (pipeMode) { pdpPlaying = false; if (!running && execHistory.length) { stepBack(); dpSync(true); } return; }
-      if (!dpModel || dpPhase <= 0) return;
+      if (!dpModel || running) return;
       dpAnimToken++;
       dpBusy = false;
-      dpPhase--;
+      if (dpPhase > 0) {
+        dpPhase--;
+        dpRender(false);
+        return;
+      }
+      // Back past the first phase: the instruction before, at its last.
+      if (!execHistory.length) return;
+      stepBack();
+      dpSync(true);
+      dpPhase = dpPhaseList.length;
       dpRender(false);
     }
 
@@ -20570,6 +20645,7 @@ endmodule
       try { dpWanted = localStorage.getItem(DP_OPEN_KEY) === '1'; } catch (e) { dpWanted = false; }
       initFloatSteps();
       pipeInitControls();
+      dpClockInit();
       const bpBlock = document.querySelector('#dpPipeBpSvg [data-e="bp"]');
       if (bpBlock) {
         bpBlock.addEventListener('click', openBpFigure);
